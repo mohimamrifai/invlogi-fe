@@ -1,0 +1,48 @@
+{
+  "Navbar": {
+    "home": "Home",
+    "services": "Services",
+    "information": "Information",
+    "login": "Login",
+    "language": "Language"
+  },
+  "Hero": {
+    "headline": "Transparent Multimodal Logistics Across Java",
+    "subheadline": "Truck. Rail. Integrated. Data-driven.",
+    "cta": "Contact Us"
+  },
+  "Login": {
+    "title": "Login to Your Account",
+    "subtitle": "Continue booking process and manage your shipments",
+    "email": "Email",
+    "password": "Password",
+    "forgotPassword": "Forgot password?",
+    "login": "Login Now",
+    "or": "or",
+    "noAccount": "Don't have an account?",
+    "register": "Register Partner",
+    "welcome": "Welcome Back",
+    "welcomeSubtitle": "Login to manage shipments and track your logistics"
+  },
+  "Register": {
+    "title": "Register Account",
+    "subtitle": "Choose account type according to your shipping needs",
+    "personal": "Personal",
+    "company": "Company",
+    "companyInfo": "Company Information",
+    "companyName": "Company Name",
+    "companyEmail": "Company Email",
+    "companyPhone": "Company Phone Number",
+    "picData": "Person In Charge (PIC) Data",
+    "fullName": "Full Name",
+    "workEmail": "Work Email",
+    "mobileNumber": "Mobile Number",
+    "password": "Password",
+    "confirmPassword": "Confirm Password",
+    "terms": "I agree to the Terms & Conditions",
+    "createAccount": "Create Company Account",
+    "or": "or",
+    "haveAccount": "Already have an account?",
+    "login": "Login"
+  }
+}

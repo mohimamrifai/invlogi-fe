@@ -4,13 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Eye, EyeOff } from "lucide-react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { Link, useRouter } from "@/i18n/routing";
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 
 export default function LoginPage() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
+  const t = useTranslations("Login");
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-zinc-50/50 p-4 font-sans pt-28 pb-10">
@@ -26,27 +27,27 @@ export default function LoginPage() {
         </div>
 
         <div className="mb-8 space-y-1.5 text-center">
-          <h2 className="text-lg font-bold text-zinc-900">Selamat Datang Kembali</h2>
+          <h2 className="text-lg font-bold text-zinc-900">{t("welcome")}</h2>
           <p className="text-sm text-zinc-500 max-w-[280px] mx-auto leading-relaxed">
-            Masuk untuk mengelola pengiriman dan melacak logistik Anda
+            {t("welcomeSubtitle")}
           </p>
         </div>
 
         <form className="space-y-4">
           <div className="space-y-1.5">
-            <Label htmlFor="email" className="text-xs font-semibold uppercase tracking-wider text-zinc-500 ml-1">Email</Label>
+            <Label htmlFor="email" className="text-xs font-semibold uppercase tracking-wider text-zinc-500 ml-1">{t("email")}</Label>
             <Input
               id="email"
               type="email"
-              placeholder="nama@perusahaan.com"
+              placeholder=""
               className="h-10 rounded-lg border-zinc-200 bg-zinc-50/50 px-3 shadow-sm transition-all focus-visible:ring-2 focus-visible:ring-black focus-visible:border-transparent focus-visible:bg-white text-sm"
             />
           </div>
           <div className="space-y-1.5">
             <div className="flex items-center justify-between ml-1">
-              <Label htmlFor="password" className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Password</Label>
+              <Label htmlFor="password" className="text-xs font-semibold uppercase tracking-wider text-zinc-500">{t("password")}</Label>
               <Link href="#" className="text-xs font-medium text-zinc-500 hover:text-black hover:underline transition-colors">
-                Lupa password?
+                {t("forgotPassword")}
               </Link>
             </div>
             <div className="relative">
@@ -71,24 +72,24 @@ export default function LoginPage() {
 
           <div className="pt-2">
             <Button className="h-10 w-full rounded-lg bg-black text-sm font-bold text-white hover:bg-zinc-800 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-md shadow-black/10">
-              Masuk Sekarang
+              {t("login")}
             </Button>
           </div>
 
           <div className="relative flex items-center py-2">
             <div className="grow border-t border-zinc-200"></div>
-            <span className="mx-4 shrink text-[10px] font-medium text-zinc-400 uppercase tracking-widest">atau</span>
+            <span className="mx-4 shrink text-[10px] font-medium text-zinc-400 uppercase tracking-widest">{t("or")}</span>
             <div className="grow border-t border-zinc-200"></div>
           </div>
 
           <div className="space-y-3 pt-0 text-center">
-            <p className="text-xs text-zinc-500">Belum memiliki akun?</p>
+            <p className="text-xs text-zinc-500">{t("noAccount")}</p>
             <Button
               variant="outline"
               onClick={() => router.push("/register")}
               className="h-10 w-full rounded-lg border border-zinc-200 bg-transparent text-sm font-bold text-zinc-900 hover:bg-zinc-50 hover:border-zinc-300 transition-all"
             >
-              Daftar Partner
+              {t("register")}
             </Button>
           </div>
         </form>

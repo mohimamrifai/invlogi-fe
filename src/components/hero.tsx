@@ -1,7 +1,10 @@
 import { ArrowRight, ChartLine, ShieldCheck, TrainFront, Truck } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useTranslations } from "next-intl";
 
 export function Hero() {
+  const t = useTranslations("Hero");
+
   return (
     <section className="relative overflow-hidden pt-28 pb-16">
       <div className="pointer-events-none absolute inset-0">
@@ -11,12 +14,12 @@ export function Hero() {
       <div className="relative mx-auto grid w-full max-w-7xl items-center gap-12 px-6 md:grid-cols-2 md:px-12 lg:gap-16">
         <div className="space-y-7">
           <h1 className="max-w-2xl text-3xl font-semibold leading-tight tracking-tight text-zinc-900 sm:text-5xl lg:text-6xl">
-            Transparent Multimodal Logistics Across Java
+            {t("headline")}
           </h1>
-          <p className="md:text-xl">Truck. Rail. Integrated. Data-driven.</p>
+          <p className="md:text-xl">{t("subheadline")}</p>
           <div className="flex flex-wrap items-center gap-3">
             <Button size="lg" className="rounded-full py-6 px-8 text-lg shadow-lg">
-              Contact Us
+              {t("cta")}
               <ArrowRight className="size-4" />
             </Button>
           </div>

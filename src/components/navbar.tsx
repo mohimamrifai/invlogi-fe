@@ -1,6 +1,7 @@
 "use client";
 
-import Link from "next/link";
+import { Link, usePathname, useRouter } from "@/i18n/routing";
+import { useTranslations, useLocale } from "next-intl";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { ChevronDown, Menu, Globe } from "lucide-react";
 import { useState, useEffect } from "react";
@@ -18,6 +19,10 @@ import {
 } from "@/components/ui/sheet";
 
 export function Navbar() {
+  const t = useTranslations("Navbar");
+  const locale = useLocale();
+  const router = useRouter();
+  const pathname = usePathname();
   const [isScrolled, setIsScrolled] = useState(false);
 
   useEffect(() => {
@@ -27,6 +32,10 @@ export function Navbar() {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  const handleLanguageChange = (newLocale: string) => {
+    router.replace(pathname, { locale: newLocale });
+  };
 
   return (
     <header
@@ -51,9 +60,9 @@ export function Navbar() {
 
         {/* Navigation Links (Desktop) */}
         <nav className="hidden md:flex items-center gap-1 bg-white/50 backdrop-blur-sm px-2 py-1.5 rounded-full border border-zinc-200/50 shadow-sm absolute left-1/2 -translate-x-1/2 transition-all duration-300 hover:shadow-md hover:border-zinc-300/80">
-          <NavLink href="/">Beranda</NavLink>
-          <NavLink href="/layanan">Layanan</NavLink>
-          <NavLink href="/informasi">Informasi</NavLink>
+          <NavLink href="/">{t("home")}</NavLink>
+          <NavLink href="/layanan">{t("services")}</NavLink>
+          <NavLink href="/informasi">{t("information")}</NavLink>
         </nav>
 
         {/* Right Actions */}
@@ -63,7 +72,7 @@ export function Navbar() {
               <Button 
                 className="rounded-full px-6 font-medium bg-zinc-900 text-white hover:bg-zinc-800 hover:scale-105 transition-all duration-300 shadow-lg shadow-zinc-900/20"
               >
-                Masuk
+                {t("login")}
               </Button>
             </Link>
             
@@ -75,13 +84,13 @@ export function Navbar() {
                 )}
               >
                 <Globe className="h-4 w-4" />
-                <span className="font-medium">ID</span>
+                <span className="font-medium">{locale.toUpperCase()}</span>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-45 rounded-xl p-2">
-                <DropdownMenuItem className="cursor-pointer rounded-lg">
+                <DropdownMenuItem className="cursor-pointer rounded-lg" onClick={() => handleLanguageChange("id")}>
                   <span className="font-medium mr-2">ID</span> Bahasa Indonesia
                 </DropdownMenuItem>
-                <DropdownMenuItem className="cursor-pointer rounded-lg">
+                <DropdownMenuItem className="cursor-pointer rounded-lg" onClick={() => handleLanguageChange("en")}>
                   <span className="font-medium mr-2">EN</span> English
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -109,18 +118,33 @@ export function Navbar() {
                 </div>
                 
                 <nav className="flex flex-col gap-2 flex-1">
-                  <MobileNavLink href="/">Beranda</MobileNavLink>
-                  <MobileNavLink href="/layanan">Layanan</MobileNavLink>
-                  <MobileNavLink href="/informasi">Informasi</MobileNavLink>
+                  <MobileNavLink href="/">{t("home")}</MobileNavLink>
+                  <MobileNavLink href="/layanan">{t("services")}</MobileNavLink>
+                  <MobileNavLink href="/informasi">{t("information")}</MobileNavLink>
                 </nav>
 
                 <div className="flex flex-col gap-3 pt-6 border-t mt-auto">
-                  <Button className="w-full rounded-full h-12 text-base font-medium shadow-lg shadow-zinc-900/10">
-                    Masuk Sekarang
-                  </Button>
-                  <Button variant="outline" className="w-full justify-between rounded-full h-12 px-6">
-                    Bahasa Indonesia <ChevronDown className="h-4 w-4 opacity-50" />
-                  </Button>
+                  <Link href="/login" className="w-full">
+                    <Button className="w-full rounded-full h-12 text-base font-medium shadow-lg shadow-zinc-900/10">
+                      {t("login")}
+                    </Button>
+                  </Link>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger className={cn(
+                      buttonVariants({ variant: "outline" }),
+                      "w-full justify-between rounded-full h-12 px-6"
+                    )}>
+                      {locale === 'id' ? 'Bahasa Indonesia' : 'English'} <ChevronDown className="h-4 w-4 opacity-50" />
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-[--radix-dropdown-menu-trigger-width] rounded-xl p-2">
+                      <DropdownMenuItem className="cursor-pointer rounded-lg" onClick={() => handleLanguageChange("id")}>
+                        <span className="font-medium mr-2">ID</span> Bahasa Indonesia
+                      </DropdownMenuItem>
+                      <DropdownMenuItem className="cursor-pointer rounded-lg" onClick={() => handleLanguageChange("en")}>
+                        <span className="font-medium mr-2">EN</span> English
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               </div>
             </SheetContent>
