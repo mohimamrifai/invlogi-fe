@@ -60,5 +60,27 @@
     "confirmPasswordRequired": "Konfirmasi password wajib diisi",
     "passwordMismatch": "Password tidak cocok",
     "termsRequired": "Anda harus menyetujui syarat dan ketentuan"
+  },
+  "Dashboard": {
+    "menu": {
+      "dashboard": "Dashboard",
+      "createBooking": "Buat Booking",
+      "myShipments": "Pengiriman Saya",
+      "shipmentTracking": "Lacak Pengiriman",
+      "invoices": "Tagihan",
+      "payments": "Pembayaran",
+      "companySettings": "Pengaturan Perusahaan",
+      "customerManagement": "Manajemen Pelanggan",
+      "bookingManagement": "Manajemen Booking",
+      "shipmentManagement": "Manajemen Pengiriman",
+      "invoiceManagement": "Manajemen Invoice",
+      "paymentManagement": "Manajemen Pembayaran",
+      "masterOperational": "Master Operasional",
+      "vendorPricing": "Vendor & Harga",
+      "logout": "Keluar"
+    },
+    "profile": "Profil",
+    "account": "Akun",
+    "notifications": "Notifikasi"
   }
 }

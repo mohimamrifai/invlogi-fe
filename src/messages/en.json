@@ -60,5 +60,27 @@
     "confirmPasswordRequired": "Confirm password is required",
     "passwordMismatch": "Passwords do not match",
     "termsRequired": "You must agree to the terms and conditions"
+  },
+  "Dashboard": {
+    "menu": {
+      "dashboard": "Dashboard",
+      "createBooking": "Create Booking",
+      "myShipments": "My Shipments",
+      "shipmentTracking": "Shipment Tracking",
+      "invoices": "Invoices",
+      "payments": "Payments",
+      "companySettings": "Company Settings",
+      "customerManagement": "Customer Management",
+      "bookingManagement": "Booking Management",
+      "shipmentManagement": "Shipment Management",
+      "invoiceManagement": "Invoice Management",
+      "paymentManagement": "Payment Management",
+      "masterOperational": "Master Operational",
+      "vendorPricing": "Vendor & Pricing",
+      "logout": "Logout"
+    },
+    "profile": "Profile",
+    "account": "Account",
+    "notifications": "Notifications"
   }
 }

@@ -37,6 +37,11 @@ export function Navbar() {
     router.replace(pathname, { locale: newLocale });
   };
 
+  // Hide Navbar on dashboard pages
+  if (pathname.startsWith("/dashboard")) {
+    return null;
+  }
+
   return (
     <header
       className={cn(
