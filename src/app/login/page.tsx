@@ -5,9 +5,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 export default function LoginPage() {
+  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
 
   return (
@@ -30,17 +32,17 @@ export default function LoginPage() {
           </p>
         </div>
 
-        <form className="space-y-5">
-          <div className="space-y-2">
+        <form className="space-y-4">
+          <div className="space-y-1.5">
             <Label htmlFor="email" className="text-xs font-semibold uppercase tracking-wider text-zinc-500 ml-1">Email</Label>
             <Input
               id="email"
               type="email"
               placeholder="nama@perusahaan.com"
-              className="h-12 rounded-xl border-zinc-200 bg-zinc-50/50 px-4 shadow-sm transition-all focus-visible:ring-2 focus-visible:ring-black focus-visible:border-transparent focus-visible:bg-white"
+              className="h-10 rounded-lg border-zinc-200 bg-zinc-50/50 px-3 shadow-sm transition-all focus-visible:ring-2 focus-visible:ring-black focus-visible:border-transparent focus-visible:bg-white text-sm"
             />
           </div>
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <div className="flex items-center justify-between ml-1">
               <Label htmlFor="password" className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Password</Label>
               <Link href="#" className="text-xs font-medium text-zinc-500 hover:text-black hover:underline transition-colors">
@@ -51,39 +53,40 @@ export default function LoginPage() {
               <Input
                 id="password"
                 type={showPassword ? "text" : "password"}
-                className="h-12 rounded-xl border-zinc-200 bg-zinc-50/50 px-4 pr-10 shadow-sm transition-all focus-visible:ring-2 focus-visible:ring-black focus-visible:border-transparent focus-visible:bg-white"
+                className="h-10 rounded-lg border-zinc-200 bg-zinc-50/50 px-3 pr-9 shadow-sm transition-all focus-visible:ring-2 focus-visible:ring-black focus-visible:border-transparent focus-visible:bg-white text-sm"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 transition-colors"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 transition-colors"
               >
                 {showPassword ? (
-                  <EyeOff className="h-5 w-5" />
+                  <EyeOff className="h-4 w-4" />
                 ) : (
-                  <Eye className="h-5 w-5" />
+                  <Eye className="h-4 w-4" />
                 )}
               </button>
             </div>
           </div>
 
           <div className="pt-2">
-            <Button className="h-12 w-full rounded-xl bg-black text-sm font-bold text-white hover:bg-zinc-800 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg shadow-black/20">
+            <Button className="h-10 w-full rounded-lg bg-black text-sm font-bold text-white hover:bg-zinc-800 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-md shadow-black/10">
               Masuk Sekarang
             </Button>
           </div>
 
           <div className="relative flex items-center py-2">
             <div className="grow border-t border-zinc-200"></div>
-            <span className="mx-4 shrink text-xs font-medium text-zinc-400 uppercase tracking-widest">atau</span>
+            <span className="mx-4 shrink text-[10px] font-medium text-zinc-400 uppercase tracking-widest">atau</span>
             <div className="grow border-t border-zinc-200"></div>
           </div>
 
-          <div className="space-y-4 pt-1 text-center">
-            <p className="text-sm text-zinc-500">Belum memiliki akun?</p>
+          <div className="space-y-3 pt-0 text-center">
+            <p className="text-xs text-zinc-500">Belum memiliki akun?</p>
             <Button
               variant="outline"
-              className="h-12 w-full rounded-xl border-2 border-zinc-200 bg-transparent text-sm font-bold text-zinc-900 hover:bg-zinc-50 hover:border-zinc-300 transition-all"
+              onClick={() => router.push("/register")}
+              className="h-10 w-full rounded-lg border border-zinc-200 bg-transparent text-sm font-bold text-zinc-900 hover:bg-zinc-50 hover:border-zinc-300 transition-all"
             >
               Daftar Partner
             </Button>
