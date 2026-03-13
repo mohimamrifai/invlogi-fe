@@ -7,14 +7,53 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Eye, EyeOff } from "lucide-react";
 import { Link, useRouter } from "@/i18n/routing";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { createRegisterSchema, type RegisterSchema } from "@/lib/validations/auth";
 
 export default function RegisterPage() {
+  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [accountType, setAccountType] = useState("company");
   const t = useTranslations("Register");
+  
+  // Use a state to trigger schema updates when locale changes (implicitly handled by re-render)
+  const form = useForm<RegisterSchema>({
+    resolver: zodResolver(createRegisterSchema((key) => t(key))),
+    defaultValues: {
+      accountType: "company",
+      companyName: "",
+      companyEmail: "",
+      companyPhone: "",
+      picName: "",
+      picEmail: "",
+      picPhone: "",
+      password: "",
+      confirmPassword: "",
+      terms: false,
+    },
+    mode: "onChange" // Validate on change for better UX on complex forms
+  });
+
+  const { register, control, handleSubmit, watch, trigger, formState: { errors, isSubmitting } } = form;
+  const accountType = watch("accountType");
+
+  // Re-validate when account type changes to clear/set errors for hidden fields
+  useEffect(() => {
+    if (accountType === "personal") {
+      // Clear company errors if switching to personal
+      trigger(); 
+    }
+  }, [accountType, trigger]);
+
+  const onSubmit = async (data: RegisterSchema) => {
+    // TODO: Implement actual registration logic here
+    console.log("Register data:", data);
+    await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate API call
+    router.push("/login");
+  };
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-zinc-50/50 p-4 font-sans pt-28 pb-10">
@@ -36,23 +75,29 @@ export default function RegisterPage() {
           </p>
         </div>
 
-        <form className="space-y-6">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           {/* Account Type Selection */}
           <div className="space-y-3">
-            <RadioGroup 
-              defaultValue="company" 
-              className="flex gap-6 justify-center"
-              onValueChange={setAccountType}
-            >
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="personal" id="personal" />
-                <Label htmlFor="personal" className="font-medium text-sm text-zinc-700">{t("personal")}</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="company" id="company" />
-                <Label htmlFor="company" className="font-medium text-sm text-zinc-700">{t("company")}</Label>
-              </div>
-            </RadioGroup>
+            <Controller
+              control={control}
+              name="accountType"
+              render={({ field }) => (
+                <RadioGroup 
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                  className="flex gap-6 justify-center"
+                >
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="personal" id="personal" />
+                    <Label htmlFor="personal" className="font-medium text-sm text-zinc-700">{t("personal")}</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="company" id="company" />
+                    <Label htmlFor="company" className="font-medium text-sm text-zinc-700">{t("company")}</Label>
+                  </div>
+                </RadioGroup>
+              )}
+            />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
@@ -65,8 +110,12 @@ export default function RegisterPage() {
                   <Input
                     id="companyName"
                     type="text"
-                    className="h-10 rounded-lg border-zinc-200 bg-zinc-50/50 px-3 shadow-sm transition-all focus-visible:ring-2 focus-visible:ring-black focus-visible:border-transparent focus-visible:bg-white text-sm"
+                    className={`h-10 rounded-lg border-zinc-200 bg-zinc-50/50 px-3 shadow-sm transition-all focus-visible:ring-2 focus-visible:ring-black focus-visible:border-transparent focus-visible:bg-white text-sm ${errors.companyName ? "border-red-500 focus-visible:ring-red-500" : ""}`}
+                    {...register("companyName")}
                   />
+                  {errors.companyName && (
+                    <p className="text-[10px] font-medium text-red-500 ml-1">{errors.companyName.message}</p>
+                  )}
                 </div>
 
                 <div className="space-y-1.5">
@@ -74,8 +123,12 @@ export default function RegisterPage() {
                   <Input
                     id="companyEmail"
                     type="email"
-                    className="h-10 rounded-lg border-zinc-200 bg-zinc-50/50 px-3 shadow-sm transition-all focus-visible:ring-2 focus-visible:ring-black focus-visible:border-transparent focus-visible:bg-white text-sm"
+                    className={`h-10 rounded-lg border-zinc-200 bg-zinc-50/50 px-3 shadow-sm transition-all focus-visible:ring-2 focus-visible:ring-black focus-visible:border-transparent focus-visible:bg-white text-sm ${errors.companyEmail ? "border-red-500 focus-visible:ring-red-500" : ""}`}
+                    {...register("companyEmail")}
                   />
+                  {errors.companyEmail && (
+                    <p className="text-[10px] font-medium text-red-500 ml-1">{errors.companyEmail.message}</p>
+                  )}
                 </div>
 
                 <div className="space-y-1.5">
@@ -83,8 +136,12 @@ export default function RegisterPage() {
                   <Input
                     id="companyPhone"
                     type="tel"
-                    className="h-10 rounded-lg border-zinc-200 bg-zinc-50/50 px-3 shadow-sm transition-all focus-visible:ring-2 focus-visible:ring-black focus-visible:border-transparent focus-visible:bg-white text-sm"
+                    className={`h-10 rounded-lg border-zinc-200 bg-zinc-50/50 px-3 shadow-sm transition-all focus-visible:ring-2 focus-visible:ring-black focus-visible:border-transparent focus-visible:bg-white text-sm ${errors.companyPhone ? "border-red-500 focus-visible:ring-red-500" : ""}`}
+                    {...register("companyPhone")}
                   />
+                  {errors.companyPhone && (
+                    <p className="text-[10px] font-medium text-red-500 ml-1">{errors.companyPhone.message}</p>
+                  )}
                 </div>
               </div>
             )}
@@ -97,8 +154,12 @@ export default function RegisterPage() {
                 <Input
                   id="picName"
                   type="text"
-                  className="h-10 rounded-lg border-zinc-200 bg-zinc-50/50 px-3 shadow-sm transition-all focus-visible:ring-2 focus-visible:ring-black focus-visible:border-transparent focus-visible:bg-white text-sm"
+                  className={`h-10 rounded-lg border-zinc-200 bg-zinc-50/50 px-3 shadow-sm transition-all focus-visible:ring-2 focus-visible:ring-black focus-visible:border-transparent focus-visible:bg-white text-sm ${errors.picName ? "border-red-500 focus-visible:ring-red-500" : ""}`}
+                  {...register("picName")}
                 />
+                {errors.picName && (
+                  <p className="text-[10px] font-medium text-red-500 ml-1">{errors.picName.message}</p>
+                )}
               </div>
 
               <div className="space-y-1.5">
@@ -106,8 +167,12 @@ export default function RegisterPage() {
                 <Input
                   id="picEmail"
                   type="email"
-                  className="h-10 rounded-lg border-zinc-200 bg-zinc-50/50 px-3 shadow-sm transition-all focus-visible:ring-2 focus-visible:ring-black focus-visible:border-transparent focus-visible:bg-white text-sm"
+                  className={`h-10 rounded-lg border-zinc-200 bg-zinc-50/50 px-3 shadow-sm transition-all focus-visible:ring-2 focus-visible:ring-black focus-visible:border-transparent focus-visible:bg-white text-sm ${errors.picEmail ? "border-red-500 focus-visible:ring-red-500" : ""}`}
+                  {...register("picEmail")}
                 />
+                {errors.picEmail && (
+                  <p className="text-[10px] font-medium text-red-500 ml-1">{errors.picEmail.message}</p>
+                )}
               </div>
 
               <div className="space-y-1.5">
@@ -115,8 +180,12 @@ export default function RegisterPage() {
                 <Input
                   id="picPhone"
                   type="tel"
-                  className="h-10 rounded-lg border-zinc-200 bg-zinc-50/50 px-3 shadow-sm transition-all focus-visible:ring-2 focus-visible:ring-black focus-visible:border-transparent focus-visible:bg-white text-sm"
+                  className={`h-10 rounded-lg border-zinc-200 bg-zinc-50/50 px-3 shadow-sm transition-all focus-visible:ring-2 focus-visible:ring-black focus-visible:border-transparent focus-visible:bg-white text-sm ${errors.picPhone ? "border-red-500 focus-visible:ring-red-500" : ""}`}
+                  {...register("picPhone")}
                 />
+                {errors.picPhone && (
+                  <p className="text-[10px] font-medium text-red-500 ml-1">{errors.picPhone.message}</p>
+                )}
               </div>
 
               <div className="space-y-1.5">
@@ -125,7 +194,8 @@ export default function RegisterPage() {
                   <Input
                     id="password"
                     type={showPassword ? "text" : "password"}
-                    className="h-10 rounded-lg border-zinc-200 bg-zinc-50/50 px-3 pr-9 shadow-sm transition-all focus-visible:ring-2 focus-visible:ring-black focus-visible:border-transparent focus-visible:bg-white text-sm"
+                    className={`h-10 rounded-lg border-zinc-200 bg-zinc-50/50 px-3 pr-9 shadow-sm transition-all focus-visible:ring-2 focus-visible:ring-black focus-visible:border-transparent focus-visible:bg-white text-sm ${errors.password ? "border-red-500 focus-visible:ring-red-500" : ""}`}
+                    {...register("password")}
                   />
                   <button
                     type="button"
@@ -139,6 +209,9 @@ export default function RegisterPage() {
                     )}
                   </button>
                 </div>
+                {errors.password && (
+                  <p className="text-[10px] font-medium text-red-500 ml-1">{errors.password.message}</p>
+                )}
               </div>
 
               <div className="space-y-1.5">
@@ -147,7 +220,8 @@ export default function RegisterPage() {
                   <Input
                     id="confirmPassword"
                     type={showConfirmPassword ? "text" : "password"}
-                    className="h-10 rounded-lg border-zinc-200 bg-zinc-50/50 px-3 pr-9 shadow-sm transition-all focus-visible:ring-2 focus-visible:ring-black focus-visible:border-transparent focus-visible:bg-white text-sm"
+                    className={`h-10 rounded-lg border-zinc-200 bg-zinc-50/50 px-3 pr-9 shadow-sm transition-all focus-visible:ring-2 focus-visible:ring-black focus-visible:border-transparent focus-visible:bg-white text-sm ${errors.confirmPassword ? "border-red-500 focus-visible:ring-red-500" : ""}`}
+                    {...register("confirmPassword")}
                   />
                   <button
                     type="button"
@@ -161,21 +235,41 @@ export default function RegisterPage() {
                     )}
                   </button>
                 </div>
+                {errors.confirmPassword && (
+                  <p className="text-[10px] font-medium text-red-500 ml-1">{errors.confirmPassword.message}</p>
+                )}
               </div>
             </div>
           </div>
 
           <div className="flex flex-col items-center gap-4 pt-4 max-w-md mx-auto">
-            <div className="flex items-center space-x-2">
-              <Checkbox id="terms" />
-              <Label htmlFor="terms" className="text-xs font-medium text-zinc-500 leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+            <div className="flex items-start space-x-2">
+              <Controller
+                control={control}
+                name="terms"
+                render={({ field }) => (
+                  <Checkbox 
+                    id="terms" 
+                    checked={field.value} 
+                    onCheckedChange={field.onChange}
+                  />
+                )}
+              />
+              <Label htmlFor="terms" className="text-xs font-medium text-zinc-500 leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 mt-0.5">
                 {t("terms")}
               </Label>
             </div>
+            {errors.terms && (
+              <p className="text-[10px] font-medium text-red-500">{errors.terms.message}</p>
+            )}
 
             <div className="w-full space-y-4">
-              <Button className="h-10 w-full rounded-lg bg-black text-sm font-bold text-white hover:bg-zinc-800 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-md shadow-black/10">
-                {t("createAccount")}
+              <Button 
+                type="submit" 
+                disabled={isSubmitting}
+                className="h-10 w-full rounded-lg bg-black text-sm font-bold text-white hover:bg-zinc-800 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-md shadow-black/10 disabled:opacity-70 disabled:cursor-not-allowed"
+              >
+                {isSubmitting ? "Loading..." : (accountType === "company" ? t("createAccount") : t("createAccountPersonal"))}
               </Button>
 
               <div className="relative flex items-center py-2">
@@ -188,6 +282,7 @@ export default function RegisterPage() {
                 <p className="text-xs text-zinc-500">{t("haveAccount")}</p>
                 <Link href="/login" className="block w-full">
                   <Button
+                    type="button"
                     variant="outline"
                     className="h-10 w-full rounded-lg border border-zinc-200 bg-transparent text-sm font-bold text-zinc-900 hover:bg-zinc-50 hover:border-zinc-300 transition-all"
                   >

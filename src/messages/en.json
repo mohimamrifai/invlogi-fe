@@ -22,7 +22,11 @@
     "noAccount": "Don't have an account?",
     "register": "Register Partner",
     "welcome": "Welcome Back",
-    "welcomeSubtitle": "Login to manage shipments and track your logistics"
+    "welcomeSubtitle": "Login to manage shipments and track your logistics",
+    "emailRequired": "Email is required",
+    "emailInvalid": "Invalid email address",
+    "passwordRequired": "Password is required",
+    "passwordMin": "Password must be at least 8 characters"
   },
   "Register": {
     "title": "Register Account",
@@ -41,8 +45,20 @@
     "confirmPassword": "Confirm Password",
     "terms": "I agree to the Terms & Conditions",
     "createAccount": "Create Company Account",
+    "createAccountPersonal": "Create Personal Account",
     "or": "or",
     "haveAccount": "Already have an account?",
-    "login": "Login"
+    "login": "Login",
+    "accountTypeRequired": "Account type is required",
+    "companyNameRequired": "Company name is required",
+    "phoneRequired": "Phone number is required",
+    "fullNameRequired": "Full name is required",
+    "emailRequired": "Email is required",
+    "emailInvalid": "Invalid email address",
+    "passwordRequired": "Password is required",
+    "passwordMin": "Password must be at least 8 characters",
+    "confirmPasswordRequired": "Confirm password is required",
+    "passwordMismatch": "Passwords do not match",
+    "termsRequired": "You must agree to the terms and conditions"
   }
 }

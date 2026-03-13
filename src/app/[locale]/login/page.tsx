@@ -7,11 +7,31 @@ import { Eye, EyeOff } from "lucide-react";
 import { Link, useRouter } from "@/i18n/routing";
 import { useState } from "react";
 import { useTranslations } from "next-intl";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { createLoginSchema, type LoginSchema } from "@/lib/validations/auth";
 
 export default function LoginPage() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const t = useTranslations("Login");
+  
+  const form = useForm<LoginSchema>({
+    resolver: zodResolver(createLoginSchema((key) => t(key))),
+    defaultValues: {
+      email: "",
+      password: "",
+    },
+  });
+
+  const { register, handleSubmit, formState: { errors, isSubmitting } } = form;
+
+  const onSubmit = async (data: LoginSchema) => {
+    // TODO: Implement actual login logic here
+    console.log("Login data:", data);
+    await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate API call
+    router.push("/");
+  };
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-zinc-50/50 p-4 font-sans pt-28 pb-10">
@@ -33,15 +53,19 @@ export default function LoginPage() {
           </p>
         </div>
 
-        <form className="space-y-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-1.5">
             <Label htmlFor="email" className="text-xs font-semibold uppercase tracking-wider text-zinc-500 ml-1">{t("email")}</Label>
             <Input
               id="email"
               type="email"
               placeholder=""
-              className="h-10 rounded-lg border-zinc-200 bg-zinc-50/50 px-3 shadow-sm transition-all focus-visible:ring-2 focus-visible:ring-black focus-visible:border-transparent focus-visible:bg-white text-sm"
+              className={`h-10 rounded-lg border-zinc-200 bg-zinc-50/50 px-3 shadow-sm transition-all focus-visible:ring-2 focus-visible:ring-black focus-visible:border-transparent focus-visible:bg-white text-sm ${errors.email ? "border-red-500 focus-visible:ring-red-500" : ""}`}
+              {...register("email")}
             />
+            {errors.email && (
+              <p className="text-[10px] font-medium text-red-500 ml-1">{errors.email.message}</p>
+            )}
           </div>
           <div className="space-y-1.5">
             <div className="flex items-center justify-between ml-1">
@@ -54,7 +78,8 @@ export default function LoginPage() {
               <Input
                 id="password"
                 type={showPassword ? "text" : "password"}
-                className="h-10 rounded-lg border-zinc-200 bg-zinc-50/50 px-3 pr-9 shadow-sm transition-all focus-visible:ring-2 focus-visible:ring-black focus-visible:border-transparent focus-visible:bg-white text-sm"
+                className={`h-10 rounded-lg border-zinc-200 bg-zinc-50/50 px-3 pr-9 shadow-sm transition-all focus-visible:ring-2 focus-visible:ring-black focus-visible:border-transparent focus-visible:bg-white text-sm ${errors.password ? "border-red-500 focus-visible:ring-red-500" : ""}`}
+                {...register("password")}
               />
               <button
                 type="button"
@@ -68,11 +93,18 @@ export default function LoginPage() {
                 )}
               </button>
             </div>
+            {errors.password && (
+              <p className="text-[10px] font-medium text-red-500 ml-1">{errors.password.message}</p>
+            )}
           </div>
 
           <div className="pt-2">
-            <Button className="h-10 w-full rounded-lg bg-black text-sm font-bold text-white hover:bg-zinc-800 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-md shadow-black/10">
-              {t("login")}
+            <Button 
+              type="submit" 
+              disabled={isSubmitting}
+              className="h-10 w-full rounded-lg bg-black text-sm font-bold text-white hover:bg-zinc-800 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-md shadow-black/10 disabled:opacity-70 disabled:cursor-not-allowed"
+            >
+              {isSubmitting ? "Loading..." : t("login")}
             </Button>
           </div>
 
@@ -85,6 +117,7 @@ export default function LoginPage() {
           <div className="space-y-3 pt-0 text-center">
             <p className="text-xs text-zinc-500">{t("noAccount")}</p>
             <Button
+              type="button"
               variant="outline"
               onClick={() => router.push("/register")}
               className="h-10 w-full rounded-lg border border-zinc-200 bg-transparent text-sm font-bold text-zinc-900 hover:bg-zinc-50 hover:border-zinc-300 transition-all"
