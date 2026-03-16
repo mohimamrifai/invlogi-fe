@@ -2,15 +2,15 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
 export type UserRole = 
-  // Internal Team
-  | "admin" 
-  | "internal_ops" 
-  | "internal_finance" 
-  | "internal_sales"
-  // Customer
-  | "customer_admin" 
-  | "customer_ops" 
-  | "customer_finance"
+  // Internal Team (match BE)
+  | "super_admin" 
+  | "operations" 
+  | "finance" 
+  | "sales"
+  // Customer (match BE)
+  | "company_admin" 
+  | "ops_pic" 
+  | "finance_pic"
   | null;
 
 interface User {

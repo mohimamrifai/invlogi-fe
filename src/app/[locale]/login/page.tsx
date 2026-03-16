@@ -33,8 +33,8 @@ export default function LoginPage() {
     console.log("Login data:", data);
     await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate API call
     
-    // Simulate role based on email or default to customer_admin
-    login("customer_admin");
+    // Simulate role based on email or default to company_admin
+    login("company_admin");
     router.push("/dashboard");
   };
 
@@ -141,13 +141,13 @@ export default function LoginPage() {
         <div className="mt-8 border-t border-zinc-100 pt-6">
           <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest text-center mb-3">Dev: Simulate Role Login</p>
           <div className="grid grid-cols-2 gap-2">
-            <Button variant="outline" size="sm" className="h-7 text-[10px]" onClick={() => handleSimulateLogin("admin")}>Admin (Super)</Button>
-            <Button variant="outline" size="sm" className="h-7 text-[10px]" onClick={() => handleSimulateLogin("internal_ops")}>Internal Ops</Button>
-            <Button variant="outline" size="sm" className="h-7 text-[10px]" onClick={() => handleSimulateLogin("internal_finance")}>Internal Finance</Button>
-            <Button variant="outline" size="sm" className="h-7 text-[10px]" onClick={() => handleSimulateLogin("internal_sales")}>Internal Sales</Button>
-            <Button variant="outline" size="sm" className="h-7 text-[10px]" onClick={() => handleSimulateLogin("customer_admin")}>Customer Admin</Button>
-            <Button variant="outline" size="sm" className="h-7 text-[10px]" onClick={() => handleSimulateLogin("customer_ops")}>Customer Ops</Button>
-            <Button variant="outline" size="sm" className="h-7 text-[10px]" onClick={() => handleSimulateLogin("customer_finance")}>Customer Finance</Button>
+            <Button variant="outline" size="sm" className="h-7 text-[10px]" onClick={() => handleSimulateLogin("super_admin")}>Super Admin</Button>
+            <Button variant="outline" size="sm" className="h-7 text-[10px]" onClick={() => handleSimulateLogin("operations")}>Operations</Button>
+            <Button variant="outline" size="sm" className="h-7 text-[10px]" onClick={() => handleSimulateLogin("finance")}>Finance</Button>
+            <Button variant="outline" size="sm" className="h-7 text-[10px]" onClick={() => handleSimulateLogin("sales")}>Sales</Button>
+            <Button variant="outline" size="sm" className="h-7 text-[10px]" onClick={() => handleSimulateLogin("company_admin")}>Company Admin</Button>
+            <Button variant="outline" size="sm" className="h-7 text-[10px]" onClick={() => handleSimulateLogin("ops_pic")}>Ops PIC</Button>
+            <Button variant="outline" size="sm" className="h-7 text-[10px]" onClick={() => handleSimulateLogin("finance_pic")}>Finance PIC</Button>
           </div>
         </div>
       </div>

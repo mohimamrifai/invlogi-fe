@@ -69,7 +69,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       title: t("dashboard"),
       url: "/dashboard",
       icon: LayoutDashboard,
-      roles: ["admin", "internal_ops", "internal_finance", "internal_sales", "customer_admin", "customer_ops", "customer_finance"],
+      roles: ["super_admin", "operations", "finance", "sales", "company_admin", "ops_pic", "finance_pic"],
     },
     
     // Internal Team - Admin/Sales
@@ -77,7 +77,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       title: t("customerManagement"),
       url: "/dashboard/admin/customers",
       icon: Users,
-      roles: ["admin", "internal_sales"],
+      roles: ["super_admin", "sales"],
     },
     
     // Internal Team - Admin/Ops
@@ -85,19 +85,19 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       title: t("bookingManagement"),
       url: "/dashboard/admin/bookings",
       icon: FileText,
-      roles: ["admin", "internal_ops"],
+      roles: ["super_admin", "operations"],
     },
     {
       title: t("shipmentManagement"),
       url: "/dashboard/admin/shipments",
       icon: Truck,
-      roles: ["admin", "internal_ops"],
+      roles: ["super_admin", "operations"],
     },
     {
       title: t("masterOperational"),
       url: "/dashboard/admin/master",
       icon: Settings,
-      roles: ["admin", "internal_ops"],
+      roles: ["super_admin", "operations"],
     },
 
     // Internal Team - Admin/Finance
@@ -105,13 +105,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       title: t("invoiceManagement"),
       url: "/dashboard/admin/invoices",
       icon: FileText,
-      roles: ["admin", "internal_finance"],
+      roles: ["super_admin", "finance"],
     },
     {
       title: t("paymentManagement"),
       url: "/dashboard/admin/payments",
       icon: CreditCard,
-      roles: ["admin", "internal_finance"],
+      roles: ["super_admin", "finance"],
     },
 
     // Internal Team - Admin/Sales
@@ -119,7 +119,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       title: t("vendorPricing"),
       url: "/dashboard/admin/vendor",
       icon: Tags,
-      roles: ["admin", "internal_sales"],
+      roles: ["super_admin", "sales"],
     },
 
     // Customer Portal - Common
@@ -127,37 +127,37 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       title: t("createBooking"),
       url: "/dashboard/booking/create",
       icon: PlusCircle,
-      roles: ["customer_admin", "customer_ops"],
+      roles: ["company_admin", "ops_pic"],
     },
     {
       title: t("myShipments"),
       url: "/dashboard/shipments",
       icon: Package,
-      roles: ["customer_admin", "customer_ops"],
+      roles: ["company_admin", "ops_pic"],
     },
     {
       title: t("shipmentTracking"),
       url: "/dashboard/tracking",
       icon: Activity,
-      roles: ["customer_admin", "customer_ops"],
+      roles: ["company_admin", "ops_pic"],
     },
     {
       title: t("invoices"),
       url: "/dashboard/invoices",
       icon: FileText,
-      roles: ["customer_admin", "customer_finance"],
+      roles: ["company_admin", "finance_pic"],
     },
     {
       title: t("payments"),
       url: "/dashboard/payments",
       icon: CreditCard,
-      roles: ["customer_admin", "customer_finance"],
+      roles: ["company_admin", "finance_pic"],
     },
     {
       title: t("companySettings"),
       url: "/dashboard/settings",
       icon: Building,
-      roles: ["customer_admin"],
+      roles: ["company_admin"],
     },
   ];
 
