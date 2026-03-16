@@ -2,7 +2,10 @@
 // Catatan: saat ini masih menggunakan data dummy di komponen, file ini hanya
 // mendefinisikan shape agar FE & BE punya kontrak yang jelas.
 
+export type AdminRole = "super_admin" | "operations" | "finance" | "sales";
+
 export interface AdminDashboardSummary {
+  // Super admin global metrics
   bookingsToday: number;
   activeShipments: number;
   rackUtilization: number;
@@ -11,6 +14,15 @@ export interface AdminDashboardSummary {
   pendingCompanyApprovals: number;
   unpaidInvoices: number;
   paymentsToday: number;
+
+  // Ops-specific metrics
+  departuresToday?: number;
+  arrivalsToday?: number;
+
+  // Sales-specific metrics
+  activeCustomers?: number;
+  newCustomersThisWeek?: number;
+  pendingProspects?: number;
 }
 
 export interface AdminBookingPendingItem {
@@ -43,6 +55,7 @@ export interface AdminPaymentItem {
 }
 
 export interface AdminDashboardResponse {
+  role: AdminRole;
   summary: AdminDashboardSummary;
   pendingBookings: AdminBookingPendingItem[];
   activeShipments: AdminShipmentItem[];
@@ -50,11 +63,16 @@ export interface AdminDashboardResponse {
   recentPayments: AdminPaymentItem[];
 }
 
+export type CustomerRole = "company_admin" | "ops_pic" | "finance_pic";
+
 export interface CustomerDashboardSummary {
+  // Company-level summary (company_admin)
   activeBookings: number;
   activeShipments: number;
   unpaidInvoices: number;
   overdueInvoices: number;
+
+  // PIC-level can reuse subset of these fields depending on role
 }
 
 export interface CustomerShipmentItem {
@@ -77,6 +95,7 @@ export interface CustomerPaymentItem {
 }
 
 export interface CustomerDashboardResponse {
+  role: CustomerRole;
   summary: CustomerDashboardSummary;
   shipments: CustomerShipmentItem[];
   invoices: CustomerInvoiceItem[];

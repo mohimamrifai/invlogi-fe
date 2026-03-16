@@ -77,7 +77,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       title: t("customerManagement"),
       url: "/dashboard/admin/customers",
       icon: Users,
-      roles: ["super_admin", "sales"],
+      roles: ["super_admin", "sales", "operations", "finance"],
     },
     
     // Internal Team - Admin/Ops
@@ -161,8 +161,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     },
   ];
 
-  // Filter menu items based on user role
-  // If not mounted (SSR), show empty or default to avoid hydration mismatch
   const role = mounted ? user?.role : null;
   const navItems = role ? allMenuItems.filter(item => item.roles.includes(role)) : [];
 
@@ -192,20 +190,35 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <SidebarGroupLabel className="text-sm font-medium px-4 mb-2">Menu</SidebarGroupLabel>
           <SidebarMenu className="gap-2 px-2">
             {navItems.map((item) => {
-              const isActive = pathname === item.url || pathname.startsWith(`${item.url}/`);
+              let normalizedPathname = pathname
+              if (normalizedPathname.startsWith("/en/") || normalizedPathname.startsWith("/id/")) {
+                normalizedPathname = normalizedPathname.replace(/^\/[a-zA-Z-]+(?=\/)/, "")
+              }
+
+              const isDashboardItem = item.url === "/dashboard"
+              const isActive = isDashboardItem
+                ? normalizedPathname === item.url
+                : normalizedPathname === item.url || normalizedPathname.startsWith(`${item.url}/`)
+
               return (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton 
-                    tooltip={item.title} 
-                    isActive={isActive} 
+                  <SidebarMenuButton
+                    tooltip={item.title}
+                    isActive={isActive}
                     size="default"
-                    className="h-10 text-sm font-medium px-3 hover:bg-zinc-100 data-[active=true]:bg-black data-[active=true]:text-white transition-all duration-200"
+                    className={
+                      "h-9 text-sm font-medium px-3 rounded-md transition-colors " +
+                      (isActive
+                        ? "bg-zinc-900 text-white"
+                        : "text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900")
+                    }
                     render={
-                    <Link href={item.url} className="flex items-center gap-3 w-full">
-                      {item.icon && <item.icon className="h-4 w-4" />}
-                      <span>{item.title}</span>
-                    </Link>
-                  } />
+                      <Link href={item.url} className="flex items-center gap-3 w-full">
+                        {item.icon && <item.icon className="h-4 w-4" />}
+                        <span>{item.title}</span>
+                      </Link>
+                    }
+                  />
                 </SidebarMenuItem>
               )
             })}
