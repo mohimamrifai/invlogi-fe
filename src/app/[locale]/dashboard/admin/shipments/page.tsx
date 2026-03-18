@@ -65,9 +65,6 @@ export default function AdminShipmentsPage() {
               </Button>
             </>
           )}
-          <Badge variant="outline" className="text-xs px-3 py-1">
-            Admin • Shipments
-          </Badge>
         </div>
       </div>
       <Card>

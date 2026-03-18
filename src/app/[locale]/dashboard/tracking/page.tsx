@@ -14,19 +14,16 @@ export default function CustomerTrackingPage() {
  
    return (
      <div className="flex flex-1 flex-col gap-6">
-       <div className="flex items-center justify-between gap-4">
-         <div>
-           <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">
-             Shipment Tracking
-           </h1>
-           <p className="mt-1 text-sm text-muted-foreground">
-             Lacak status shipment perusahaan Anda menggunakan nomor referensi internal.
-           </p>
-         </div>
-         <Badge variant="outline" className="text-xs px-3 py-1">
-           Customer • Tracking
-         </Badge>
-       </div>
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">
+            Shipment Tracking
+          </h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Lacak status shipment perusahaan Anda menggunakan nomor referensi internal.
+          </p>
+        </div>
+      </div>
       <div className="rounded-xl border bg-card text-card-foreground shadow-sm p-6 space-y-4">
         <p className="text-sm text-muted-foreground">
           Masukkan nomor waybill internal untuk melihat status shipment

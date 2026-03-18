@@ -54,8 +54,8 @@ export default function AdminVendorPage() {
         <div className="flex items-center gap-2">
           {canManageVendor && (
             <>
-              <Button size="sm" className="gap-1.5">
-                <Store className="h-3.5 w-3.5" />
+              <Button className="h-9 px-4 gap-1.5">
+                <Store className="h-4 w-4" />
                 Tambah Vendor
               </Button>
               <Button variant="outline" size="sm" className="gap-1.5">
@@ -64,9 +64,6 @@ export default function AdminVendorPage() {
               </Button>
             </>
           )}
-          <Badge variant="outline" className="text-xs px-3 py-1">
-            Admin • Vendor
-          </Badge>
         </div>
       </div>
       <div className="grid gap-4 lg:grid-cols-3">

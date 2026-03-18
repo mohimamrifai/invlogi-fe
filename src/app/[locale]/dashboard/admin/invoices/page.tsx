@@ -65,9 +65,6 @@ export default function AdminInvoicesPage() {
               </Button>
             </>
           )}
-          <Badge variant="outline" className="text-xs px-3 py-1">
-            Admin • Invoices
-          </Badge>
         </div>
       </div>
       <Card>

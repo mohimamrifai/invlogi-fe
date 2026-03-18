@@ -69,9 +69,6 @@ export default function AdminBookingsPage() {
               </Button>
             </>
           )}
-          <Badge variant="outline" className="text-xs px-3 py-1">
-            Admin • Bookings
-          </Badge>
         </div>
       </div>
       <Card>

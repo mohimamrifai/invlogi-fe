@@ -54,14 +54,11 @@ export default function AdminMasterPage() {
         </div>
         <div className="flex items-center gap-2">
           {canManageMaster && (
-            <Button size="sm" className="gap-1.5">
-              <Plus className="h-3.5 w-3.5" />
+            <Button className="h-9 px-4 gap-1.5">
+              <Plus className="h-4 w-4" />
               Tambah Master Data
             </Button>
           )}
-          <Badge variant="outline" className="text-xs px-3 py-1">
-            Admin • Master
-          </Badge>
         </div>
       </div>
       <div className="grid gap-4 md:grid-cols-2">

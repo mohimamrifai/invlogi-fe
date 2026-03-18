@@ -65,9 +65,6 @@ export default function AdminPaymentsPage() {
               </Button>
             </>
           )}
-          <Badge variant="outline" className="text-xs px-3 py-1">
-            Admin • Payments
-          </Badge>
         </div>
       </div>
       <Card>

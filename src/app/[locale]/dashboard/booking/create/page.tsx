@@ -21,19 +21,16 @@ export default function CreateBookingPage() {
  
    return (
      <div className="flex flex-1 flex-col gap-6">
-       <div className="flex items-center justify-between gap-4">
-         <div>
-           <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">
-             Create Booking
-           </h1>
-           <p className="mt-1 text-sm text-muted-foreground">
-             Buat booking baru menggunakan master data layanan dan rute yang tersedia.
-           </p>
-         </div>
-         <Badge variant="outline" className="text-xs px-3 py-1">
-           Customer • Create Booking
-         </Badge>
-       </div>
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">
+            Create Booking
+          </h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Buat booking baru menggunakan master data layanan dan rute yang tersedia.
+          </p>
+        </div>
+      </div>
       <Card>
         <CardHeader>
           <CardTitle>Step 1 - Detail Pengiriman</CardTitle>

@@ -78,9 +78,6 @@ export default function DashboardPage() {
             {title}
           </h1>
         </div>
-        <Badge className="text-xs px-3 py-1" variant="outline">
-          {roleLabel}
-        </Badge>
       </div>
 
       {renderDashboardByRole()}

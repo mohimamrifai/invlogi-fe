@@ -30,19 +30,16 @@ export default function CustomerShipmentsPage() {
  
    return (
      <div className="flex flex-1 flex-col gap-6">
-       <div className="flex items-center justify-between gap-4">
-         <div>
-           <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">
-             My Shipments
-           </h1>
-           <p className="mt-1 text-sm text-muted-foreground">
-             Lihat semua shipment milik perusahaan Anda beserta status dan detailnya.
-           </p>
-         </div>
-         <Badge variant="outline" className="text-xs px-3 py-1">
-           Customer • Shipments
-         </Badge>
-       </div>
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">
+            My Shipments
+          </h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Lihat semua shipment milik perusahaan Anda beserta status dan detailnya.
+          </p>
+        </div>
+      </div>
       <Card>
         <CardHeader>
           <CardTitle>My Shipments</CardTitle>
