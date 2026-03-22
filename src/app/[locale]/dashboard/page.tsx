@@ -9,7 +9,6 @@ import { DashboardSales } from "@/components/dashboard/role/DashboardSales";
 import { DashboardCompanyAdmin } from "@/components/dashboard/role/DashboardCompanyAdmin";
 import { DashboardOpsPic } from "@/components/dashboard/role/DashboardOpsPic";
 import { DashboardFinancePic } from "@/components/dashboard/role/DashboardFinancePic";
-import { Badge } from "@/components/ui/badge";
 
 export default function DashboardPage() {
   const { user } = useAuthStore();
