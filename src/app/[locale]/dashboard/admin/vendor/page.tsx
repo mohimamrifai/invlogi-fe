@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Badge } from "@/components/ui/badge";
 import {
   Card,
   CardContent,
@@ -36,14 +35,14 @@ export default function AdminVendorPage() {
   if (!mounted) return null;
 
   return (
-    <div className="flex flex-1 flex-col gap-6">
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex items-start gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-zinc-900/5 text-zinc-900">
+    <div className="flex min-w-0 w-full flex-1 flex-col gap-6 md:px-2">
+      <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
+        <div className="flex min-w-0 items-start gap-3">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-zinc-900/5 text-zinc-900">
             <Store className="h-4 w-4" />
           </div>
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-xl font-semibold tracking-tight text-zinc-900 sm:text-2xl">
               Vendor &amp; Pricing
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">
@@ -51,28 +50,30 @@ export default function AdminVendorPage() {
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          {canManageVendor && (
-            <>
-              <Button className="h-9 px-4 gap-1.5">
-                <Store className="h-4 w-4" />
-                Tambah Vendor
-              </Button>
-              <Button variant="outline" size="sm" className="gap-1.5">
-                <Tags className="h-3.5 w-3.5" />
-                Atur Pricing
-              </Button>
-            </>
-          )}
-        </div>
+        {canManageVendor && (
+          <div className="flex w-full shrink-0 flex-col gap-2 sm:w-auto sm:flex-row sm:justify-end">
+            <Button className="h-9 w-full gap-1.5 px-4 sm:w-auto">
+              <Store className="h-4 w-4 shrink-0" />
+              Tambah Vendor
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-9 w-full gap-1.5 sm:w-auto"
+            >
+              <Tags className="h-3.5 w-3.5 shrink-0" />
+              Atur Pricing
+            </Button>
+          </div>
+        )}
       </div>
-      <div className="grid gap-4 lg:grid-cols-3">
-       <Card className="lg:col-span-1">
-          <CardHeader>
+      <div className="grid min-w-0 gap-4 lg:grid-cols-3">
+        <Card className="min-w-0 overflow-hidden lg:col-span-1">
+          <CardHeader className="space-y-1">
             <CardTitle>Vendor</CardTitle>
             <CardDescription>Vendor rail cargo (dummy).</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -95,12 +96,12 @@ export default function AdminVendorPage() {
           </CardContent>
         </Card>
 
-        <Card className="lg:col-span-2">
-          <CardHeader>
+        <Card className="min-w-0 overflow-hidden lg:col-span-2">
+          <CardHeader className="space-y-1">
             <CardTitle>Pricing Matrix</CardTitle>
             <CardDescription>Buy/sell & diskon per lane (dummy).</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -127,16 +128,15 @@ export default function AdminVendorPage() {
                 ))}
               </TableBody>
               <TableCaption className="text-xs">
-                Ilustrasi struktur harga yang nanti akan terhubung ke backend
-                vendor &amp; pricing.
+                Ilustrasi struktur harga (backend vendor &amp; pricing).
               </TableCaption>
             </Table>
           </CardContent>
         </Card>
       </div>
-     </div>
-   );
- }
+    </div>
+  );
+}
 
 const dummyVendors = [
   { name: "PT Rail Logistics Indonesia", category: "Rail Operator" },
@@ -161,5 +161,3 @@ const dummyPricing = [
     discount: 10,
   },
 ];
-
- 

@@ -75,8 +75,8 @@ const shipmentByService = [
 
 export function DashboardSuperAdmin() {
   return (
-    <div className="flex flex-1 flex-col gap-6">
-      <div className="grid gap-4 md:grid-cols-4">
+    <div className="flex min-w-0 w-full flex-1 flex-col gap-6">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Card>
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between gap-2">
@@ -143,15 +143,15 @@ export function DashboardSuperAdmin() {
         </Card>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-3">
-        <Card className="lg:col-span-2">
+      <div className="grid min-w-0 gap-4 lg:grid-cols-3">
+        <Card className="min-w-0 overflow-hidden lg:col-span-2">
           <CardHeader>
             <CardTitle>Distribusi Shipment Rail per Service Type</CardTitle>
             <CardDescription>
               Volume Rail Cargo per minggu (FCL vs LCL).
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="overflow-x-auto">
             <ChartContainer
               config={chartConfig}
               className="h-64 w-full rounded-sm border border-sky-100/70 bg-gradient-to-br from-sky-50 via-white to-indigo-50 px-4 py-3 shadow-sm"
@@ -179,7 +179,7 @@ export function DashboardSuperAdmin() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="min-w-0 overflow-hidden">
           <CardHeader>
             <CardTitle>Ringkasan Admin Internal</CardTitle>
             <CardDescription />
@@ -256,14 +256,14 @@ export function DashboardSuperAdmin() {
         </Card>
       </div>
 
-      <Card>
+      <Card className="min-w-0 overflow-hidden">
         <CardHeader>
           <CardTitle>Shipment Terbaru</CardTitle>
           <CardDescription>
             Shipment Rail Cargo terbaru (data dummy untuk MVP).
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>

@@ -30,8 +30,8 @@ const recentPayments = [
 
 export function DashboardFinance() {
   return (
-    <div className="flex flex-1 flex-col gap-6">
-      <div className="grid gap-4 md:grid-cols-4">
+    <div className="flex min-w-0 w-full flex-1 flex-col gap-6">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Card>
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between gap-2">
@@ -86,13 +86,13 @@ export function DashboardFinance() {
         </Card>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Card>
+      <div className="grid min-w-0 gap-4 lg:grid-cols-2">
+        <Card className="min-w-0 overflow-hidden">
           <CardHeader>
             <CardTitle>Invoice Overdue</CardTitle>
             <CardDescription>Invoice yang melewati due date dan belum dibayar.</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -116,12 +116,12 @@ export function DashboardFinance() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="min-w-0 overflow-hidden">
           <CardHeader>
             <CardTitle>Pembayaran Terbaru</CardTitle>
             <CardDescription>Transaksi pembayaran yang tercatat melalui Midtrans.</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>

@@ -9,6 +9,7 @@ import { DashboardSales } from "@/components/dashboard/role/DashboardSales";
 import { DashboardCompanyAdmin } from "@/components/dashboard/role/DashboardCompanyAdmin";
 import { DashboardOpsPic } from "@/components/dashboard/role/DashboardOpsPic";
 import { DashboardFinancePic } from "@/components/dashboard/role/DashboardFinancePic";
+import { LayoutDashboard } from "lucide-react";
 
 export default function DashboardPage() {
   const { user } = useAuthStore();
@@ -21,8 +22,6 @@ export default function DashboardPage() {
   if (!mounted) return null;
 
   const role = user?.role ?? "super_admin";
-
-  const roleLabel = role.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
 
   const renderDashboardByRole = () => {
     switch (role) {
@@ -42,7 +41,7 @@ export default function DashboardPage() {
         return <DashboardFinancePic />;
       default:
         return (
-          <div className="flex flex-1 flex-col gap-4">
+          <div className="flex min-w-0 w-full flex-1 flex-col gap-4">
             <h1 className="text-xl font-semibold">Dashboard tidak tersedia</h1>
             <p className="text-sm text-muted-foreground">
               Role ini belum punya tampilan khusus.
@@ -70,12 +69,17 @@ export default function DashboardPage() {
       : "Dashboard";
 
   return (
-    <div className="flex flex-1 flex-col gap-6">
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">
-            {title}
-          </h1>
+    <div className="flex min-w-0 w-full flex-1 flex-col gap-6 md:px-2">
+      <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
+        <div className="flex min-w-0 items-start gap-3">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-zinc-900/5 text-zinc-900">
+            <LayoutDashboard className="h-4 w-4" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <h1 className="text-xl font-semibold tracking-tight text-zinc-900 sm:text-2xl">
+              {title}
+            </h1>
+          </div>
         </div>
       </div>
 

@@ -18,34 +18,41 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Truck } from "lucide-react";
+import { shipmentStatusBadgeClass } from "@/lib/shipment-status";
 
 export default function CustomerShipmentsPage() {
   const [mounted, setMounted] = useState(false);
- 
-   useEffect(() => {
-     setMounted(true);
-   }, []);
- 
-   if (!mounted) return null;
- 
-   return (
-     <div className="flex flex-1 flex-col gap-6">
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">
-            My Shipments
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Shipment perusahaan Anda.
-          </p>
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) return null;
+
+  return (
+    <div className="flex min-w-0 w-full flex-1 flex-col gap-6 md:px-2">
+      <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
+        <div className="flex min-w-0 items-start gap-3">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-zinc-900/5 text-zinc-900">
+            <Truck className="h-4 w-4" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <h1 className="text-xl font-semibold tracking-tight text-zinc-900 sm:text-2xl">
+              My Shipments
+            </h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Shipment perusahaan Anda.
+            </p>
+          </div>
         </div>
       </div>
-      <Card>
-        <CardHeader>
+      <Card className="min-w-0 overflow-hidden">
+        <CardHeader className="space-y-1">
           <CardTitle>My Shipments</CardTitle>
           <CardDescription>Shipment perusahaan Anda (dummy).</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
@@ -67,13 +74,8 @@ export default function CustomerShipmentsPage() {
                   <TableCell>{shipment.destination}</TableCell>
                   <TableCell>
                     <Badge
-                      variant={
-                        shipment.status === "Completed"
-                          ? "default"
-                          : shipment.status === "In Transit"
-                          ? "secondary"
-                          : "outline"
-                      }
+                      variant="outline"
+                      className={shipmentStatusBadgeClass(shipment.status)}
                     >
                       {shipment.status}
                     </Badge>
@@ -82,14 +84,14 @@ export default function CustomerShipmentsPage() {
               ))}
             </TableBody>
             <TableCaption className="text-xs">
-              Contoh shipment perusahaan yang sedang login (company scoped).
+              Data contoh (company scoped).
             </TableCaption>
           </Table>
         </CardContent>
       </Card>
-     </div>
-   );
- }
+    </div>
+  );
+}
 
 const dummyCustomerShipments = [
   {
@@ -107,5 +109,3 @@ const dummyCustomerShipments = [
     status: "Created",
   },
 ];
-
- 

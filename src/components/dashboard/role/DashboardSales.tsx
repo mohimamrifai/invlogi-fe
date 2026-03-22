@@ -27,8 +27,8 @@ const pendingApprovals = [
 
 export function DashboardSales() {
   return (
-    <div className="flex flex-1 flex-col gap-6">
-      <div className="grid gap-4 md:grid-cols-4">
+    <div className="flex min-w-0 w-full flex-1 flex-col gap-6">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <Card>
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between gap-2">
@@ -70,13 +70,13 @@ export function DashboardSales() {
         </Card>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Card>
+      <div className="grid min-w-0 gap-4 lg:grid-cols-2">
+        <Card className="min-w-0 overflow-hidden">
           <CardHeader>
             <CardTitle>Customer Baru</CardTitle>
             <CardDescription>Perusahaan yang baru bergabung pekan ini.</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -98,12 +98,12 @@ export function DashboardSales() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="min-w-0 overflow-hidden">
           <CardHeader>
             <CardTitle>Permintaan Customer Pending</CardTitle>
             <CardDescription>Perusahaan yang membutuhkan follow-up sebelum aktif.</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>

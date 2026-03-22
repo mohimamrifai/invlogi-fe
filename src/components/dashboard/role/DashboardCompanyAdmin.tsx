@@ -29,8 +29,8 @@ const companyInvoices = [
 
 export function DashboardCompanyAdmin() {
   return (
-    <div className="flex flex-1 flex-col gap-6">
-      <div className="grid gap-4 md:grid-cols-4">
+    <div className="flex min-w-0 w-full flex-1 flex-col gap-6">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Card>
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between gap-2">
@@ -113,12 +113,12 @@ export function DashboardCompanyAdmin() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="min-w-0 overflow-hidden">
           <CardHeader>
             <CardTitle>Status Invoice</CardTitle>
             <CardDescription>Ringkasan invoice penting untuk perusahaan ini.</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
