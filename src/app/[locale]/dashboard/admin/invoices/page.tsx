@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
+import { buttonVariants } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -9,6 +10,13 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Table,
   TableBody,
@@ -18,61 +26,220 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
-import { FileText, FileSpreadsheet, Download } from "lucide-react";
+import { invoiceStatusBadgeClass } from "@/lib/invoice-status";
+import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/lib/store";
+import { useAuthPersistHydrated } from "@/lib/use-auth-hydrated";
+import {
+  AlertCircle,
+  CheckCircle2,
+  Download,
+  Eye,
+  FileText,
+  MoreHorizontal,
+  Receipt,
+} from "lucide-react";
+
+const actionsHeadClass =
+  "w-12 max-md:sticky max-md:right-0 max-md:z-20 max-md:border-l max-md:border-border max-md:bg-card max-md:shadow-[-8px_0_12px_-8px_rgba(0,0,0,0.08)] md:static md:z-auto md:border-l-0 md:bg-transparent md:shadow-none text-right";
+
+const actionsCellClass =
+  "max-md:sticky max-md:right-0 max-md:z-10 max-md:border-l max-md:border-border max-md:bg-card max-md:shadow-[-8px_0_12px_-8px_rgba(0,0,0,0.08)] max-md:group-hover:bg-muted/50 md:static md:z-auto md:border-l-0 md:shadow-none md:group-hover:bg-transparent";
+
+const dummyInvoices = [
+  {
+    number: "INV-2026-0001",
+    customer: "PT Nusantara Cargo",
+    shipmentRef: "WB-RAIL-0001",
+    amount: 12_500_000,
+    dueDate: "2026-03-25",
+    status: "Unpaid",
+  },
+  {
+    number: "INV-2026-0002",
+    customer: "PT Mandiri Steel",
+    shipmentRef: "WB-RAIL-0002",
+    amount: 8_800_000,
+    dueDate: "2026-03-10",
+    status: "Overdue",
+  },
+  {
+    number: "INV-2026-0003",
+    customer: "PT Sawit Jaya",
+    shipmentRef: "WB-RAIL-0003",
+    amount: 15_450_000,
+    dueDate: "2026-04-05",
+    status: "Paid",
+  },
+];
+
+function AdminInvoiceActionsMenu({
+  invoiceNumber,
+  canManageInvoices,
+}: {
+  invoiceNumber: string;
+  canManageInvoices: boolean;
+}) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        className={cn(
+          buttonVariants({ variant: "ghost", size: "icon-sm" }),
+          "shrink-0"
+        )}
+      >
+        <MoreHorizontal className="h-4 w-4" />
+        <span className="sr-only">Menu aksi</span>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="min-w-52">
+        <DropdownMenuItem
+          className="cursor-pointer"
+          onClick={() => {
+            /* TODO: detail invoice */
+            void invoiceNumber;
+          }}
+        >
+          <Eye className="h-4 w-4" />
+          Lihat detail invoice
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          className="cursor-pointer"
+          onClick={() => {
+            /* TODO: unduh PDF */
+            void invoiceNumber;
+          }}
+        >
+          <Download className="h-4 w-4" />
+          Unduh PDF
+        </DropdownMenuItem>
+        {canManageInvoices ? (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              className="cursor-pointer"
+              onClick={() => {
+                /* TODO: generate / regenerate invoice */
+                void invoiceNumber;
+              }}
+            >
+              <FileText className="h-4 w-4" />
+              Generate / cetak ulang
+            </DropdownMenuItem>
+          </>
+        ) : null}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
 
 export default function AdminInvoicesPage() {
   const [mounted, setMounted] = useState(false);
+  const authHydrated = useAuthPersistHydrated();
   const { user } = useAuthStore();
-  const role = user?.role;
-
   const canManageInvoices =
-    role === "super_admin" || role === "finance";
- 
-   useEffect(() => {
-     setMounted(true);
-   }, []);
- 
-   if (!mounted) return null;
- 
-   return (
-     <div className="flex flex-1 flex-col gap-6">
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex items-start gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-zinc-900/5 text-zinc-900">
-            <FileSpreadsheet className="h-4 w-4" />
+    authHydrated &&
+    (user?.role === "super_admin" || user?.role === "finance");
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) return null;
+
+  const countUnpaid = dummyInvoices.filter((i) => i.status === "Unpaid").length;
+  const countOverdue = dummyInvoices.filter(
+    (i) => i.status === "Overdue"
+  ).length;
+  const countPaid = dummyInvoices.filter((i) => i.status === "Paid").length;
+
+  return (
+    <div className="flex min-w-0 w-full flex-1 flex-col gap-6 md:px-2">
+      <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
+        <div className="flex min-w-0 items-start gap-3">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-zinc-900/5 text-zinc-900">
+            <FileText className="h-4 w-4" />
           </div>
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-xl font-semibold tracking-tight text-zinc-900 sm:text-2xl">
               Invoice Management
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              Kelola invoice, status pembayaran, dan akses ke dokumen PDF.
+              Invoice semua customer: status, jatuh tempo & PDF.
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          {canManageInvoices && (
-            <>
-              <Button size="sm" className="gap-1.5">
-                <FileText className="h-3.5 w-3.5" />
-                Generate Invoice
-              </Button>
-              <Button variant="outline" size="sm" className="gap-1.5">
-                <Download className="h-3.5 w-3.5" />
-                Download PDF
-              </Button>
-            </>
-          )}
-        </div>
       </div>
-      <Card>
-        <CardHeader>
-          <CardTitle>Daftar Invoice</CardTitle>
+
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <Card>
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between gap-2">
+              <CardDescription>Belum dibayar</CardDescription>
+              <span className="rounded-md bg-sky-100 p-1.5 text-sky-700">
+                <Receipt className="h-3.5 w-3.5" aria-hidden />
+              </span>
+            </div>
+            <CardTitle className="flex flex-col gap-0.5 text-2xl font-semibold">
+              <span>{countUnpaid}</span>
+              <span className="text-xs font-normal text-muted-foreground">
+                Unpaid
+              </span>
+            </CardTitle>
+          </CardHeader>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between gap-2">
+              <CardDescription>Lewat jatuh tempo</CardDescription>
+              <span className="rounded-md bg-red-100 p-1.5 text-red-700">
+                <AlertCircle className="h-3.5 w-3.5" aria-hidden />
+              </span>
+            </div>
+            <CardTitle className="flex flex-col gap-0.5 text-2xl font-semibold">
+              <span>{countOverdue}</span>
+              <span className="text-xs font-normal text-muted-foreground">
+                Overdue
+              </span>
+            </CardTitle>
+          </CardHeader>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between gap-2">
+              <CardDescription>Lunas</CardDescription>
+              <span className="rounded-md bg-emerald-100 p-1.5 text-emerald-700">
+                <CheckCircle2 className="h-3.5 w-3.5" aria-hidden />
+              </span>
+            </div>
+            <CardTitle className="flex flex-col gap-0.5 text-2xl font-semibold">
+              <span>{countPaid}</span>
+              <span className="text-xs font-normal text-emerald-600">Paid</span>
+            </CardTitle>
+          </CardHeader>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between gap-2">
+              <CardDescription>Total invoice</CardDescription>
+              <span className="rounded-md bg-violet-100 p-1.5 text-violet-700">
+                <FileText className="h-3.5 w-3.5" aria-hidden />
+              </span>
+            </div>
+            <CardTitle className="flex flex-col gap-0.5 text-2xl font-semibold">
+              <span>{dummyInvoices.length}</span>
+              <span className="text-xs font-normal text-muted-foreground">
+                semua customer
+              </span>
+            </CardTitle>
+          </CardHeader>
+        </Card>
+      </div>
+
+      <Card className="min-w-0 overflow-hidden">
+        <CardHeader className="space-y-1">
+          <CardTitle>Daftar invoice</CardTitle>
           <CardDescription>
-            Data dummy invoice dengan status dan jatuh tempo untuk ilustrasi
-            monitoring AR.
+            Internal: semua customer; generate & unduh PDF.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -81,70 +248,55 @@ export default function AdminInvoicesPage() {
               <TableRow>
                 <TableHead className="w-[130px]">No. Invoice</TableHead>
                 <TableHead>Customer</TableHead>
-                <TableHead>Amount</TableHead>
-                <TableHead>Due Date</TableHead>
+                <TableHead className="min-w-[100px]">Shipment</TableHead>
+                <TableHead className="text-right">Amount</TableHead>
+                <TableHead>Due date</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead className={actionsHeadClass}>
+                  <span className="max-md:sr-only">Aksi</span>
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {dummyInvoices.map((invoice) => (
-                <TableRow key={invoice.number}>
+                <TableRow key={invoice.number} className="group">
                   <TableCell className="font-mono text-xs">
                     {invoice.number}
                   </TableCell>
-                  <TableCell>{invoice.customer}</TableCell>
-                  <TableCell>
+                  <TableCell className="font-medium">{invoice.customer}</TableCell>
+                  <TableCell className="font-mono text-xs">
+                    {invoice.shipmentRef}
+                  </TableCell>
+                  <TableCell className="text-right font-medium tabular-nums">
                     Rp {invoice.amount.toLocaleString("id-ID")}
                   </TableCell>
                   <TableCell>{invoice.dueDate}</TableCell>
                   <TableCell>
                     <Badge
-                      variant={
-                        invoice.status === "Paid"
-                          ? "default"
-                          : invoice.status === "Overdue"
-                          ? "secondary"
-                          : "outline"
-                      }
+                      variant="outline"
+                      className={invoiceStatusBadgeClass(invoice.status)}
                     >
                       {invoice.status}
                     </Badge>
+                  </TableCell>
+                  <TableCell className={cn(actionsCellClass, "p-2 text-right")}>
+                    <div className="flex justify-end">
+                      <AdminInvoiceActionsMenu
+                        invoiceNumber={invoice.number}
+                        canManageInvoices={canManageInvoices}
+                      />
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
             </TableBody>
             <TableCaption className="text-xs">
-              Contoh invoice dengan status Paid, Unpaid, dan Overdue.
+              Contoh invoice dengan status Paid, Unpaid, dan Overdue (monitoring
+              AR).
             </TableCaption>
           </Table>
         </CardContent>
       </Card>
-     </div>
-   );
- }
-
-const dummyInvoices = [
-  {
-    number: "INV-2026-0001",
-    customer: "PT Nusantara Cargo",
-    amount: 12500000,
-    dueDate: "2026-03-25",
-    status: "Unpaid",
-  },
-  {
-    number: "INV-2026-0002",
-    customer: "PT Mandiri Steel",
-    amount: 8800000,
-    dueDate: "2026-03-10",
-    status: "Overdue",
-  },
-  {
-    number: "INV-2026-0003",
-    customer: "PT Sawit Jaya",
-    amount: 15450000,
-    dueDate: "2026-04-05",
-    status: "Paid",
-  },
-];
-
- 
+    </div>
+  );
+}

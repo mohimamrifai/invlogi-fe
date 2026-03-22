@@ -29,11 +29,14 @@ import {
 import { bookingStatusBadgeClass } from "@/lib/booking-status";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/lib/store";
+import { useAuthPersistHydrated } from "@/lib/use-auth-hydrated";
 import {
   ArrowRightLeft,
   CheckCircle2,
+  ClipboardClock,
   ClipboardList,
   Eye,
+  FilePenLine,
   MoreHorizontal,
   XCircle,
 } from "lucide-react";
@@ -161,10 +164,11 @@ function BookingActionsMenu({
 
 export default function AdminBookingsPage() {
   const [mounted, setMounted] = useState(false);
+  const authHydrated = useAuthPersistHydrated();
   const { user } = useAuthStore();
-  const role = user?.role;
   const canProcessOperations =
-    role === "super_admin" || role === "operations";
+    authHydrated &&
+    (user?.role === "super_admin" || user?.role === "operations");
 
   useEffect(() => {
     setMounted(true);
@@ -172,8 +176,16 @@ export default function AdminBookingsPage() {
 
   if (!mounted) return null;
 
+  const countDraft = dummyBookings.filter((b) => b.status === "Draft").length;
+  const countSubmitted = dummyBookings.filter(
+    (b) => b.status === "Submitted"
+  ).length;
+  const countApproved = dummyBookings.filter(
+    (b) => b.status === "Approved"
+  ).length;
+
   return (
-    <div className="flex min-w-0 md:px-2 w-full flex-1 flex-col gap-6">
+    <div className="flex min-w-0 w-full flex-1 flex-col gap-6 md:px-2">
       <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
         <div className="flex min-w-0 items-start gap-3">
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-zinc-900/5 text-zinc-900">
@@ -184,19 +196,84 @@ export default function AdminBookingsPage() {
               Booking Management
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              Kelola permintaan booking: lihat detail, setujui/tolak, dan konversi
-              ke shipment.
+              Approval booking & konversi ke shipment.
             </p>
           </div>
         </div>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <Card>
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between gap-2">
+              <CardDescription>Draft</CardDescription>
+              <span className="rounded-md bg-slate-100 p-1.5 text-slate-700">
+                <FilePenLine className="h-3.5 w-3.5" aria-hidden />
+              </span>
+            </div>
+            <CardTitle className="flex flex-col gap-0.5 text-2xl font-semibold">
+              <span>{countDraft}</span>
+              <span className="text-xs font-normal text-muted-foreground">
+                belum dikirim / revisi
+              </span>
+            </CardTitle>
+          </CardHeader>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between gap-2">
+              <CardDescription>Menunggu persetujuan</CardDescription>
+              <span className="rounded-md bg-amber-100 p-1.5 text-amber-700">
+                <ClipboardClock className="h-3.5 w-3.5" aria-hidden />
+              </span>
+            </div>
+            <CardTitle className="flex flex-col gap-0.5 text-2xl font-semibold">
+              <span>{countSubmitted}</span>
+              <span className="text-xs font-normal text-muted-foreground">
+                perlu approve / tolak
+              </span>
+            </CardTitle>
+          </CardHeader>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between gap-2">
+              <CardDescription>Disetujui</CardDescription>
+              <span className="rounded-md bg-emerald-100 p-1.5 text-emerald-700">
+                <CheckCircle2 className="h-3.5 w-3.5" aria-hidden />
+              </span>
+            </div>
+            <CardTitle className="flex flex-col gap-0.5 text-2xl font-semibold">
+              <span>{countApproved}</span>
+              <span className="text-xs font-normal text-emerald-600">
+                siap konversi ke shipment
+              </span>
+            </CardTitle>
+          </CardHeader>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between gap-2">
+              <CardDescription>Total booking</CardDescription>
+              <span className="rounded-md bg-sky-100 p-1.5 text-sky-700">
+                <ClipboardList className="h-3.5 w-3.5" aria-hidden />
+              </span>
+            </div>
+            <CardTitle className="flex flex-col gap-0.5 text-2xl font-semibold">
+              <span>{dummyBookings.length}</span>
+              <span className="text-xs font-normal text-muted-foreground">
+                semua booking
+              </span>
+            </CardTitle>
+          </CardHeader>
+        </Card>
       </div>
 
       <Card className="min-w-0 overflow-hidden">
         <CardHeader className="space-y-1">
           <CardTitle>Daftar Booking</CardTitle>
           <CardDescription>
-            Lihat detail booking, setujui atau tolak saat menunggu persetujuan,
-            lalu konversi ke shipment setelah disetujui.
+            Detail, approve/tolak, lalu konversi ke shipment.
           </CardDescription>
         </CardHeader>
         <CardContent>

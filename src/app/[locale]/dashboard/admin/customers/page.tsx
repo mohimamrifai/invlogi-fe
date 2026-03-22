@@ -154,7 +154,7 @@ export default function AdminCustomersPage() {
               Customer Management
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              Kelola perusahaan customer, status aktivasi, dan struktur pengguna.
+              Perusahaan customer & aktivasi.
             </p>
           </div>
         </div>

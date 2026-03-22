@@ -47,7 +47,7 @@ export default function AdminVendorPage() {
               Vendor &amp; Pricing
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              Kelola data vendor dan matriks harga untuk setiap lane &amp; layanan.
+              Vendor & harga per lane/layanan.
             </p>
           </div>
         </div>
@@ -70,9 +70,7 @@ export default function AdminVendorPage() {
        <Card className="lg:col-span-1">
           <CardHeader>
             <CardTitle>Vendor</CardTitle>
-            <CardDescription>
-              Data dummy vendor utama untuk layanan rail cargo.
-            </CardDescription>
+            <CardDescription>Vendor rail cargo (dummy).</CardDescription>
           </CardHeader>
           <CardContent>
             <Table>
@@ -100,9 +98,7 @@ export default function AdminVendorPage() {
         <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle>Pricing Matrix</CardTitle>
-            <CardDescription>
-              Data dummy buy/sell price per lane dan service type.
-            </CardDescription>
+            <CardDescription>Buy/sell & diskon per lane (dummy).</CardDescription>
           </CardHeader>
           <CardContent>
             <Table>

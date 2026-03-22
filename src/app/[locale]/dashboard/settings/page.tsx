@@ -23,8 +23,7 @@
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
             {t("description", {
-              default:
-                "Kelola profil perusahaan dan pengguna internal yang relevan.",
+              default: "Profil perusahaan & pengguna.",
             })}
           </p>
         </div>
@@ -32,9 +31,7 @@
        {/* TODO: Implement limited editable company profile & internal users */}
        <div className="rounded-xl border bg-card text-card-foreground shadow-sm p-6">
          <p className="text-sm text-muted-foreground">
-           Placeholder halaman Company Settings. Nanti diisi form untuk
-           memperbarui informasi perusahaan dan user internal tertentu
-           sesuai aturan role `company_admin`.
+           Placeholder — form perusahaan & user (company_admin).
          </p>
        </div>
      </div>

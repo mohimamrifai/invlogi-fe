@@ -20,14 +20,13 @@ export default function CustomerTrackingPage() {
             Shipment Tracking
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Lacak status shipment perusahaan Anda menggunakan nomor referensi internal.
+            Lacak dengan nomor referensi / waybill.
           </p>
         </div>
       </div>
       <div className="rounded-xl border bg-card text-card-foreground shadow-sm p-6 space-y-4">
         <p className="text-sm text-muted-foreground">
-          Masukkan nomor waybill internal untuk melihat status shipment
-          perusahaan Anda (data dummy).
+          Masukkan waybill untuk lihat status (dummy).
         </p>
         <div className="flex flex-wrap gap-3 text-xs">
           <Badge variant="outline">Contoh: WB-RAIL-0101</Badge>

@@ -36,17 +36,14 @@ export default function CustomerShipmentsPage() {
             My Shipments
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Lihat semua shipment milik perusahaan Anda beserta status dan detailnya.
+            Shipment perusahaan Anda.
           </p>
         </div>
       </div>
       <Card>
         <CardHeader>
           <CardTitle>My Shipments</CardTitle>
-          <CardDescription>
-            Data dummy shipment yang hanya menampilkan shipment milik perusahaan
-            user.
-          </CardDescription>
+          <CardDescription>Shipment perusahaan Anda (dummy).</CardDescription>
         </CardHeader>
         <CardContent>
           <Table>

@@ -27,16 +27,14 @@ export default function CreateBookingPage() {
             Create Booking
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Buat booking baru menggunakan master data layanan dan rute yang tersedia.
+            Booking baru dari layanan & rute tersedia.
           </p>
         </div>
       </div>
       <Card>
         <CardHeader>
           <CardTitle>Step 1 - Detail Pengiriman</CardTitle>
-          <CardDescription>
-            Ilustrasi step pertama dari wizard booking (tanpa logika form dulu).
-          </CardDescription>
+          <CardDescription>Langkah pertama wizard (placeholder).</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4 md:grid-cols-2 text-sm">
           <div className="space-y-1">
