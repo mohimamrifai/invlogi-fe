@@ -44,6 +44,7 @@ import {
   type DashboardMenuKey,
 } from "@/lib/dashboard-access";
 import type { LucideIcon } from "lucide-react";
+import { BrandLogo } from "@/components/brand-logo";
 
 const MENU_ICONS: Record<DashboardMenuKey, LucideIcon> = {
   dashboard: LayoutDashboard,
@@ -99,14 +100,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" render={
-              <Link href="/">
-                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-black text-sidebar-primary-foreground">
-                  <span className="text-lg font-bold text-white">I</span>
-                </div>
-                <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-semibold">IDNVerse</span>
-                  <span className="truncate text-xs">Logistics Platform</span>
-                </div>
+              <Link href="/" className="min-w-0 gap-2 overflow-hidden">
+                <span className="flex min-w-0 flex-1 flex-col gap-1.5 text-left">
+                  <BrandLogo size="sm" className="max-w-[min(100%,11rem)]" />
+                </span>
               </Link>
             } />
           </SidebarMenuItem>

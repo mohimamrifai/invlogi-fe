@@ -6,6 +6,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { ChevronDown, Menu, Globe } from "lucide-react";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
+import { BrandLogo } from "@/components/brand-logo";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -53,19 +54,18 @@ export function Navbar() {
     >
       <div className="container mx-auto flex items-center justify-between px-6 md:px-12">
         {/* Logo */}
-        <Link 
-          href="/" 
-          className="text-2xl font-bold tracking-tighter flex items-center gap-2 group"
+        <Link
+          href="/"
+          className="group flex shrink-0 items-center transition-transform duration-300 hover:opacity-95"
         >
-          <div className="h-8 w-8 bg-black rounded-lg flex items-center justify-center text-white group-hover:rotate-3 transition-transform duration-300">
-            <span className="text-lg font-black">I</span>
-          </div>
-          <span className="text-zinc-900 dark:text-zinc-50">IDNVerse</span>
+          <BrandLogo size="sm" className="group-hover:rotate-[0.5deg]" />
         </Link>
 
         {/* Navigation Links (Desktop) */}
         <nav className="hidden md:flex items-center gap-1 bg-white/50 backdrop-blur-sm px-2 py-1.5 rounded-full border border-zinc-200/50 shadow-sm absolute left-1/2 -translate-x-1/2 transition-all duration-300 hover:shadow-md hover:border-zinc-300/80">
           <NavLink href="/">{t("home")}</NavLink>
+          <NavLink href="/estimasi">{t("estimate")}</NavLink>
+          <NavLink href="/tracking">{t("track")}</NavLink>
           <NavLink href="/layanan">{t("services")}</NavLink>
           <NavLink href="/informasi">{t("information")}</NavLink>
         </nav>
@@ -115,15 +115,14 @@ export function Navbar() {
             </SheetTrigger>
             <SheetContent side="right" className="w-full sm:w-[350px] rounded-l-3xl p-6">
               <div className="flex flex-col h-full">
-                <div className="flex items-center gap-2 mb-8">
-                  <div className="h-8 w-8 bg-black rounded-lg flex items-center justify-center text-white">
-                    <span className="text-lg font-black">I</span>
-                  </div>
-                  <span className="text-xl font-bold">IDNVerse</span>
+                <div className="mb-8">
+                  <BrandLogo size="sm" />
                 </div>
                 
                 <nav className="flex flex-col gap-2 flex-1">
                   <MobileNavLink href="/">{t("home")}</MobileNavLink>
+                  <MobileNavLink href="/estimasi">{t("estimate")}</MobileNavLink>
+                  <MobileNavLink href="/tracking">{t("track")}</MobileNavLink>
                   <MobileNavLink href="/layanan">{t("services")}</MobileNavLink>
                   <MobileNavLink href="/informasi">{t("information")}</MobileNavLink>
                 </nav>

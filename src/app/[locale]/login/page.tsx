@@ -13,6 +13,7 @@ import { createLoginSchema, type LoginSchema } from "@/lib/validations/auth";
 import { useAuthStore } from "@/lib/store";
 import { loginRequest } from "@/lib/auth-api";
 import { ApiError } from "@/lib/api-client";
+import { BrandLogo } from "@/components/brand-logo";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -56,11 +57,8 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-zinc-50/50 p-4 font-sans pt-28 pb-10">
       <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl shadow-zinc-200/50 sm:p-10 border border-zinc-100">
-        <div className="mb-8 text-center space-y-2">
-          <div className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-black text-white mb-2 shadow-lg shadow-black/20">
-            <span className="text-xl font-bold">I</span>
-          </div>
-          <h1 className="text-3xl font-bold tracking-tight text-zinc-900">IDNVerse</h1>
+        <div className="mb-8 flex flex-col items-center space-y-3 text-center">
+          <BrandLogo size="lg" />
           <p className="text-sm font-medium text-zinc-500">
             Logistik Multimoda, Transparan & Berkelanjutan
           </p>
@@ -153,8 +151,8 @@ export default function LoginPage() {
         </form>
       </div>
 
-      <div className="mt-12 text-center space-y-2">
-        <h3 className="text-lg font-bold text-zinc-300">IDNVerse</h3>
+      <div className="mt-12 flex flex-col items-center space-y-3 text-center">
+        <BrandLogo size="sm" />
         <p className="text-xs font-medium text-zinc-400">
           ©2026 PT IDNVerse Karya Nusantara
         </p>

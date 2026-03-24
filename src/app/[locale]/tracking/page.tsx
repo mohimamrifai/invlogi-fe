@@ -48,7 +48,7 @@ export default function PublicTrackingPage() {
   };
 
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 py-10 px-4">
+    <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 py-10 px-4 md:pt-36">
       <div className="space-y-2 text-center">
         <h1 className="text-3xl font-semibold tracking-tight text-zinc-900">Lacak Pengiriman</h1>
         <p className="text-sm text-muted-foreground">
