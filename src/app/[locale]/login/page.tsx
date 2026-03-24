@@ -10,14 +10,17 @@ import { useTranslations } from "next-intl";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { createLoginSchema, type LoginSchema } from "@/lib/validations/auth";
-import { useAuthStore, type UserRole } from "@/lib/store";
+import { useAuthStore } from "@/lib/store";
+import { loginRequest } from "@/lib/auth-api";
+import { ApiError } from "@/lib/api-client";
 
 export default function LoginPage() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
   const t = useTranslations("Login");
-  const { login } = useAuthStore();
-  
+  const { setSession } = useAuthStore();
+
   const form = useForm<LoginSchema>({
     resolver: zodResolver(createLoginSchema((key) => t(key))),
     defaultValues: {
@@ -26,21 +29,28 @@ export default function LoginPage() {
     },
   });
 
-  const { register, handleSubmit, formState: { errors, isSubmitting } } = form;
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = form;
 
   const onSubmit = async (data: LoginSchema) => {
-    // TODO: Implement actual login logic here
-    console.log("Login data:", data);
-    await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate API call
-    
-    // Simulate role based on email or default to company_admin
-    login("company_admin");
-    router.push("/dashboard");
-  };
-
-  const handleSimulateLogin = (role: UserRole) => {
-    login(role);
-    router.push("/dashboard");
+    setFormError(null);
+    try {
+      const res = await loginRequest(data.email, data.password);
+      setSession(res.data.token, res.data.user);
+      router.push("/dashboard");
+    } catch (e) {
+      if (e instanceof ApiError) {
+        const body = e.body as { message?: string; errors?: Record<string, string[]> } | undefined;
+        setFormError(
+          body?.message ?? (typeof e.message === "string" ? e.message : "Login gagal.")
+        );
+        return;
+      }
+      setFormError("Tidak dapat terhubung ke server. Periksa NEXT_PUBLIC_API_URL dan server Laravel.");
+    }
   };
 
   return (
@@ -64,6 +74,11 @@ export default function LoginPage() {
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          {formError && (
+            <p className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+              {formError}
+            </p>
+          )}
           <div className="space-y-1.5">
             <Label htmlFor="email" className="text-xs font-semibold uppercase tracking-wider text-zinc-500 ml-1">{t("email")}</Label>
             <Input
@@ -136,20 +151,6 @@ export default function LoginPage() {
             </Button>
           </div>
         </form>
-
-        {/* Development Helper: Role Simulation */}
-        <div className="mt-8 border-t border-zinc-100 pt-6">
-          <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest text-center mb-3">Dev: Simulate Role Login</p>
-          <div className="grid grid-cols-2 gap-2">
-            <Button variant="outline" size="sm" className="h-7 text-[10px]" onClick={() => handleSimulateLogin("super_admin")}>Super Admin</Button>
-            <Button variant="outline" size="sm" className="h-7 text-[10px]" onClick={() => handleSimulateLogin("operations")}>Operations</Button>
-            <Button variant="outline" size="sm" className="h-7 text-[10px]" onClick={() => handleSimulateLogin("finance")}>Finance</Button>
-            <Button variant="outline" size="sm" className="h-7 text-[10px]" onClick={() => handleSimulateLogin("sales")}>Sales</Button>
-            <Button variant="outline" size="sm" className="h-7 text-[10px]" onClick={() => handleSimulateLogin("company_admin")}>Company Admin</Button>
-            <Button variant="outline" size="sm" className="h-7 text-[10px]" onClick={() => handleSimulateLogin("ops_pic")}>Ops PIC</Button>
-            <Button variant="outline" size="sm" className="h-7 text-[10px]" onClick={() => handleSimulateLogin("finance_pic")}>Finance PIC</Button>
-          </div>
-        </div>
       </div>
 
       <div className="mt-12 text-center space-y-2">

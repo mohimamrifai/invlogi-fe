@@ -1,30 +1,14 @@
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-
-export type UserRole = 
-  // Internal Team (match BE)
-  | "super_admin" 
-  | "operations" 
-  | "finance" 
-  | "sales"
-  // Customer (match BE)
-  | "company_admin" 
-  | "ops_pic" 
-  | "finance_pic"
-  | null;
-
-interface User {
-  name: string;
-  email: string;
-  avatar: string;
-  role: UserRole;
-}
+import { create } from "zustand";
+import { persist, createJSONStorage } from "zustand/middleware";
+import type { AuthUser } from "./auth-api";
+import { getStoredToken, setStoredToken } from "./api-client";
 
 interface AuthState {
-  user: User | null;
+  user: AuthUser | null;
   isAuthenticated: boolean;
-  login: (role: UserRole) => void;
-  logout: () => void;
+  setSession: (token: string, user: AuthUser) => void;
+  setUser: (user: AuthUser) => void;
+  clearSession: () => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -32,20 +16,32 @@ export const useAuthStore = create<AuthState>()(
     (set) => ({
       user: null,
       isAuthenticated: false,
-      login: (role) => {
-        // Mock login data based on role
-        const userData: User = {
-          name: role?.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') || "User",
-          email: `${role}@example.com`,
-          avatar: "/avatars/shadcn.jpg",
-          role: role
-        };
-        set({ user: userData, isAuthenticated: true });
+      setSession: (token, user) => {
+        setStoredToken(token);
+        set({ user, isAuthenticated: true });
       },
-      logout: () => set({ user: null, isAuthenticated: false }),
+      setUser: (user) => set({ user, isAuthenticated: !!user }),
+      clearSession: () => {
+        setStoredToken(null);
+        set({ user: null, isAuthenticated: false });
+      },
     }),
     {
-      name: 'auth-storage',
+      name: "invlogi-user",
+      storage: createJSONStorage(() => localStorage),
+      partialize: (s) => ({ user: s.user, isAuthenticated: s.isAuthenticated }),
     }
   )
 );
+
+/** Sinkronkan token sessionStorage dengan flag login (setelah rehydrate). */
+export function syncAuthTokenWithStore(): void {
+  const token = getStoredToken();
+  const { isAuthenticated, clearSession } = useAuthStore.getState();
+  if (!token && isAuthenticated) {
+    clearSession();
+  }
+  if (token && !isAuthenticated) {
+    useAuthStore.setState({ isAuthenticated: true });
+  }
+}

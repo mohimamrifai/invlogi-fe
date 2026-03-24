@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
+import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -9,6 +10,12 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Table,
   TableBody,
@@ -18,27 +25,28 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Button, buttonVariants } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { PaginationBar } from "@/components/data-table/pagination-bar";
+import { TableToolbar } from "@/components/data-table/table-toolbar";
 import { cn } from "@/lib/utils";
-import {
-  Building2,
-  ClipboardClock,
-  Eye,
-  MoreHorizontal,
-  Pencil,
-  Plus,
-  Trash2,
-  UserCheck,
-  Users,
-} from "lucide-react";
-import { customerStatusBadgeClass } from "@/lib/customer-status";
+import { Building2, ClipboardClock, Eye, MoreHorizontal, Plus, UserCheck, Users } from "lucide-react";
+import { customerStatusBadgeClass, customerStatusLabelFromApi } from "@/lib/customer-status";
 import { useAuthStore } from "@/lib/store";
+import { useAuthPersistHydrated } from "@/lib/use-auth-hydrated";
+import { fetchAdminCompanies } from "@/lib/admin-api";
+import type { LaravelPaginated } from "@/lib/types-api";
+import { ApiError } from "@/lib/api-client";
+import { rowNumber } from "@/lib/list-query";
+import { useDebouncedValue } from "@/lib/use-debounced-value";
+
+const PER_PAGE = 10;
+const STATS_CAP = 1000;
+
+const COMPANY_STATUS_FILTERS = [
+  { value: "all", label: "Semua status" },
+  { value: "active", label: "Aktif" },
+  { value: "pending", label: "Menunggu" },
+  { value: "inactive", label: "Nonaktif" },
+];
 
 const actionsHeadClass =
   "w-12 max-md:sticky max-md:right-0 max-md:z-20 max-md:border-l max-md:border-border max-md:bg-card max-md:shadow-[-8px_0_12px_-8px_rgba(0,0,0,0.08)] md:static md:z-auto md:border-l-0 md:bg-transparent md:shadow-none text-right";
@@ -46,101 +54,112 @@ const actionsHeadClass =
 const actionsCellClass =
   "max-md:sticky max-md:right-0 max-md:z-10 max-md:border-l max-md:border-border max-md:bg-card max-md:shadow-[-8px_0_12px_-8px_rgba(0,0,0,0.08)] max-md:group-hover:bg-muted/50 md:static md:z-auto md:border-l-0 md:shadow-none md:group-hover:bg-transparent";
 
-function CustomerActionsMenu({ customerId }: { customerId: string }) {
+function billingCycleLabel(code: string): string {
+  const m: Record<string, string> = {
+    half_monthly_1: "Setengah bulan (1)",
+    half_monthly_2: "Setengah bulan (2)",
+    both_half: "Dua periode",
+    end_of_month: "Akhir bulan",
+  };
+  return m[code] ?? code;
+}
+
+type CompanyRow = Record<string, unknown>;
+
+function CustomerActionsMenu({ companyId }: { companyId: number }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        className={cn(
-          buttonVariants({ variant: "ghost", size: "icon-sm" }),
-          "shrink-0"
-        )}
+        className={cn(buttonVariants({ variant: "ghost", size: "icon-sm" }), "shrink-0")}
       >
         <MoreHorizontal className="h-4 w-4" />
         <span className="sr-only">Menu aksi</span>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-40">
-        <DropdownMenuItem
-          className="cursor-pointer"
-          onClick={() => {
-            /* TODO: buka detail customer */
-            void customerId;
-          }}
-        >
+        <DropdownMenuItem className="cursor-pointer" onClick={() => window.alert(`Company #${companyId}`)}>
           <Eye className="h-4 w-4" />
           Detail
-        </DropdownMenuItem>
-        <DropdownMenuItem
-          className="cursor-pointer"
-          onClick={() => {
-            /* TODO: edit customer */
-            void customerId;
-          }}
-        >
-          <Pencil className="h-4 w-4" />
-          Edit
-        </DropdownMenuItem>
-        <DropdownMenuItem
-          className="cursor-pointer"
-          variant="destructive"
-          onClick={() => {
-            /* TODO: hapus customer */
-            void customerId;
-          }}
-        >
-          <Trash2 className="h-4 w-4" />
-          Hapus
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );
 }
 
-const dummyCustomers = [
-  {
-    id: "CUST-0001",
-    name: "PT Nusantara Cargo",
-    npwp: "01.234.567.8-901.000",
-    segmen: "Manufacturing",
-    billingCycle: "Monthly",
-    status: "Active",
-    pic: "Budi Santoso",
-    pendingApproval: false,
-  },
-  {
-    id: "CUST-0002",
-    name: "PT Mandiri Steel",
-    npwp: "02.345.678.9-012.000",
-    segmen: "Steel",
-    billingCycle: "Bi-weekly",
-    status: "Pending",
-    pic: "Sari Putri",
-    pendingApproval: true,
-  },
-  {
-    id: "CUST-0003",
-    name: "PT Sawit Jaya",
-    npwp: "03.456.789.0-123.000",
-    segmen: "Commodity",
-    billingCycle: "Monthly",
-    status: "Inactive",
-    pic: "Andi Pratama",
-    pendingApproval: false,
-  },
-];
-
 export default function AdminCustomersPage() {
-  const [mounted, setMounted] = useState(false);
+  const authHydrated = useAuthPersistHydrated();
   const { user } = useAuthStore();
-  const role = user?.role;
-
+  const roles = user?.roles ?? [];
   const canCreateOrApproveCustomer =
-    role === "super_admin" || role === "sales";
+    authHydrated && (roles.includes("super_admin") || roles.includes("sales"));
+
+  const [rows, setRows] = useState<CompanyRow[]>([]);
+  const [statsRows, setStatsRows] = useState<CompanyRow[]>([]);
+  const [statsMeta, setStatsMeta] = useState<LaravelPaginated<CompanyRow> | null>(null);
+  const [meta, setMeta] = useState<LaravelPaginated<CompanyRow> | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const [page, setPage] = useState(1);
+  const [searchInput, setSearchInput] = useState("");
+  const debouncedSearch = useDebouncedValue(searchInput, 400);
+  const [statusFilter, setStatusFilter] = useState("all");
 
   useEffect(() => {
-    setMounted(true);
-  }, []);
+    setPage(1);
+  }, [debouncedSearch, statusFilter]);
 
-  if (!mounted) return null;
+  const statusParam = statusFilter === "all" ? undefined : statusFilter;
+
+  const loadStats = useCallback(async () => {
+    if (!authHydrated) return;
+    try {
+      const res = await fetchAdminCompanies({
+        page: 1,
+        perPage: STATS_CAP,
+      });
+      const paginated = res as LaravelPaginated<CompanyRow>;
+      setStatsRows(paginated.data ?? []);
+      setStatsMeta(paginated);
+    } catch {
+      setStatsRows([]);
+      setStatsMeta(null);
+    }
+  }, [authHydrated]);
+
+  const load = useCallback(async () => {
+    if (!authHydrated) return;
+    setError(null);
+    setLoading(true);
+    try {
+      const res = await fetchAdminCompanies({
+        page,
+        perPage: PER_PAGE,
+        search: debouncedSearch.trim() || undefined,
+        status: statusParam,
+      });
+      const paginated = res as LaravelPaginated<CompanyRow>;
+      setRows(paginated.data ?? []);
+      setMeta(paginated);
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "Gagal memuat customer.");
+      setRows([]);
+      setMeta(null);
+    } finally {
+      setLoading(false);
+    }
+  }, [authHydrated, page, debouncedSearch, statusParam]);
+
+  useEffect(() => {
+    void loadStats();
+  }, [loadStats]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  const countActive = statsRows.filter((c) => String(c.status).toLowerCase() === "active").length;
+  const countPending = statsRows.filter((c) => String(c.status).toLowerCase() === "pending").length;
+  const totalStats = statsMeta?.total ?? 0;
 
   return (
     <div className="flex md:px-2 min-w-0 w-full flex-1 flex-col gap-6">
@@ -150,23 +169,23 @@ export default function AdminCustomersPage() {
             <Building2 className="h-4 w-4" />
           </div>
           <div className="min-w-0 flex-1">
-            <h1 className="text-xl font-semibold tracking-tight text-zinc-900 sm:text-2xl">
-              Customer Management
-            </h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Perusahaan customer & aktivasi.
-            </p>
+            <h1 className="text-xl font-semibold tracking-tight text-zinc-900 sm:text-2xl">Customer Management</h1>
+            <p className="mt-1 text-sm text-muted-foreground">Perusahaan customer & aktivasi.</p>
           </div>
         </div>
         {canCreateOrApproveCustomer && (
           <div className="flex w-full shrink-0 sm:w-auto sm:justify-end">
-            <Button className="h-9 w-full gap-1.5 px-4 sm:w-auto">
+            <Button className="h-9 w-full gap-1.5 px-4 sm:w-auto" type="button" disabled>
               <Plus className="h-4 w-4 shrink-0" />
               Tambah Customer
             </Button>
           </div>
         )}
       </div>
+
+      {error ? (
+        <p className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{error}</p>
+      ) : null}
 
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
@@ -178,12 +197,8 @@ export default function AdminCustomersPage() {
               </span>
             </div>
             <CardTitle className="flex flex-col gap-0.5 text-2xl font-semibold">
-              <span>
-                {dummyCustomers.filter((c) => c.status === "Active").length}
-              </span>
-              <span className="text-xs font-normal text-emerald-600">
-                perusahaan aktif
-              </span>
+              <span>{countActive}</span>
+              <span className="text-xs font-normal text-emerald-600">perusahaan aktif</span>
             </CardTitle>
           </CardHeader>
         </Card>
@@ -196,12 +211,8 @@ export default function AdminCustomersPage() {
               </span>
             </div>
             <CardTitle className="flex flex-col gap-0.5 text-2xl font-semibold">
-              <span>
-                {dummyCustomers.filter((c) => c.pendingApproval).length}
-              </span>
-              <span className="text-xs font-normal text-muted-foreground">
-                antrean persetujuan
-              </span>
+              <span>{countPending}</span>
+              <span className="text-xs font-normal text-muted-foreground">status pending</span>
             </CardTitle>
           </CardHeader>
         </Card>
@@ -214,10 +225,8 @@ export default function AdminCustomersPage() {
               </span>
             </div>
             <CardTitle className="flex flex-col gap-0.5 text-2xl font-semibold">
-              <span>{dummyCustomers.length}</span>
-              <span className="text-xs font-normal text-muted-foreground">
-                seluruh perusahaan
-              </span>
+              <span>{totalStats}</span>
+              <span className="text-xs font-normal text-muted-foreground">semua customer</span>
             </CardTitle>
           </CardHeader>
         </Card>
@@ -227,59 +236,82 @@ export default function AdminCustomersPage() {
         <CardHeader className="space-y-1">
           <CardTitle>Daftar Customer</CardTitle>
         </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[110px]">ID</TableHead>
-                <TableHead>Nama Perusahaan</TableHead>
-                <TableHead>NPWP</TableHead>
-                <TableHead>Segmen</TableHead>
-                <TableHead>Billing Cycle</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>PIC Utama</TableHead>
-                <TableHead className={actionsHeadClass}>
-                  <span className="max-md:sr-only">Aksi</span>
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {dummyCustomers.map((cust) => (
-                <TableRow key={cust.id} className="group">
-                  <TableCell className="font-mono text-xs">
-                    {cust.id}
-                  </TableCell>
-                  <TableCell className="font-medium">{cust.name}</TableCell>
-                  <TableCell className="text-xs text-muted-foreground">
-                    {cust.npwp}
-                  </TableCell>
-                  <TableCell>{cust.segmen}</TableCell>
-                  <TableCell>{cust.billingCycle}</TableCell>
-                  <TableCell>
-                    <Badge
-                      variant="outline"
-                      className={customerStatusBadgeClass(cust.status)}
-                    >
-                      {cust.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{cust.pic}</TableCell>
-                  <TableCell className={cn(actionsCellClass, "p-2 text-right")}>
-                    <div className="flex justify-end">
-                      <CustomerActionsMenu customerId={cust.id} />
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-            <TableCaption className="text-xs">
-              Data di atas hanya contoh. Nantinya akan terhubung ke tabel
-              perusahaan di backend.
-            </TableCaption>
-          </Table>
+        <CardContent className="space-y-4">
+          <TableToolbar
+            searchPlaceholder="Cari nama, NPWP, NIB, atau email…"
+            searchValue={searchInput}
+            onSearchChange={setSearchInput}
+            filterLabel="Status"
+            filterValue={statusFilter}
+            onFilterChange={setStatusFilter}
+            filterOptions={COMPANY_STATUS_FILTERS}
+          />
+          {loading ? (
+            <p className="text-sm text-muted-foreground">Memuat…</p>
+          ) : (
+            <>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-14">No</TableHead>
+                    <TableHead>Nama Perusahaan</TableHead>
+                    <TableHead>NPWP</TableHead>
+                    <TableHead>Billing</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>PIC</TableHead>
+                    <TableHead className={actionsHeadClass}>
+                      <span className="max-md:sr-only">Aksi</span>
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {rows.map((cust, index) => {
+                    const id = Number(cust.id);
+                    const st = String(cust.status ?? "");
+                    const bc = String(cust.billing_cycle ?? "—");
+                    return (
+                      <TableRow key={id} className="group">
+                        <TableCell className="tabular-nums text-muted-foreground">
+                          {rowNumber(meta?.current_page ?? page, PER_PAGE, index)}
+                        </TableCell>
+                        <TableCell className="font-medium">{String(cust.name ?? "")}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground">{String(cust.npwp ?? "—")}</TableCell>
+                        <TableCell>{billingCycleLabel(bc)}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className={customerStatusBadgeClass(st)}>
+                            {customerStatusLabelFromApi(st)}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{String(cust.contact_person ?? "—")}</TableCell>
+                        <TableCell className={cn(actionsCellClass, "p-2 text-right")}>
+                          <div className="flex justify-end">
+                            <CustomerActionsMenu companyId={id} />
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+                {rows.length === 0 ? (
+                  <TableCaption className="text-xs">Belum ada data.</TableCaption>
+                ) : (
+                  <TableCaption className="text-xs">Baris pada halaman ini.</TableCaption>
+                )}
+              </Table>
+              {meta ? (
+                <PaginationBar
+                  currentPage={meta.current_page}
+                  lastPage={meta.last_page}
+                  total={meta.total}
+                  from={meta.from}
+                  to={meta.to}
+                  onPageChange={setPage}
+                />
+              ) : null}
+            </>
+          )}
         </CardContent>
       </Card>
     </div>
   );
 }
-

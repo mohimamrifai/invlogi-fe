@@ -2,16 +2,6 @@
 
 import * as React from "react"
 import {
-  AudioWaveform,
-  BookOpen,
-  Bot,
-  Command,
-  Frame,
-  GalleryVerticalEnd,
-  Map,
-  PieChart,
-  Settings2,
-  SquareTerminal,
   LayoutDashboard,
   PlusCircle,
   Package,
@@ -24,8 +14,8 @@ import {
   Users,
   Truck,
   Tags,
-  Settings
-} from "lucide-react"
+  Settings,
+} from "lucide-react";
 
 import {
   Sidebar,
@@ -45,124 +35,61 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
 import { useAuthStore } from "@/lib/store";
-import { useEffect, useState } from "react";
+import { getDashboardUiRole } from "@/lib/auth-role";
+import { performLogout } from "@/lib/auth-actions";
+import { useRouter } from "@/i18n/routing";
+import { useEffect, useMemo, useState } from "react";
+import {
+  DASHBOARD_SIDEBAR_ITEM_DEFS,
+  type DashboardMenuKey,
+} from "@/lib/dashboard-access";
+import type { LucideIcon } from "lucide-react";
 
-// Menu configuration
-const allMenuItems = [
-  // ... (keep menu items defined outside or inside component)
-];
+const MENU_ICONS: Record<DashboardMenuKey, LucideIcon> = {
+  dashboard: LayoutDashboard,
+  customerManagement: Users,
+  bookingManagement: FileText,
+  shipmentManagement: Truck,
+  masterOperational: Settings,
+  invoiceManagement: FileText,
+  paymentManagement: CreditCard,
+  vendorPricing: Tags,
+  createBooking: PlusCircle,
+  myShipments: Package,
+  shipmentTracking: Activity,
+  invoices: FileText,
+  payments: CreditCard,
+  companySettings: Building,
+};
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const t = useTranslations("Dashboard.menu")
   const pathname = usePathname()
-  const { user, logout } = useAuthStore()
+  const router = useRouter()
+  const { user } = useAuthStore()
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
     setMounted(true)
   }, [])
 
-  // Define all possible menu items
-  const allMenuItems = [
-    // Common
-    {
-      title: t("dashboard"),
-      url: "/dashboard",
-      icon: LayoutDashboard,
-      roles: ["super_admin", "operations", "finance", "sales", "company_admin", "ops_pic", "finance_pic"],
-    },
-    
-    // Internal Team - Admin/Sales
-    {
-      title: t("customerManagement"),
-      url: "/dashboard/admin/customers",
-      icon: Users,
-      roles: ["super_admin", "sales", "operations", "finance"],
-    },
-    
-    // Internal Team - Admin/Ops
-    {
-      title: t("bookingManagement"),
-      url: "/dashboard/admin/bookings",
-      icon: FileText,
-      roles: ["super_admin", "operations"],
-    },
-    {
-      title: t("shipmentManagement"),
-      url: "/dashboard/admin/shipments",
-      icon: Truck,
-      roles: ["super_admin", "operations"],
-    },
-    {
-      title: t("masterOperational"),
-      url: "/dashboard/admin/master",
-      icon: Settings,
-      roles: ["super_admin", "operations"],
-    },
+  const allMenuItems = useMemo(
+    () =>
+      DASHBOARD_SIDEBAR_ITEM_DEFS.map((def) => ({
+        title: t(def.menuKey as Parameters<typeof t>[0]),
+        url: def.url,
+        icon: MENU_ICONS[def.menuKey],
+        roles: [...def.roles],
+      })),
+    [t]
+  );
 
-    // Internal Team - Admin/Finance
-    {
-      title: t("invoiceManagement"),
-      url: "/dashboard/admin/invoices",
-      icon: FileText,
-      roles: ["super_admin", "finance"],
-    },
-    {
-      title: t("paymentManagement"),
-      url: "/dashboard/admin/payments",
-      icon: CreditCard,
-      roles: ["super_admin", "finance"],
-    },
-
-    // Internal Team - Admin/Sales
-    {
-      title: t("vendorPricing"),
-      url: "/dashboard/admin/vendor",
-      icon: Tags,
-      roles: ["super_admin", "sales"],
-    },
-
-    // Customer Portal - Common
-    {
-      title: t("createBooking"),
-      url: "/dashboard/booking/create",
-      icon: PlusCircle,
-      roles: ["company_admin", "ops_pic"],
-    },
-    {
-      title: t("myShipments"),
-      url: "/dashboard/shipments",
-      icon: Package,
-      roles: ["company_admin", "ops_pic"],
-    },
-    {
-      title: t("shipmentTracking"),
-      url: "/dashboard/tracking",
-      icon: Activity,
-      roles: ["company_admin", "ops_pic"],
-    },
-    {
-      title: t("invoices"),
-      url: "/dashboard/invoices",
-      icon: FileText,
-      roles: ["company_admin", "finance_pic"],
-    },
-    {
-      title: t("payments"),
-      url: "/dashboard/payments",
-      icon: CreditCard,
-      roles: ["company_admin", "finance_pic"],
-    },
-    {
-      title: t("companySettings"),
-      url: "/dashboard/settings",
-      icon: Building,
-      roles: ["company_admin"],
-    },
-  ];
-
-  const role = mounted ? user?.role : null;
-  const navItems = role ? allMenuItems.filter(item => item.roles.includes(role)) : [];
+  const uiRole = mounted && user ? getDashboardUiRole(user) : null;
+  const menuRole =
+    uiRole === "internal_other" ? "operations" : uiRole;
+  const navItems = menuRole
+    ? allMenuItems.filter((item) => item.roles.includes(menuRole))
+    : [];
 
   if (!mounted) return null; // Avoid hydration mismatch
 
@@ -201,7 +128,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 : normalizedPathname === item.url || normalizedPathname.startsWith(`${item.url}/`)
 
               return (
-                <SidebarMenuItem key={item.title}>
+                <SidebarMenuItem key={item.url}>
                   <SidebarMenuButton
                     tooltip={item.title}
                     isActive={isActive}
@@ -236,7 +163,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   render={
                     <div className="flex w-full items-center gap-3 px-1">
                        <Avatar className="h-8 w-8 rounded-lg">
-                        <AvatarImage src={user?.avatar} alt={user?.name} />
+                        <AvatarImage src={undefined} alt={user?.name} />
                         <AvatarFallback className="rounded-lg">CN</AvatarFallback>
                       </Avatar>
                       <div className="grid flex-1 text-left text-sm leading-tight overflow-hidden">
@@ -254,7 +181,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 align="end"
                 sideOffset={4}
               >
-                <DropdownMenuItem onClick={() => logout()}>
+                <DropdownMenuItem
+                  onClick={async () => {
+                    await performLogout();
+                    router.push("/login");
+                  }}
+                >
                   <LogOut className="mr-2 h-4 w-4" />
                   {t("logout")}
                 </DropdownMenuItem>

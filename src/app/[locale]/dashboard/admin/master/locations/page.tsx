@@ -1,0 +1,181 @@
+"use client";
+
+import { useCallback, useEffect, useState } from "react";
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { PaginationBar } from "@/components/data-table/pagination-bar";
+import { TableToolbar } from "@/components/data-table/table-toolbar";
+import { cn } from "@/lib/utils";
+import { useAuthStore } from "@/lib/store";
+import { useAuthPersistHydrated } from "@/lib/use-auth-hydrated";
+import { fetchAdminLocations } from "@/lib/admin-api";
+import type { LaravelPaginated } from "@/lib/types-api";
+import { ApiError } from "@/lib/api-client";
+import { rowNumber } from "@/lib/list-query";
+import { useDebouncedValue } from "@/lib/use-debounced-value";
+import { MasterRowActions } from "../_components/master-row-actions";
+import { MasterTableShell } from "../_components/master-table-shell";
+import { MasterActiveBadge } from "../_components/master-active-badge";
+import { actionsCellClass, actionsHeadClass } from "../_components/master-table-classes";
+import {
+  LOCATION_TYPE_FILTER_OPTIONS,
+  STATUS_FILTER_OPTIONS,
+} from "../_components/master-filters";
+
+const PER_PAGE = 10;
+
+type Row = Record<string, unknown>;
+
+function locationTypeLabel(code: string): string {
+  const m: Record<string, string> = {
+    port: "Pelabuhan",
+    city: "Kota",
+    hub: "Hub",
+    warehouse: "Gudang",
+  };
+  return m[code] ?? code;
+}
+
+export default function MasterLocationsPage() {
+  const authHydrated = useAuthPersistHydrated();
+  const { user } = useAuthStore();
+  const roles = user?.roles ?? [];
+  const canManageMaster = authHydrated && (roles.includes("super_admin") || roles.includes("operations"));
+
+  const [rows, setRows] = useState<Row[]>([]);
+  const [meta, setMeta] = useState<LaravelPaginated<Row> | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const [page, setPage] = useState(1);
+  const [searchInput, setSearchInput] = useState("");
+  const debouncedSearch = useDebouncedValue(searchInput, 400);
+  const [typeFilter, setTypeFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
+
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch, typeFilter, statusFilter]);
+
+  const load = useCallback(async () => {
+    setError(null);
+    setLoading(true);
+    try {
+      const locRes = await fetchAdminLocations({
+        page,
+        perPage: PER_PAGE,
+        search: debouncedSearch.trim() || undefined,
+        type: typeFilter === "all" ? undefined : typeFilter,
+        status: statusFilter === "all" ? undefined : statusFilter,
+      });
+      const paginated = locRes as LaravelPaginated<Row>;
+      setRows(paginated.data ?? []);
+      setMeta(paginated);
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "Gagal memuat lokasi.");
+      setRows([]);
+      setMeta(null);
+    } finally {
+      setLoading(false);
+    }
+  }, [page, debouncedSearch, typeFilter, statusFilter]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  const toolbar = (
+    <TableToolbar
+      searchPlaceholder="Cari kode atau nama lokasi…"
+      searchValue={searchInput}
+      onSearchChange={setSearchInput}
+      filterLabel="Tipe"
+      filterValue={typeFilter}
+      onFilterChange={setTypeFilter}
+      filterOptions={LOCATION_TYPE_FILTER_OPTIONS}
+      filter2Label="Status"
+      filter2Value={statusFilter}
+      onFilter2Change={setStatusFilter}
+      filter2Options={STATUS_FILTER_OPTIONS}
+    />
+  );
+
+  return (
+    <>
+      {error ? (
+        <p className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{error}</p>
+      ) : null}
+
+      <MasterTableShell
+        title="Daftar Lokasi"
+        description="Origin, destination & terminal."
+        loading={loading}
+        toolbar={toolbar}
+      >
+        <div className="overflow-x-auto -mx-1 px-1">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-14">No</TableHead>
+                <TableHead className="w-[100px]">Kode</TableHead>
+                <TableHead>Nama Lokasi</TableHead>
+                <TableHead>Tipe</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className={actionsHeadClass}>
+                  <span className="max-md:sr-only">Aksi</span>
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {rows.map((loc, index) => {
+                const code = String(loc.code ?? loc.id ?? "");
+                const typeCode = String(loc.type ?? "");
+                const active = loc.is_active !== false;
+                return (
+                  <TableRow key={String(loc.id ?? code)} className="group">
+                    <TableCell className="tabular-nums text-muted-foreground">
+                      {rowNumber(meta?.current_page ?? page, PER_PAGE, index)}
+                    </TableCell>
+                    <TableCell className="font-mono text-xs">{code}</TableCell>
+                    <TableCell className="font-medium">{String(loc.name ?? "")}</TableCell>
+                    <TableCell>{locationTypeLabel(typeCode)}</TableCell>
+                    <TableCell>
+                      <MasterActiveBadge active={active} />
+                    </TableCell>
+                    <TableCell className={cn(actionsCellClass, "p-2 text-right")}>
+                      <div className="flex justify-end">
+                        <MasterRowActions entityLabel="lokasi" rowCode={code} canManage={canManageMaster} />
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+            {rows.length === 0 ? (
+              <TableCaption className="text-xs">Tidak ada data lokasi.</TableCaption>
+            ) : (
+              <TableCaption className="text-xs">Baris pada halaman ini.</TableCaption>
+            )}
+          </Table>
+        </div>
+        {meta ? (
+          <PaginationBar
+            currentPage={meta.current_page}
+            lastPage={meta.last_page}
+            total={meta.total}
+            from={meta.from}
+            to={meta.to}
+            onPageChange={setPage}
+          />
+        ) : null}
+      </MasterTableShell>
+    </>
+  );
+}

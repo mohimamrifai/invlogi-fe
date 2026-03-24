@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import {
@@ -26,7 +26,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { invoiceStatusBadgeClass } from "@/lib/invoice-status";
+import { PaginationBar } from "@/components/data-table/pagination-bar";
+import { TableToolbar } from "@/components/data-table/table-toolbar";
+import { invoiceStatusBadgeClass, invoiceStatusLabelFromApi } from "@/lib/invoice-status";
 import { cn } from "@/lib/utils";
 import {
   AlertCircle,
@@ -37,6 +39,23 @@ import {
   MoreHorizontal,
   Receipt,
 } from "lucide-react";
+import { fetchCustomerInvoices, downloadCustomerInvoicePdf, payInvoice } from "@/lib/customer-api";
+import type { LaravelPaginated } from "@/lib/types-api";
+import { ApiError } from "@/lib/api-client";
+import { ensureMidtransSnapLoaded, openMidtransSnap } from "@/lib/midtrans-client";
+import { rowNumber } from "@/lib/list-query";
+import { useDebouncedValue } from "@/lib/use-debounced-value";
+
+const PER_PAGE = 10;
+const STATS_CAP = 1000;
+
+const INVOICE_STATUS_FILTERS = [
+  { value: "all", label: "Semua status" },
+  { value: "unpaid", label: "Belum bayar" },
+  { value: "paid", label: "Lunas" },
+  { value: "overdue", label: "Jatuh tempo" },
+  { value: "cancelled", label: "Dibatalkan" },
+];
 
 const actionsHeadClass =
   "w-12 max-md:sticky max-md:right-0 max-md:z-20 max-md:border-l max-md:border-border max-md:bg-card max-md:shadow-[-8px_0_12px_-8px_rgba(0,0,0,0.08)] md:static md:z-auto md:border-l-0 md:bg-transparent md:shadow-none text-right";
@@ -44,87 +63,161 @@ const actionsHeadClass =
 const actionsCellClass =
   "max-md:sticky max-md:right-0 max-md:z-10 max-md:border-l max-md:border-border max-md:bg-card max-md:shadow-[-8px_0_12px_-8px_rgba(0,0,0,0.08)] max-md:group-hover:bg-muted/50 md:static md:z-auto md:border-l-0 md:shadow-none md:group-hover:bg-transparent";
 
-const dummyCustomerInvoices = [
-  {
-    number: "INV-CUST-0101",
-    shipmentRef: "WB-RAIL-0001",
-    amount: 5_500_000,
-    dueDate: "2026-03-25",
-    status: "Unpaid",
-  },
-  {
-    number: "INV-CUST-0102",
-    shipmentRef: "WB-RAIL-0002",
-    amount: 3_200_000,
-    dueDate: "2026-03-10",
-    status: "Overdue",
-  },
-  {
-    number: "INV-CUST-0103",
-    shipmentRef: "WB-RAIL-0003",
-    amount: 7_800_000,
-    dueDate: "2026-04-05",
-    status: "Paid",
-  },
-];
+type InvRow = Record<string, unknown>;
 
-function InvoiceActionsMenu({ invoiceNumber }: { invoiceNumber: string }) {
+function InvoiceActionsMenu({
+  invoiceId,
+  invoiceNumber,
+  status,
+  onPaid,
+}: {
+  invoiceId: number;
+  invoiceNumber: string;
+  status: string;
+  onPaid: () => void;
+}) {
+  const st = status.toLowerCase();
+  const canPay = st === "unpaid" || st === "overdue";
+
+  const onPdf = async () => {
+    try {
+      const blob = await downloadCustomerInvoicePdf(invoiceId);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `invoice-${invoiceNumber}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      window.alert(e instanceof ApiError ? e.message : "Gagal mengunduh PDF.");
+    }
+  };
+
+  const onPay = async () => {
+    try {
+      await ensureMidtransSnapLoaded();
+      const res = await payInvoice(invoiceId);
+      const token = res.data?.token;
+      if (!token) {
+        window.alert("Token pembayaran tidak tersedia.");
+        return;
+      }
+      openMidtransSnap(token, {
+        onSuccess: () => {
+          void onPaid();
+        },
+        onPending: () => void onPaid(),
+      });
+    } catch (e) {
+      window.alert(e instanceof ApiError ? e.message : "Gagal membuka pembayaran.");
+    }
+  };
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        className={cn(
-          buttonVariants({ variant: "ghost", size: "icon-sm" }),
-          "shrink-0"
-        )}
+        className={cn(buttonVariants({ variant: "ghost", size: "icon-sm" }), "shrink-0")}
       >
         <MoreHorizontal className="h-4 w-4" />
         <span className="sr-only">Menu aksi</span>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-48">
-        <DropdownMenuItem
-          className="cursor-pointer"
-          onClick={() => {
-            /* TODO: detail invoice */
-            void invoiceNumber;
-          }}
-        >
+        <DropdownMenuItem className="cursor-pointer" onClick={() => window.alert(`Invoice #${invoiceNumber}`)}>
           <Eye className="h-4 w-4" />
           Lihat detail
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem
-          className="cursor-pointer"
-          onClick={() => {
-            /* TODO: unduh PDF invoice */
-            void invoiceNumber;
-          }}
-        >
+        <DropdownMenuItem className="cursor-pointer" onClick={() => void onPdf()}>
           <Download className="h-4 w-4" />
           Unduh PDF
         </DropdownMenuItem>
+        {canPay ? (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem className="cursor-pointer" onClick={() => void onPay()}>
+              <Receipt className="h-4 w-4" />
+              Bayar (Midtrans)
+            </DropdownMenuItem>
+          </>
+        ) : null}
       </DropdownMenuContent>
     </DropdownMenu>
   );
 }
 
 export default function CustomerInvoicesPage() {
-  const [mounted, setMounted] = useState(false);
+  const [rows, setRows] = useState<InvRow[]>([]);
+  const [statsRows, setStatsRows] = useState<InvRow[]>([]);
+  const [statsMeta, setStatsMeta] = useState<LaravelPaginated<InvRow> | null>(null);
+  const [meta, setMeta] = useState<LaravelPaginated<InvRow> | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const [page, setPage] = useState(1);
+  const [searchInput, setSearchInput] = useState("");
+  const debouncedSearch = useDebouncedValue(searchInput, 400);
+  const [statusFilter, setStatusFilter] = useState("all");
 
   useEffect(() => {
-    setMounted(true);
+    setPage(1);
+  }, [debouncedSearch, statusFilter]);
+
+  const statusParam = statusFilter === "all" ? undefined : statusFilter;
+
+  const loadStats = useCallback(async () => {
+    try {
+      const res = await fetchCustomerInvoices({
+        page: 1,
+        perPage: STATS_CAP,
+      });
+      const paginated = res as LaravelPaginated<InvRow>;
+      setStatsRows(paginated.data ?? []);
+      setStatsMeta(paginated);
+    } catch {
+      setStatsRows([]);
+      setStatsMeta(null);
+    }
   }, []);
 
-  if (!mounted) return null;
+  const load = useCallback(async () => {
+    setError(null);
+    setLoading(true);
+    try {
+      const res = await fetchCustomerInvoices({
+        page,
+        perPage: PER_PAGE,
+        search: debouncedSearch.trim() || undefined,
+        status: statusParam,
+      });
+      const paginated = res as LaravelPaginated<InvRow>;
+      setRows(paginated.data ?? []);
+      setMeta(paginated);
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "Gagal memuat invoice.");
+      setRows([]);
+      setMeta(null);
+    } finally {
+      setLoading(false);
+    }
+  }, [page, debouncedSearch, statusParam]);
 
-  const countUnpaid = dummyCustomerInvoices.filter(
-    (i) => i.status === "Unpaid"
-  ).length;
-  const countOverdue = dummyCustomerInvoices.filter(
-    (i) => i.status === "Overdue"
-  ).length;
-  const countPaid = dummyCustomerInvoices.filter(
-    (i) => i.status === "Paid"
-  ).length;
+  const reloadAll = useCallback(async () => {
+    await loadStats();
+    await load();
+  }, [loadStats, load]);
+
+  useEffect(() => {
+    void loadStats();
+  }, [loadStats]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  const countUnpaid = statsRows.filter((i) => String(i.status).toLowerCase() === "unpaid").length;
+  const countOverdue = statsRows.filter((i) => String(i.status).toLowerCase() === "overdue").length;
+  const countPaid = statsRows.filter((i) => String(i.status).toLowerCase() === "paid").length;
+  const totalStats = statsMeta?.total ?? 0;
 
   return (
     <div className="flex min-w-0 w-full flex-1 flex-col gap-6 md:px-2">
@@ -134,15 +227,15 @@ export default function CustomerInvoicesPage() {
             <FileText className="h-4 w-4" />
           </div>
           <div className="min-w-0 flex-1">
-            <h1 className="text-xl font-semibold tracking-tight text-zinc-900 sm:text-2xl">
-              Invoices
-            </h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Invoice perusahaan Anda per shipment.
-            </p>
+            <h1 className="text-xl font-semibold tracking-tight text-zinc-900 sm:text-2xl">Invoices</h1>
+            <p className="mt-1 text-sm text-muted-foreground">Invoice perusahaan Anda per shipment.</p>
           </div>
         </div>
       </div>
+
+      {error ? (
+        <p className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{error}</p>
+      ) : null}
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Card>
@@ -155,9 +248,7 @@ export default function CustomerInvoicesPage() {
             </div>
             <CardTitle className="flex flex-col gap-0.5 text-2xl font-semibold">
               <span>{countUnpaid}</span>
-              <span className="text-xs font-normal text-muted-foreground">
-                Unpaid
-              </span>
+              <span className="text-xs font-normal text-muted-foreground">Unpaid</span>
             </CardTitle>
           </CardHeader>
         </Card>
@@ -171,9 +262,7 @@ export default function CustomerInvoicesPage() {
             </div>
             <CardTitle className="flex flex-col gap-0.5 text-2xl font-semibold">
               <span>{countOverdue}</span>
-              <span className="text-xs font-normal text-muted-foreground">
-                Overdue
-              </span>
+              <span className="text-xs font-normal text-muted-foreground">Overdue</span>
             </CardTitle>
           </CardHeader>
         </Card>
@@ -200,10 +289,8 @@ export default function CustomerInvoicesPage() {
               </span>
             </div>
             <CardTitle className="flex flex-col gap-0.5 text-2xl font-semibold">
-              <span>{dummyCustomerInvoices.length}</span>
-              <span className="text-xs font-normal text-muted-foreground">
-                perusahaan Anda
-              </span>
+              <span>{totalStats}</span>
+              <span className="text-xs font-normal text-muted-foreground">semua invoice</span>
             </CardTitle>
           </CardHeader>
         </Card>
@@ -212,57 +299,93 @@ export default function CustomerInvoicesPage() {
       <Card className="min-w-0 overflow-hidden">
         <CardHeader className="space-y-1">
           <CardTitle>Invoices perusahaan</CardTitle>
-          <CardDescription>
-            Satu perusahaan; satu invoice per shipment; unduh PDF.
-          </CardDescription>
+          <CardDescription>Satu invoice per shipment; unduh PDF atau bayar via Midtrans.</CardDescription>
         </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[130px]">No. Invoice</TableHead>
-                <TableHead className="min-w-[100px]">Shipment</TableHead>
-                <TableHead className="text-right">Amount</TableHead>
-                <TableHead>Due date</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className={actionsHeadClass}>
-                  <span className="max-md:sr-only">Aksi</span>
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {dummyCustomerInvoices.map((invoice) => (
-                <TableRow key={invoice.number} className="group">
-                  <TableCell className="font-mono text-xs">
-                    {invoice.number}
-                  </TableCell>
-                  <TableCell className="font-mono text-xs">
-                    {invoice.shipmentRef}
-                  </TableCell>
-                  <TableCell className="text-right font-medium tabular-nums">
-                    Rp {invoice.amount.toLocaleString("id-ID")}
-                  </TableCell>
-                  <TableCell>{invoice.dueDate}</TableCell>
-                  <TableCell>
-                    <Badge
-                      variant="outline"
-                      className={invoiceStatusBadgeClass(invoice.status)}
-                    >
-                      {invoice.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className={cn(actionsCellClass, "p-2 text-right")}>
-                    <div className="flex justify-end">
-                      <InvoiceActionsMenu invoiceNumber={invoice.number} />
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-            <TableCaption className="text-xs">
-              Contoh invoice milik perusahaan login (scope ke 1 company).
-            </TableCaption>
-          </Table>
+        <CardContent className="space-y-4">
+          <TableToolbar
+            searchPlaceholder="Cari nomor invoice atau waybill…"
+            searchValue={searchInput}
+            onSearchChange={setSearchInput}
+            filterLabel="Status"
+            filterValue={statusFilter}
+            onFilterChange={setStatusFilter}
+            filterOptions={INVOICE_STATUS_FILTERS}
+          />
+          {loading ? (
+            <p className="text-sm text-muted-foreground">Memuat…</p>
+          ) : (
+            <>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-14">No</TableHead>
+                    <TableHead className="w-[130px]">No. Invoice</TableHead>
+                    <TableHead className="min-w-[100px]">Shipment</TableHead>
+                    <TableHead className="text-right">Amount</TableHead>
+                    <TableHead>Due date</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className={actionsHeadClass}>
+                      <span className="max-md:sr-only">Aksi</span>
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {rows.map((invoice, index) => {
+                    const num = String(invoice.invoice_number ?? "");
+                    const id = Number(invoice.id);
+                    const ship = invoice.shipment as { waybill_number?: string; shipment_number?: string } | undefined;
+                    const wb = ship?.waybill_number ?? ship?.shipment_number ?? "—";
+                    const amt = Number(invoice.total_amount ?? 0);
+                    const due = String(invoice.due_date ?? "").slice(0, 10);
+                    const st = String(invoice.status ?? "");
+                    return (
+                      <TableRow key={id} className="group">
+                        <TableCell className="tabular-nums text-muted-foreground">
+                          {rowNumber(meta?.current_page ?? page, PER_PAGE, index)}
+                        </TableCell>
+                        <TableCell className="font-mono text-xs">{num}</TableCell>
+                        <TableCell className="font-mono text-xs">{wb}</TableCell>
+                        <TableCell className="text-right font-medium tabular-nums">
+                          Rp {amt.toLocaleString("id-ID")}
+                        </TableCell>
+                        <TableCell>{due}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className={invoiceStatusBadgeClass(st)}>
+                            {invoiceStatusLabelFromApi(st)}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className={cn(actionsCellClass, "p-2 text-right")}>
+                          <div className="flex justify-end">
+                            <InvoiceActionsMenu
+                              invoiceId={id}
+                              invoiceNumber={num}
+                              status={st}
+                              onPaid={() => void reloadAll()}
+                            />
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+                {rows.length === 0 ? (
+                  <TableCaption className="text-xs">Belum ada invoice.</TableCaption>
+                ) : (
+                  <TableCaption className="text-xs">Baris pada halaman ini.</TableCaption>
+                )}
+              </Table>
+              {meta ? (
+                <PaginationBar
+                  currentPage={meta.current_page}
+                  lastPage={meta.last_page}
+                  total={meta.total}
+                  from={meta.from}
+                  to={meta.to}
+                  onPageChange={setPage}
+                />
+              ) : null}
+            </>
+          )}
         </CardContent>
       </Card>
     </div>

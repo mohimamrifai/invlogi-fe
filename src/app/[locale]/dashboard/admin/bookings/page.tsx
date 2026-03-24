@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import {
@@ -26,10 +26,22 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { bookingStatusBadgeClass } from "@/lib/booking-status";
+import { PaginationBar } from "@/components/data-table/pagination-bar";
+import { TableToolbar } from "@/components/data-table/table-toolbar";
+import { bookingStatusBadgeClass, bookingStatusLabelFromApi } from "@/lib/booking-status";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/lib/store";
 import { useAuthPersistHydrated } from "@/lib/use-auth-hydrated";
+import {
+  approveBooking,
+  convertBookingToShipment,
+  fetchAdminBookings,
+  rejectBooking,
+} from "@/lib/admin-api";
+import { ApiError } from "@/lib/api-client";
+import { rowNumber } from "@/lib/list-query";
+import type { LaravelPaginated } from "@/lib/types-api";
+import { useDebouncedValue } from "@/lib/use-debounced-value";
 import {
   ArrowRightLeft,
   CheckCircle2,
@@ -41,92 +53,75 @@ import {
   XCircle,
 } from "lucide-react";
 
+const PER_PAGE = 10;
+const STATS_CAP = 1000;
+
+const BOOKING_STATUS_FILTERS = [
+  { value: "all", label: "Semua status" },
+  { value: "draft", label: "Draft" },
+  { value: "submitted", label: "Diajukan" },
+  { value: "confirmed", label: "Terkonfirmasi" },
+  { value: "approved", label: "Disetujui" },
+  { value: "rejected", label: "Ditolak" },
+  { value: "cancelled", label: "Dibatalkan" },
+];
+
 const actionsHeadClass =
   "w-12 max-md:sticky max-md:right-0 max-md:z-20 max-md:border-l max-md:border-border max-md:bg-card max-md:shadow-[-8px_0_12px_-8px_rgba(0,0,0,0.08)] md:static md:z-auto md:border-l-0 md:bg-transparent md:shadow-none text-right";
 
 const actionsCellClass =
   "max-md:sticky max-md:right-0 max-md:z-10 max-md:border-l max-md:border-border max-md:bg-card max-md:shadow-[-8px_0_12px_-8px_rgba(0,0,0,0.08)] max-md:group-hover:bg-muted/50 md:static md:z-auto md:border-l-0 md:shadow-none md:group-hover:bg-transparent";
 
-const dummyBookings = [
-  {
-    code: "BK-RAIL-0001",
-    customer: "PT Nusantara Cargo",
-    origin: "Tanjung Priok",
-    destination: "Tanjung Perak",
-    serviceType: "Rail FCL 40ft",
-    status: "Submitted",
-  },
-  {
-    code: "BK-RAIL-0002",
-    customer: "PT Mandiri Steel",
-    origin: "Tanjung Priok",
-    destination: "Kalimas",
-    serviceType: "Rail LCL Rack",
-    status: "Draft",
-  },
-  {
-    code: "BK-RAIL-0003",
-    customer: "PT Sawit Jaya",
-    origin: "Tanjung Perak",
-    destination: "Kijing",
-    serviceType: "Rail FCL 20ft",
-    status: "Approved",
-  },
-  {
-    code: "BK-RAIL-0004",
-    customer: "PT Sinar Logistik",
-    origin: "Tanjung Priok",
-    destination: "Gedebage",
-    serviceType: "Rail LCL Rack",
-    status: "Rejected",
-  },
-];
+type BookingRow = {
+  id: number;
+  booking_number: string;
+  status: string;
+  company?: { name?: string };
+  origin_location?: { name?: string };
+  destination_location?: { name?: string };
+  service_type?: { name?: string; code?: string };
+};
 
 function BookingActionsMenu({
-  bookingCode,
-  status,
+  booking,
   canProcessOperations,
+  onDone,
 }: {
-  bookingCode: string;
-  status: string;
+  booking: BookingRow;
   canProcessOperations: boolean;
+  onDone: () => void;
 }) {
+  const st = booking.status.toLowerCase();
   const showApproveReject =
-    status === "Submitted" && canProcessOperations;
-  const showConvert =
-    status === "Approved" && canProcessOperations;
+    canProcessOperations && (st === "submitted" || st === "confirmed");
+  const showConvert = canProcessOperations && st === "approved";
   const showOpsDivider = showApproveReject || showConvert;
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        className={cn(
-          buttonVariants({ variant: "ghost", size: "icon-sm" }),
-          "shrink-0"
-        )}
+        className={cn(buttonVariants({ variant: "ghost", size: "icon-sm" }), "shrink-0")}
       >
         <MoreHorizontal className="h-4 w-4" />
         <span className="sr-only">Menu aksi</span>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-52">
-        <DropdownMenuItem
-          className="cursor-pointer"
-          onClick={() => {
-            /* TODO: view booking */
-            void bookingCode;
-          }}
-        >
+        <DropdownMenuItem className="cursor-pointer" onClick={() => window.alert(`Booking #${booking.id}`)}>
           <Eye className="h-4 w-4" />
-          Lihat detail booking
+          Lihat detail
         </DropdownMenuItem>
         {showOpsDivider ? <DropdownMenuSeparator /> : null}
         {showApproveReject ? (
           <>
             <DropdownMenuItem
               className="cursor-pointer"
-              onClick={() => {
-                /* TODO: approve booking */
-                void bookingCode;
+              onClick={async () => {
+                try {
+                  await approveBooking(booking.id);
+                  onDone();
+                } catch (e) {
+                  window.alert(e instanceof ApiError ? e.message : "Gagal");
+                }
               }}
             >
               <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
@@ -135,9 +130,15 @@ function BookingActionsMenu({
             <DropdownMenuItem
               className="cursor-pointer"
               variant="destructive"
-              onClick={() => {
-                /* TODO: reject booking */
-                void bookingCode;
+              onClick={async () => {
+                const reason = window.prompt("Alasan penolakan:");
+                if (!reason) return;
+                try {
+                  await rejectBooking(booking.id, reason);
+                  onDone();
+                } catch (e) {
+                  window.alert(e instanceof ApiError ? e.message : "Gagal");
+                }
               }}
             >
               <XCircle className="h-4 w-4" />
@@ -148,9 +149,13 @@ function BookingActionsMenu({
         {showConvert ? (
           <DropdownMenuItem
             className="cursor-pointer"
-            onClick={() => {
-              /* TODO: convert booking → shipment */
-              void bookingCode;
+            onClick={async () => {
+              try {
+                await convertBookingToShipment(booking.id);
+                onDone();
+              } catch (e) {
+                window.alert(e instanceof ApiError ? e.message : "Gagal");
+              }
             }}
           >
             <ArrowRightLeft className="h-4 w-4" />
@@ -166,23 +171,90 @@ export default function AdminBookingsPage() {
   const [mounted, setMounted] = useState(false);
   const authHydrated = useAuthPersistHydrated();
   const { user } = useAuthStore();
+  const roles = user?.roles ?? [];
   const canProcessOperations =
-    authHydrated &&
-    (user?.role === "super_admin" || user?.role === "operations");
+    authHydrated && (roles.includes("super_admin") || roles.includes("operations"));
+
+  const [bookings, setBookings] = useState<BookingRow[]>([]);
+  const [statsRows, setStatsRows] = useState<BookingRow[]>([]);
+  const [statsMeta, setStatsMeta] = useState<LaravelPaginated<BookingRow> | null>(null);
+  const [meta, setMeta] = useState<LaravelPaginated<BookingRow> | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [loadingTable, setLoadingTable] = useState(true);
+
+  const [page, setPage] = useState(1);
+  const [searchInput, setSearchInput] = useState("");
+  const debouncedSearch = useDebouncedValue(searchInput, 400);
+  const [statusFilter, setStatusFilter] = useState("all");
+
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch, statusFilter]);
+
+  const statusParam = statusFilter === "all" ? undefined : statusFilter;
+
+  const loadStats = useCallback(async () => {
+    if (!mounted || !authHydrated) return;
+    try {
+      const res = await fetchAdminBookings({
+        page: 1,
+        perPage: STATS_CAP,
+      });
+      const paginated = res as LaravelPaginated<BookingRow>;
+      setStatsRows((paginated.data as BookingRow[]) ?? []);
+      setStatsMeta(paginated);
+    } catch {
+      setStatsRows([]);
+      setStatsMeta(null);
+    }
+  }, [mounted, authHydrated]);
+
+  const loadTable = useCallback(async () => {
+    if (!mounted || !authHydrated) return;
+    setLoadError(null);
+    setLoadingTable(true);
+    try {
+      const res = await fetchAdminBookings({
+        page,
+        perPage: PER_PAGE,
+        search: debouncedSearch.trim() || undefined,
+        status: statusParam,
+      });
+      const paginated = res as LaravelPaginated<BookingRow>;
+      setBookings((paginated.data as BookingRow[]) ?? []);
+      setMeta(paginated);
+    } catch (e) {
+      setLoadError(e instanceof ApiError ? e.message : "Gagal memuat booking");
+      setBookings([]);
+      setMeta(null);
+    } finally {
+      setLoadingTable(false);
+    }
+  }, [mounted, authHydrated, page, debouncedSearch, statusParam]);
+
+  const reloadAll = useCallback(async () => {
+    await loadStats();
+    await loadTable();
+  }, [loadStats, loadTable]);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
+  useEffect(() => {
+    if (mounted && authHydrated) void loadStats();
+  }, [mounted, authHydrated, loadStats]);
+
+  useEffect(() => {
+    if (mounted && authHydrated) void loadTable();
+  }, [mounted, authHydrated, loadTable]);
+
   if (!mounted) return null;
 
-  const countDraft = dummyBookings.filter((b) => b.status === "Draft").length;
-  const countSubmitted = dummyBookings.filter(
-    (b) => b.status === "Submitted"
-  ).length;
-  const countApproved = dummyBookings.filter(
-    (b) => b.status === "Approved"
-  ).length;
+  const countDraft = statsRows.filter((b) => b.status.toLowerCase() === "draft").length;
+  const countSubmitted = statsRows.filter((b) => b.status.toLowerCase() === "submitted").length;
+  const countApproved = statsRows.filter((b) => b.status.toLowerCase() === "approved").length;
+  const totalStats = statsMeta?.total ?? 0;
 
   return (
     <div className="flex min-w-0 w-full flex-1 flex-col gap-6 md:px-2">
@@ -202,6 +274,10 @@ export default function AdminBookingsPage() {
         </div>
       </div>
 
+      {loadError ? (
+        <p className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{loadError}</p>
+      ) : null}
+
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Card>
           <CardHeader className="pb-2">
@@ -213,9 +289,7 @@ export default function AdminBookingsPage() {
             </div>
             <CardTitle className="flex flex-col gap-0.5 text-2xl font-semibold">
               <span>{countDraft}</span>
-              <span className="text-xs font-normal text-muted-foreground">
-                belum dikirim / revisi
-              </span>
+              <span className="text-xs font-normal text-muted-foreground">belum dikirim / revisi</span>
             </CardTitle>
           </CardHeader>
         </Card>
@@ -229,9 +303,7 @@ export default function AdminBookingsPage() {
             </div>
             <CardTitle className="flex flex-col gap-0.5 text-2xl font-semibold">
               <span>{countSubmitted}</span>
-              <span className="text-xs font-normal text-muted-foreground">
-                perlu approve / tolak
-              </span>
+              <span className="text-xs font-normal text-muted-foreground">perlu approve / tolak</span>
             </CardTitle>
           </CardHeader>
         </Card>
@@ -245,9 +317,7 @@ export default function AdminBookingsPage() {
             </div>
             <CardTitle className="flex flex-col gap-0.5 text-2xl font-semibold">
               <span>{countApproved}</span>
-              <span className="text-xs font-normal text-emerald-600">
-                siap konversi ke shipment
-              </span>
+              <span className="text-xs font-normal text-emerald-600">siap konversi ke shipment</span>
             </CardTitle>
           </CardHeader>
         </Card>
@@ -260,10 +330,8 @@ export default function AdminBookingsPage() {
               </span>
             </div>
             <CardTitle className="flex flex-col gap-0.5 text-2xl font-semibold">
-              <span>{dummyBookings.length}</span>
-              <span className="text-xs font-normal text-muted-foreground">
-                semua booking
-              </span>
+              <span>{totalStats}</span>
+              <span className="text-xs font-normal text-muted-foreground">semua booking</span>
             </CardTitle>
           </CardHeader>
         </Card>
@@ -272,62 +340,80 @@ export default function AdminBookingsPage() {
       <Card className="min-w-0 overflow-hidden">
         <CardHeader className="space-y-1">
           <CardTitle>Daftar Booking</CardTitle>
-          <CardDescription>
-            Detail, approve/tolak, lalu konversi ke shipment.
-          </CardDescription>
         </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[120px]">Kode Booking</TableHead>
-                <TableHead>Customer</TableHead>
-                <TableHead>Origin</TableHead>
-                <TableHead>Destination</TableHead>
-                <TableHead>Service</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className={actionsHeadClass}>
-                  <span className="max-md:sr-only">Aksi</span>
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {dummyBookings.map((booking) => (
-                <TableRow key={booking.code} className="group">
-                  <TableCell className="font-mono text-xs">
-                    {booking.code}
-                  </TableCell>
-                  <TableCell className="font-medium">
-                    {booking.customer}
-                  </TableCell>
-                  <TableCell>{booking.origin}</TableCell>
-                  <TableCell>{booking.destination}</TableCell>
-                  <TableCell>{booking.serviceType}</TableCell>
-                  <TableCell>
-                    <Badge
-                      variant="outline"
-                      className={bookingStatusBadgeClass(booking.status)}
-                    >
-                      {booking.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className={cn(actionsCellClass, "p-2 text-right")}>
-                    <div className="flex justify-end">
-                      <BookingActionsMenu
-                        bookingCode={booking.code}
-                        status={booking.status}
-                        canProcessOperations={canProcessOperations}
-                      />
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-            <TableCaption className="text-xs">
-              Contoh booking dengan berbagai status (draft, submitted, approved,
-              rejected).
-            </TableCaption>
-          </Table>
+        <CardContent className="space-y-4">
+          <TableToolbar
+            searchPlaceholder="Cari nomor booking atau kargo…"
+            searchValue={searchInput}
+            onSearchChange={setSearchInput}
+            filterLabel="Status"
+            filterValue={statusFilter}
+            onFilterChange={setStatusFilter}
+            filterOptions={BOOKING_STATUS_FILTERS}
+          />
+          {loadingTable ? (
+            <p className="text-sm text-muted-foreground">Memuat…</p>
+          ) : (
+            <>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-14">No</TableHead>
+                    <TableHead className="w-[120px]">Kode Booking</TableHead>
+                    <TableHead>Customer</TableHead>
+                    <TableHead>Origin</TableHead>
+                    <TableHead>Destination</TableHead>
+                    <TableHead>Service</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className={actionsHeadClass}>
+                      <span className="max-md:sr-only">Aksi</span>
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {bookings.map((booking, index) => (
+                    <TableRow key={booking.id} className="group">
+                      <TableCell className="tabular-nums text-muted-foreground">
+                        {rowNumber(meta?.current_page ?? page, PER_PAGE, index)}
+                      </TableCell>
+                      <TableCell className="font-mono text-xs">{booking.booking_number}</TableCell>
+                      <TableCell className="font-medium">{booking.company?.name ?? "—"}</TableCell>
+                      <TableCell>{booking.origin_location?.name ?? "—"}</TableCell>
+                      <TableCell>{booking.destination_location?.name ?? "—"}</TableCell>
+                      <TableCell>{booking.service_type?.name ?? booking.service_type?.code ?? "—"}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className={bookingStatusBadgeClass(booking.status)}>
+                          {bookingStatusLabelFromApi(booking.status)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className={cn(actionsCellClass, "p-2 text-right")}>
+                        <div className="flex justify-end">
+                          <BookingActionsMenu
+                            booking={booking}
+                            canProcessOperations={canProcessOperations}
+                            onDone={reloadAll}
+                          />
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+                <TableCaption className="text-xs">
+                  {bookings.length === 0 ? "Tidak ada data." : `${bookings.length} baris di halaman ini.`}
+                </TableCaption>
+              </Table>
+              {meta ? (
+                <PaginationBar
+                  currentPage={meta.current_page}
+                  lastPage={meta.last_page}
+                  total={meta.total}
+                  from={meta.from}
+                  to={meta.to}
+                  onPageChange={setPage}
+                />
+              ) : null}
+            </>
+          )}
         </CardContent>
       </Card>
     </div>

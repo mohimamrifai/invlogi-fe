@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -18,17 +18,84 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { PaginationBar } from "@/components/data-table/pagination-bar";
+import { TableToolbar } from "@/components/data-table/table-toolbar";
 import { Truck } from "lucide-react";
-import { shipmentStatusBadgeClass } from "@/lib/shipment-status";
+import { SHIPMENT_STATUS_KEYS, shipmentStatusBadgeClass, shipmentStatusLabel } from "@/lib/shipment-status";
+import { fetchCustomerShipments } from "@/lib/customer-api";
+import type { LaravelPaginated } from "@/lib/types-api";
+import { ApiError } from "@/lib/api-client";
+import { rowNumber } from "@/lib/list-query";
+import { useDebouncedValue } from "@/lib/use-debounced-value";
+
+type Row = Record<string, unknown>;
+
+const PER_PAGE = 10;
+
+const SHIPMENT_STATUS_FILTERS = [
+  { value: "all", label: "Semua status" },
+  ...SHIPMENT_STATUS_KEYS.map((k) => ({
+    value: k,
+    label: shipmentStatusLabel(k),
+  })),
+];
 
 export default function CustomerShipmentsPage() {
-  const [mounted, setMounted] = useState(false);
+  const [rows, setRows] = useState<Row[]>([]);
+  const [meta, setMeta] = useState<LaravelPaginated<Row> | null>(null);
+  const [totalAllShipments, setTotalAllShipments] = useState<number | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const [page, setPage] = useState(1);
+  const [searchInput, setSearchInput] = useState("");
+  const debouncedSearch = useDebouncedValue(searchInput, 400);
+  const [statusFilter, setStatusFilter] = useState("all");
 
   useEffect(() => {
-    setMounted(true);
+    setPage(1);
+  }, [debouncedSearch, statusFilter]);
+
+  const statusParam = statusFilter === "all" ? undefined : statusFilter;
+
+  const loadStatsTotal = useCallback(async () => {
+    try {
+      const res = await fetchCustomerShipments({ page: 1, perPage: 1 });
+      setTotalAllShipments((res as LaravelPaginated<Row>).total);
+    } catch {
+      setTotalAllShipments(null);
+    }
   }, []);
 
-  if (!mounted) return null;
+  const load = useCallback(async () => {
+    setError(null);
+    setLoading(true);
+    try {
+      const res = await fetchCustomerShipments({
+        page,
+        perPage: PER_PAGE,
+        search: debouncedSearch.trim() || undefined,
+        status: statusParam,
+      });
+      const paginated = res as LaravelPaginated<Row>;
+      setRows(paginated.data ?? []);
+      setMeta(paginated);
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "Gagal memuat shipment.");
+      setRows([]);
+      setMeta(null);
+    } finally {
+      setLoading(false);
+    }
+  }, [page, debouncedSearch, statusParam]);
+
+  useEffect(() => {
+    void loadStatsTotal();
+  }, [loadStatsTotal]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
 
   return (
     <div className="flex min-w-0 w-full flex-1 flex-col gap-6 md:px-2">
@@ -38,74 +105,99 @@ export default function CustomerShipmentsPage() {
             <Truck className="h-4 w-4" />
           </div>
           <div className="min-w-0 flex-1">
-            <h1 className="text-xl font-semibold tracking-tight text-zinc-900 sm:text-2xl">
-              My Shipments
-            </h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Shipment perusahaan Anda.
-            </p>
+            <h1 className="text-xl font-semibold tracking-tight text-zinc-900 sm:text-2xl">My Shipments</h1>
+            <p className="mt-1 text-sm text-muted-foreground">Shipment perusahaan Anda.</p>
           </div>
         </div>
       </div>
+
+      {error ? (
+        <p className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{error}</p>
+      ) : null}
+
       <Card className="min-w-0 overflow-hidden">
         <CardHeader className="space-y-1">
           <CardTitle>My Shipments</CardTitle>
-          <CardDescription>Shipment perusahaan Anda (dummy).</CardDescription>
+          <CardDescription>
+            {totalAllShipments != null && totalAllShipments > 0
+              ? `Total ${totalAllShipments} shipment perusahaan Anda.`
+              : null}
+          </CardDescription>
         </CardHeader>
-        <CardContent className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Waybill</TableHead>
-                <TableHead>Service</TableHead>
-                <TableHead>Origin</TableHead>
-                <TableHead>Destination</TableHead>
-                <TableHead>Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {dummyCustomerShipments.map((shipment) => (
-                <TableRow key={shipment.waybill}>
-                  <TableCell className="font-mono text-xs">
-                    {shipment.waybill}
-                  </TableCell>
-                  <TableCell>{shipment.serviceType}</TableCell>
-                  <TableCell>{shipment.origin}</TableCell>
-                  <TableCell>{shipment.destination}</TableCell>
-                  <TableCell>
-                    <Badge
-                      variant="outline"
-                      className={shipmentStatusBadgeClass(shipment.status)}
-                    >
-                      {shipment.status}
-                    </Badge>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-            <TableCaption className="text-xs">
-              Data contoh (company scoped).
-            </TableCaption>
-          </Table>
+        <CardContent className="space-y-4 overflow-x-auto">
+          <TableToolbar
+            searchPlaceholder="Cari waybill atau nomor shipment…"
+            searchValue={searchInput}
+            onSearchChange={setSearchInput}
+            filterLabel="Status"
+            filterValue={statusFilter}
+            onFilterChange={setStatusFilter}
+            filterOptions={SHIPMENT_STATUS_FILTERS}
+          />
+          {loading ? (
+            <p className="text-sm text-muted-foreground">Memuat…</p>
+          ) : (
+            <>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-14">No</TableHead>
+                    <TableHead>Waybill</TableHead>
+                    <TableHead>Service</TableHead>
+                    <TableHead>Origin</TableHead>
+                    <TableHead>Destination</TableHead>
+                    <TableHead>Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {rows.map((shipment, index) => {
+                    const st = String(shipment.status ?? "");
+                    const origin = (shipment.origin_location ?? shipment.originLocation) as
+                      | { name?: string }
+                      | undefined;
+                    const dest = (shipment.destination_location ?? shipment.destinationLocation) as
+                      | { name?: string }
+                      | undefined;
+                    const svc = (shipment.service_type ?? shipment.serviceType) as { name?: string } | undefined;
+                    const waybill = String(shipment.waybill_number ?? shipment.shipment_number ?? "");
+                    return (
+                      <TableRow key={waybill || String(shipment.id)}>
+                        <TableCell className="tabular-nums text-muted-foreground">
+                          {rowNumber(meta?.current_page ?? page, PER_PAGE, index)}
+                        </TableCell>
+                        <TableCell className="font-mono text-xs">{waybill}</TableCell>
+                        <TableCell>{svc?.name ?? "—"}</TableCell>
+                        <TableCell>{origin?.name ?? "—"}</TableCell>
+                        <TableCell>{dest?.name ?? "—"}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className={shipmentStatusBadgeClass(st)}>
+                            {shipmentStatusLabel(st)}
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+                {rows.length === 0 ? (
+                  <TableCaption className="text-xs">Belum ada shipment.</TableCaption>
+                ) : (
+                  <TableCaption className="text-xs">Baris pada halaman ini.</TableCaption>
+                )}
+              </Table>
+              {meta ? (
+                <PaginationBar
+                  currentPage={meta.current_page}
+                  lastPage={meta.last_page}
+                  total={meta.total}
+                  from={meta.from}
+                  to={meta.to}
+                  onPageChange={setPage}
+                />
+              ) : null}
+            </>
+          )}
         </CardContent>
       </Card>
     </div>
   );
 }
-
-const dummyCustomerShipments = [
-  {
-    waybill: "WB-RAIL-0101",
-    serviceType: "Rail FCL 40ft",
-    origin: "Tanjung Priok",
-    destination: "Tanjung Perak",
-    status: "In Transit",
-  },
-  {
-    waybill: "WB-RAIL-0102",
-    serviceType: "Rail LCL Rack",
-    origin: "Tanjung Priok",
-    destination: "Gedebage",
-    status: "Created",
-  },
-];

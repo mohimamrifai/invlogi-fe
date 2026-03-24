@@ -1,6 +1,3 @@
-// Bentuk response API yang diusulkan untuk integrasi dashboard
-// Catatan: saat ini masih menggunakan data dummy di komponen, file ini hanya
-// mendefinisikan shape agar FE & BE punya kontrak yang jelas.
 
 export type AdminRole = "super_admin" | "operations" | "finance" | "sales";
 

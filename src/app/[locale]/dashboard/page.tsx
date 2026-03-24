@@ -2,6 +2,14 @@
 
 import { useAuthStore } from "@/lib/store";
 import { useEffect, useState } from "react";
+import { getDashboardUiRole } from "@/lib/auth-role";
+import {
+  fetchAdminDashboard,
+  fetchCustomerDashboard,
+  type AdminDashboardPayload,
+  type CustomerDashboardPayload,
+} from "@/lib/dashboard-api";
+import { fetchCustomerShipments, fetchCustomerInvoices } from "@/lib/customer-api";
 import { DashboardSuperAdmin } from "@/components/dashboard/role/DashboardSuperAdmin";
 import { DashboardOperations } from "@/components/dashboard/role/DashboardOperations";
 import { DashboardFinance } from "@/components/dashboard/role/DashboardFinance";
@@ -14,59 +22,122 @@ import { LayoutDashboard } from "lucide-react";
 export default function DashboardPage() {
   const { user } = useAuthStore();
   const [mounted, setMounted] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [adminData, setAdminData] = useState<AdminDashboardPayload | null>(null);
+  const [customerSummary, setCustomerSummary] = useState<CustomerDashboardPayload | null>(null);
+  const [customerShipments, setCustomerShipments] = useState<
+    Array<{
+      id: number;
+      shipment_number?: string;
+      waybill_number?: string;
+      status: string;
+      origin_location?: { name?: string };
+      destination_location?: { name?: string };
+    }>
+  >([]);
+  const [customerInvoices, setCustomerInvoices] = useState<
+    Array<{
+      invoice_number: string;
+      status: string;
+      due_date?: string;
+      total_amount: string | number;
+    }>
+  >([]);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      try {
+        if (user.user_type === "internal") {
+          const r = await fetchAdminDashboard();
+          if (!cancelled) setAdminData(r.data);
+        } else {
+          const [d, shipRes, invRes] = await Promise.all([
+            fetchCustomerDashboard(),
+            fetchCustomerShipments(5),
+            fetchCustomerInvoices(5),
+          ]);
+          if (!cancelled) {
+            setCustomerSummary(d.data);
+            setCustomerShipments((shipRes.data as unknown[]) as typeof customerShipments);
+            setCustomerInvoices((invRes.data as unknown[]) as typeof customerInvoices);
+          }
+        }
+      } catch {
+        if (!cancelled) {
+          setAdminData(null);
+          setCustomerSummary(null);
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
+
   if (!mounted) return null;
 
-  const role = user?.role ?? "super_admin";
+  const uiRole = getDashboardUiRole(user);
+  const effectiveRole = uiRole === "internal_other" ? "operations" : uiRole;
 
   const renderDashboardByRole = () => {
-    switch (role) {
+    const adminProps = { data: adminData, loading };
+    const customerProps = {
+      summary: customerSummary,
+      shipments: customerShipments,
+      invoices: customerInvoices,
+      loading,
+    };
+
+    switch (effectiveRole) {
       case "super_admin":
-        return <DashboardSuperAdmin />;
+        return <DashboardSuperAdmin {...adminProps} />;
       case "operations":
-        return <DashboardOperations />;
+        return <DashboardOperations {...adminProps} />;
       case "finance":
-        return <DashboardFinance />;
+        return <DashboardFinance {...adminProps} />;
       case "sales":
-        return <DashboardSales />;
+        return <DashboardSales {...adminProps} />;
       case "company_admin":
-        return <DashboardCompanyAdmin />;
+        return <DashboardCompanyAdmin {...customerProps} />;
       case "ops_pic":
-        return <DashboardOpsPic />;
+        return <DashboardOpsPic {...customerProps} />;
       case "finance_pic":
-        return <DashboardFinancePic />;
+        return <DashboardFinancePic {...customerProps} />;
       default:
         return (
           <div className="flex min-w-0 w-full flex-1 flex-col gap-4">
             <h1 className="text-xl font-semibold">Dashboard tidak tersedia</h1>
-            <p className="text-sm text-muted-foreground">
-              Role ini belum punya tampilan khusus.
-            </p>
+            <p className="text-sm text-muted-foreground">Role tidak dikenali.</p>
           </div>
         );
     }
   };
 
   const title =
-    role === "super_admin"
+    effectiveRole === "super_admin"
       ? "Dashboard Super Admin"
-      : role === "operations"
-      ? "Dashboard Operations"
-      : role === "finance"
-      ? "Dashboard Finance"
-      : role === "sales"
-      ? "Dashboard Sales"
-      : role === "company_admin"
-      ? "Dashboard Company Admin"
-      : role === "ops_pic"
-      ? "Dashboard Ops PIC"
-      : role === "finance_pic"
-      ? "Dashboard Finance PIC"
-      : "Dashboard";
+      : effectiveRole === "operations"
+        ? "Dashboard Operations"
+        : effectiveRole === "finance"
+          ? "Dashboard Finance"
+          : effectiveRole === "sales"
+            ? "Dashboard Sales"
+            : effectiveRole === "company_admin"
+              ? "Dashboard Company Admin"
+              : effectiveRole === "ops_pic"
+                ? "Dashboard Ops PIC"
+                : effectiveRole === "finance_pic"
+                  ? "Dashboard Finance PIC"
+                  : "Dashboard";
 
   return (
     <div className="flex min-w-0 w-full flex-1 flex-col gap-6 md:px-2">
@@ -76,9 +147,7 @@ export default function DashboardPage() {
             <LayoutDashboard className="h-4 w-4" />
           </div>
           <div className="min-w-0 flex-1">
-            <h1 className="text-xl font-semibold tracking-tight text-zinc-900 sm:text-2xl">
-              {title}
-            </h1>
+            <h1 className="text-xl font-semibold tracking-tight text-zinc-900 sm:text-2xl">{title}</h1>
           </div>
         </div>
       </div>

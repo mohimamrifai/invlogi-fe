@@ -12,11 +12,14 @@ import { useTranslations } from "next-intl";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { createRegisterSchema, type RegisterSchema } from "@/lib/validations/auth";
+import { registerCompanyRequest } from "@/lib/auth-api";
+import { ApiError } from "@/lib/api-client";
 
 export default function RegisterPage() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
   const t = useTranslations("Register");
   
   // Use a state to trigger schema updates when locale changes (implicitly handled by re-render)
@@ -49,10 +52,32 @@ export default function RegisterPage() {
   }, [accountType, trigger]);
 
   const onSubmit = async (data: RegisterSchema) => {
-    // TODO: Implement actual registration logic here
-    console.log("Register data:", data);
-    await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate API call
-    router.push("/login");
+    setFormError(null);
+    if (data.accountType === "personal") {
+      setFormError(
+        "Registrasi perorangan belum tersedia (sesuai MVP B2B). Silakan gunakan akun perusahaan."
+      );
+      return;
+    }
+    try {
+      await registerCompanyRequest({
+        company_name: data.companyName ?? "",
+        company_phone: data.companyPhone,
+        name: data.picName,
+        email: data.picEmail,
+        password: data.password,
+        password_confirmation: data.confirmPassword,
+        phone: data.picPhone,
+      });
+      router.push("/login");
+    } catch (e) {
+      if (e instanceof ApiError) {
+        const body = e.body as { message?: string } | undefined;
+        setFormError(body?.message ?? e.message);
+        return;
+      }
+      setFormError("Gagal menghubungi server. Periksa NEXT_PUBLIC_API_URL.");
+    }
   };
 
   return (
@@ -76,6 +101,11 @@ export default function RegisterPage() {
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          {formError && (
+            <p className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+              {formError}
+            </p>
+          )}
           {/* Account Type Selection */}
           <div className="space-y-3">
             <Controller

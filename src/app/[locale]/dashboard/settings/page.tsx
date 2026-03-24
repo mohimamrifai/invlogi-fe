@@ -33,10 +33,11 @@ export default function CompanySettingsPage() {
           </div>
         </div>
       </div>
-      {/* TODO: Implement limited editable company profile & internal users */}
       <div className="min-w-0 overflow-hidden rounded-xl border bg-card p-4 text-card-foreground shadow-sm sm:p-6">
         <p className="text-sm text-muted-foreground">
-          Placeholder — form perusahaan & user (company_admin).
+          {t("comingSoon", {
+            default: "Pengaturan lanjutan profil perusahaan dan pengguna dapat ditambahkan di sini.",
+          })}
         </p>
       </div>
     </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import {
@@ -26,18 +26,44 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { paymentStatusBadgeClass } from "@/lib/payment-status";
+import { PaginationBar } from "@/components/data-table/pagination-bar";
+import { TableToolbar } from "@/components/data-table/table-toolbar";
+import { paymentStatusBadgeClass, paymentStatusLabelFromApi } from "@/lib/payment-status";
 import { cn } from "@/lib/utils";
 import {
   AlertCircle,
   CheckCircle2,
   Clock,
   CreditCard,
-  Download,
   Eye,
   MoreHorizontal,
   Wallet,
 } from "lucide-react";
+import { fetchCustomerPayments, payInvoice } from "@/lib/customer-api";
+import type { LaravelPaginated } from "@/lib/types-api";
+import { ApiError } from "@/lib/api-client";
+import { ensureMidtransSnapLoaded, openMidtransSnap } from "@/lib/midtrans-client";
+import { rowNumber } from "@/lib/list-query";
+import { useDebouncedValue } from "@/lib/use-debounced-value";
+
+const PER_PAGE = 10;
+const STATS_CAP = 1000;
+
+const PAYMENT_STATUS_FILTERS = [
+  { value: "all", label: "Semua status" },
+  { value: "success", label: "Berhasil" },
+  { value: "settlement", label: "Settlement" },
+  { value: "pending", label: "Pending" },
+  { value: "capture", label: "Capture" },
+  { value: "authorize", label: "Authorize" },
+  { value: "deny", label: "Deny" },
+  { value: "cancel", label: "Cancel" },
+  { value: "expire", label: "Expire" },
+  { value: "failure", label: "Failure" },
+  { value: "refund", label: "Refund" },
+  { value: "partial_refund", label: "Refund sebagian" },
+  { value: "chargeback", label: "Chargeback" },
+];
 
 const actionsHeadClass =
   "w-12 max-md:sticky max-md:right-0 max-md:z-20 max-md:border-l max-md:border-border max-md:bg-card max-md:shadow-[-8px_0_12px_-8px_rgba(0,0,0,0.08)] md:static md:z-auto md:border-l-0 md:bg-transparent md:shadow-none text-right";
@@ -45,44 +71,47 @@ const actionsHeadClass =
 const actionsCellClass =
   "max-md:sticky max-md:right-0 max-md:z-10 max-md:border-l max-md:border-border max-md:bg-card max-md:shadow-[-8px_0_12px_-8px_rgba(0,0,0,0.08)] max-md:group-hover:bg-muted/50 md:static md:z-auto md:border-l-0 md:shadow-none md:group-hover:bg-transparent";
 
-const dummyCustomerPayments = [
-  {
-    ref: "PAY-CUST-0101",
-    invoiceNumber: "INV-CUST-0101",
-    method: "Midtrans - VA BNI",
-    amount: 5_500_000,
-    status: "Paid",
-  },
-  {
-    ref: "PAY-CUST-0102",
-    invoiceNumber: "INV-CUST-0102",
-    method: "Midtrans - Credit Card",
-    amount: 3_200_000,
-    status: "Pending",
-  },
-  {
-    ref: "PAY-CUST-0103",
-    invoiceNumber: "INV-CUST-0103",
-    method: "Midtrans - QRIS",
-    amount: 7_800_000,
-    status: "Failed",
-  },
-];
+type PayRow = Record<string, unknown>;
 
 function CustomerPaymentActionsMenu({
-  paymentRef,
-  status,
+  payment,
+  onUpdated,
 }: {
-  paymentRef: string;
-  status: string;
+  payment: PayRow;
+  onUpdated: () => void;
 }) {
+  const st = String(payment.status ?? "").toLowerCase();
+  const invoice = payment.invoice as { id?: number; invoice_number?: string } | undefined;
+  const invoiceId = invoice?.id;
+  const ref = String(payment.midtrans_order_id ?? payment.id ?? "");
+  const canRetry = st === "pending" || st === "failure" || st === "deny" || st === "expire";
+
+  const openSnap = async () => {
+    if (!invoiceId) {
+      window.alert("Invoice tidak ditemukan untuk pembayaran ini.");
+      return;
+    }
+    try {
+      await ensureMidtransSnapLoaded();
+      const res = await payInvoice(invoiceId);
+      const token = res.data?.token;
+      if (!token) {
+        window.alert("Token pembayaran tidak tersedia.");
+        return;
+      }
+      openMidtransSnap(token, {
+        onSuccess: () => void onUpdated(),
+        onPending: () => void onUpdated(),
+      });
+    } catch (e) {
+      window.alert(e instanceof ApiError ? e.message : "Gagal membuka pembayaran.");
+    }
+  };
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        className={cn(
-          buttonVariants({ variant: "ghost", size: "icon-sm" }),
-          "shrink-0"
-        )}
+        className={cn(buttonVariants({ variant: "ghost", size: "icon-sm" }), "shrink-0")}
       >
         <MoreHorizontal className="h-4 w-4" />
         <span className="sr-only">Menu aksi</span>
@@ -90,39 +119,15 @@ function CustomerPaymentActionsMenu({
       <DropdownMenuContent align="end" className="min-w-48">
         <DropdownMenuItem
           className="cursor-pointer"
-          onClick={() => {
-            /* TODO: detail pembayaran */
-            void paymentRef;
-          }}
+          onClick={() => window.alert(`Payment ${ref}`)}
         >
           <Eye className="h-4 w-4" />
           Lihat detail
         </DropdownMenuItem>
-        {status === "Paid" ? (
+        {canRetry && invoiceId ? (
           <>
             <DropdownMenuSeparator />
-            <DropdownMenuItem
-              className="cursor-pointer"
-              onClick={() => {
-                /* TODO: unduh bukti bayar */
-                void paymentRef;
-              }}
-            >
-              <Download className="h-4 w-4" />
-              Unduh bukti
-            </DropdownMenuItem>
-          </>
-        ) : null}
-        {status === "Pending" || status === "Failed" ? (
-          <>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              className="cursor-pointer"
-              onClick={() => {
-                /* TODO: lanjutkan / ulang pembayaran Midtrans */
-                void paymentRef;
-              }}
-            >
+            <DropdownMenuItem className="cursor-pointer" onClick={() => void openSnap()}>
               <Wallet className="h-4 w-4" />
               Bayar / coba lagi
             </DropdownMenuItem>
@@ -134,23 +139,87 @@ function CustomerPaymentActionsMenu({
 }
 
 export default function CustomerPaymentsPage() {
-  const [mounted, setMounted] = useState(false);
+  const [rows, setRows] = useState<PayRow[]>([]);
+  const [statsRows, setStatsRows] = useState<PayRow[]>([]);
+  const [statsMeta, setStatsMeta] = useState<LaravelPaginated<PayRow> | null>(null);
+  const [meta, setMeta] = useState<LaravelPaginated<PayRow> | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const [page, setPage] = useState(1);
+  const [searchInput, setSearchInput] = useState("");
+  const debouncedSearch = useDebouncedValue(searchInput, 400);
+  const [statusFilter, setStatusFilter] = useState("all");
 
   useEffect(() => {
-    setMounted(true);
+    setPage(1);
+  }, [debouncedSearch, statusFilter]);
+
+  const statusParam = statusFilter === "all" ? undefined : statusFilter;
+
+  const loadStats = useCallback(async () => {
+    try {
+      const res = await fetchCustomerPayments({
+        page: 1,
+        perPage: STATS_CAP,
+      });
+      const paginated = res as LaravelPaginated<PayRow>;
+      setStatsRows(paginated.data ?? []);
+      setStatsMeta(paginated);
+    } catch {
+      setStatsRows([]);
+      setStatsMeta(null);
+    }
   }, []);
 
-  if (!mounted) return null;
+  const load = useCallback(async () => {
+    setError(null);
+    setLoading(true);
+    try {
+      const res = await fetchCustomerPayments({
+        page,
+        perPage: PER_PAGE,
+        search: debouncedSearch.trim() || undefined,
+        status: statusParam,
+      });
+      const paginated = res as LaravelPaginated<PayRow>;
+      setRows(paginated.data ?? []);
+      setMeta(paginated);
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "Gagal memuat pembayaran.");
+      setRows([]);
+      setMeta(null);
+    } finally {
+      setLoading(false);
+    }
+  }, [page, debouncedSearch, statusParam]);
 
-  const countPaid = dummyCustomerPayments.filter(
-    (p) => p.status === "Paid"
-  ).length;
-  const countPending = dummyCustomerPayments.filter(
-    (p) => p.status === "Pending"
-  ).length;
-  const countFailed = dummyCustomerPayments.filter(
-    (p) => p.status === "Failed"
-  ).length;
+  const reloadAll = useCallback(async () => {
+    await loadStats();
+    await load();
+  }, [loadStats, load]);
+
+  useEffect(() => {
+    void loadStats();
+  }, [loadStats]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  const countSuccess = statsRows.filter((p) => {
+    const s = String(p.status).toLowerCase();
+    return s === "success" || s === "settlement";
+  }).length;
+  const countPending = statsRows.filter((p) => {
+    const s = String(p.status).toLowerCase();
+    return s === "pending" || s === "capture" || s === "authorize";
+  }).length;
+  const countFailed = statsRows.filter((p) => {
+    const s = String(p.status).toLowerCase();
+    return s === "failure" || s === "deny" || s === "expire" || s === "cancel";
+  }).length;
+  const totalStats = statsMeta?.total ?? 0;
 
   return (
     <div className="flex min-w-0 w-full flex-1 flex-col gap-6 md:px-2">
@@ -160,15 +229,15 @@ export default function CustomerPaymentsPage() {
             <CreditCard className="h-4 w-4" />
           </div>
           <div className="min-w-0 flex-1">
-            <h1 className="text-xl font-semibold tracking-tight text-zinc-900 sm:text-2xl">
-              Payments
-            </h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Riwayat pembayaran invoice perusahaan Anda.
-            </p>
+            <h1 className="text-xl font-semibold tracking-tight text-zinc-900 sm:text-2xl">Payments</h1>
+            <p className="mt-1 text-sm text-muted-foreground">Riwayat pembayaran invoice perusahaan Anda.</p>
           </div>
         </div>
       </div>
+
+      {error ? (
+        <p className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{error}</p>
+      ) : null}
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Card>
@@ -180,8 +249,8 @@ export default function CustomerPaymentsPage() {
               </span>
             </div>
             <CardTitle className="flex flex-col gap-0.5 text-2xl font-semibold">
-              <span>{countPaid}</span>
-              <span className="text-xs font-normal text-emerald-600">Paid</span>
+              <span>{countSuccess}</span>
+              <span className="text-xs font-normal text-emerald-600">Sukses</span>
             </CardTitle>
           </CardHeader>
         </Card>
@@ -195,25 +264,21 @@ export default function CustomerPaymentsPage() {
             </div>
             <CardTitle className="flex flex-col gap-0.5 text-2xl font-semibold">
               <span>{countPending}</span>
-              <span className="text-xs font-normal text-muted-foreground">
-                Pending
-              </span>
+              <span className="text-xs font-normal text-muted-foreground">Pending</span>
             </CardTitle>
           </CardHeader>
         </Card>
         <Card>
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between gap-2">
-              <CardDescription>Gagal</CardDescription>
+              <CardDescription>Gagal / expired</CardDescription>
               <span className="rounded-md bg-red-100 p-1.5 text-red-700">
                 <AlertCircle className="h-3.5 w-3.5" aria-hidden />
               </span>
             </div>
             <CardTitle className="flex flex-col gap-0.5 text-2xl font-semibold">
               <span>{countFailed}</span>
-              <span className="text-xs font-normal text-muted-foreground">
-                Failed
-              </span>
+              <span className="text-xs font-normal text-muted-foreground">Bermasalah</span>
             </CardTitle>
           </CardHeader>
         </Card>
@@ -226,10 +291,8 @@ export default function CustomerPaymentsPage() {
               </span>
             </div>
             <CardTitle className="flex flex-col gap-0.5 text-2xl font-semibold">
-              <span>{dummyCustomerPayments.length}</span>
-              <span className="text-xs font-normal text-muted-foreground">
-                perusahaan Anda
-              </span>
+              <span>{totalStats}</span>
+              <span className="text-xs font-normal text-muted-foreground">semua pembayaran</span>
             </CardTitle>
           </CardHeader>
         </Card>
@@ -238,60 +301,87 @@ export default function CustomerPaymentsPage() {
       <Card className="min-w-0 overflow-hidden">
         <CardHeader className="space-y-1">
           <CardTitle>Riwayat pembayaran</CardTitle>
-          <CardDescription>
-            Transaksi Midtrans untuk invoice perusahaan Anda.
-          </CardDescription>
+          <CardDescription>Transaksi Midtrans untuk invoice perusahaan Anda.</CardDescription>
         </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[130px]">Ref payment</TableHead>
-                <TableHead className="w-[130px]">No. invoice</TableHead>
-                <TableHead>Metode</TableHead>
-                <TableHead className="text-right">Amount</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className={actionsHeadClass}>
-                  <span className="max-md:sr-only">Aksi</span>
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {dummyCustomerPayments.map((payment) => (
-                <TableRow key={payment.ref} className="group">
-                  <TableCell className="font-mono text-xs">{payment.ref}</TableCell>
-                  <TableCell className="font-mono text-xs">
-                    {payment.invoiceNumber}
-                  </TableCell>
-                  <TableCell className="max-w-[200px] wrap-break-word">
-                    {payment.method}
-                  </TableCell>
-                  <TableCell className="text-right font-medium tabular-nums">
-                    Rp {payment.amount.toLocaleString("id-ID")}
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      variant="outline"
-                      className={paymentStatusBadgeClass(payment.status)}
-                    >
-                      {payment.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className={cn(actionsCellClass, "p-2 text-right")}>
-                    <div className="flex justify-end">
-                      <CustomerPaymentActionsMenu
-                        paymentRef={payment.ref}
-                        status={payment.status}
-                      />
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-            <TableCaption className="text-xs">
-              Data contoh (Midtrans & manual).
-            </TableCaption>
-          </Table>
+        <CardContent className="space-y-4">
+          <TableToolbar
+            searchPlaceholder="Cari order Midtrans atau nomor invoice…"
+            searchValue={searchInput}
+            onSearchChange={setSearchInput}
+            filterLabel="Status"
+            filterValue={statusFilter}
+            onFilterChange={setStatusFilter}
+            filterOptions={PAYMENT_STATUS_FILTERS}
+          />
+          {loading ? (
+            <p className="text-sm text-muted-foreground">Memuat…</p>
+          ) : (
+            <>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-14">No</TableHead>
+                    <TableHead className="w-[130px]">Order / ref</TableHead>
+                    <TableHead className="w-[130px]">No. invoice</TableHead>
+                    <TableHead>Metode</TableHead>
+                    <TableHead className="text-right">Amount</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className={actionsHeadClass}>
+                      <span className="max-md:sr-only">Aksi</span>
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {rows.map((payment, index) => {
+                    const inv = payment.invoice as { invoice_number?: string } | undefined;
+                    const invNo = inv?.invoice_number ?? "—";
+                    const amt = Number(payment.amount ?? 0);
+                    const st = String(payment.status ?? "");
+                    const method = String(payment.payment_type ?? "Midtrans");
+                    const key = String(payment.midtrans_order_id ?? payment.id ?? "");
+                    return (
+                      <TableRow key={key} className="group">
+                        <TableCell className="tabular-nums text-muted-foreground">
+                          {rowNumber(meta?.current_page ?? page, PER_PAGE, index)}
+                        </TableCell>
+                        <TableCell className="font-mono text-xs">{key}</TableCell>
+                        <TableCell className="font-mono text-xs">{invNo}</TableCell>
+                        <TableCell className="max-w-[200px] wrap-break-word">{method}</TableCell>
+                        <TableCell className="text-right font-medium tabular-nums">
+                          Rp {amt.toLocaleString("id-ID")}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className={paymentStatusBadgeClass(st)}>
+                            {paymentStatusLabelFromApi(st)}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className={cn(actionsCellClass, "p-2 text-right")}>
+                          <div className="flex justify-end">
+                            <CustomerPaymentActionsMenu payment={payment} onUpdated={() => void reloadAll()} />
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+                {rows.length === 0 ? (
+                  <TableCaption className="text-xs">Belum ada pembayaran.</TableCaption>
+                ) : (
+                  <TableCaption className="text-xs">Baris pada halaman ini.</TableCaption>
+                )}
+              </Table>
+              {meta ? (
+                <PaginationBar
+                  currentPage={meta.current_page}
+                  lastPage={meta.last_page}
+                  total={meta.total}
+                  from={meta.from}
+                  to={meta.to}
+                  onPageChange={setPage}
+                />
+              ) : null}
+            </>
+          )}
         </CardContent>
       </Card>
     </div>
