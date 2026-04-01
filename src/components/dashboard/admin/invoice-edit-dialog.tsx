@@ -22,6 +22,7 @@ import {
 import { updateAdminInvoice } from "@/lib/admin-api";
 import { ApiError } from "@/lib/api-client";
 import { firstLaravelError } from "@/lib/laravel-errors";
+import { toast } from "sonner";
 
 const STATUS_OPTIONS = [
   { value: "unpaid", label: "Belum bayar" },
@@ -68,14 +69,13 @@ export function InvoiceEditDialog({
         status,
       };
       await updateAdminInvoice(id, body);
+      toast.success("Invoice berhasil diperbarui.");
       onOpenChange(false);
       onSaved();
     } catch (e) {
-      if (e instanceof ApiError) {
-        setError(firstLaravelError(e) ?? e.message);
-      } else {
-        setError("Gagal menyimpan.");
-      }
+      const msg = e instanceof ApiError ? firstLaravelError(e.body) ?? e.message : "Gagal menyimpan.";
+      setError(msg);
+      toast.error(msg);
     } finally {
       setSaving(false);
     }

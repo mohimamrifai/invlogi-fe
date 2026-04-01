@@ -32,6 +32,7 @@ import { MasterActiveBadge } from "../_components/master-active-badge";
 import { actionsCellClass, actionsHeadClass } from "../_components/master-table-classes";
 import { STATUS_FILTER_OPTIONS } from "../_components/master-filters";
 import { MasterServiceTypeDialog } from "../_components/master-service-type-dialog";
+import { useMasterOpenCreateFromQuery } from "../_components/use-master-open-create-from-query";
 import type { SimpleDialogMode } from "../_components/master-transport-mode-dialog";
 import { ConfirmDeleteDialog } from "@/components/dashboard/admin/confirm-delete-dialog";
 import { Plus } from "lucide-react";
@@ -119,6 +120,18 @@ export default function MasterServiceTypesPage() {
     void load();
   }, [load]);
 
+  const openCreate = useCallback(() => {
+    setDialogRow(null);
+    setDialogMode("create");
+    setDialogOpen(true);
+  }, []);
+
+  useMasterOpenCreateFromQuery({
+    authHydrated,
+    canManage: canManageMaster,
+    onOpenCreate: openCreate,
+  });
+
   const toolbar = (
     <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
       <div className="min-w-0 flex-1">
@@ -137,15 +150,7 @@ export default function MasterServiceTypesPage() {
         />
       </div>
       {canManageMaster ? (
-        <Button
-          type="button"
-          className="shrink-0 gap-1.5"
-          onClick={() => {
-            setDialogRow(null);
-            setDialogMode("create");
-            setDialogOpen(true);
-          }}
-        >
+        <Button type="button" className="shrink-0 gap-1.5" onClick={openCreate}>
           <Plus className="h-4 w-4" />
           Tambah service type
         </Button>
@@ -158,6 +163,7 @@ export default function MasterServiceTypesPage() {
     setDeleteLoading(true);
     try {
       await deleteAdminServiceType(Number(deleteRow.id));
+      toast.success("Service type berhasil dihapus.");
       setDeleteOpen(false);
       setDeleteRow(null);
       await load();

@@ -199,6 +199,7 @@ export default function AdminShipmentDetailPage() {
         estimated_arrival: estArr || null,
         notes: notes.trim() || null,
       });
+      toast.success("Data shipment berhasil diperbarui.");
       setEditOpen(false);
       await load();
     } catch (e) {
@@ -221,6 +222,7 @@ export default function AdminShipmentDetailPage() {
         }
       }
       await updateAdminShipmentTracking(shipmentId, fd);
+      toast.success("Tracking berhasil ditambahkan.");
       setTrackOpen(false);
       setTrackNotes("");
       setTrackFiles(null);
@@ -241,6 +243,7 @@ export default function AdminShipmentDetailPage() {
         container_number: contNum.trim() || null,
         seal_number: contSeal.trim() || null,
       });
+      toast.success("Kontainer berhasil ditambahkan.");
       setContOpen(false);
       setContNum("");
       setContSeal("");
@@ -263,6 +266,7 @@ export default function AdminShipmentDetailPage() {
     setSavingRack(true);
     try {
       await addAdminContainerRack(rackContainerId, { name: rackName.trim() });
+      toast.success("Rack berhasil ditambahkan.");
       setRackOpen(false);
       await load();
     } catch (e) {
@@ -319,8 +323,10 @@ export default function AdminShipmentDetailPage() {
       };
       if (itemMode === "create") {
         await addAdminShipmentItem(shipmentId, body);
+        toast.success("Item berhasil ditambahkan.");
       } else if (itemRow?.id != null) {
         await updateAdminShipmentItem(Number(itemRow.id), body);
+        toast.success("Item berhasil diperbarui.");
       }
       setItemOpen(false);
       await load();
@@ -342,6 +348,7 @@ export default function AdminShipmentDetailPage() {
     setDeleteItemLoading(true);
     try {
       await deleteAdminShipmentItem(Number(deleteItemRow.id));
+      toast.success("Item berhasil dihapus.");
       setDeleteItemOpen(false);
       setDeleteItemRow(null);
       await load();
@@ -357,6 +364,7 @@ export default function AdminShipmentDetailPage() {
       const blob = await downloadAdminWaybillPdf(shipmentId);
       const wb = String(data?.waybill_number ?? shipmentId);
       downloadBlob(blob, `waybill-${wb}.pdf`);
+      toast.success("PDF waybill berhasil diunduh.");
     } catch (e) {
       toast.error(e instanceof ApiError ? e.message : "Gagal unduh PDF.");
     }

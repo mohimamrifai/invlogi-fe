@@ -22,6 +22,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { createAdminLocation, updateAdminLocation } from "@/lib/admin-api";
 import { ApiError } from "@/lib/api-client";
+import { toast } from "sonner";
 import { firstLaravelError } from "@/lib/laravel-errors";
 import { DIALOG_CREATE_HEADER_CLASS } from "@/lib/dialog-create-header";
 import { cn } from "@/lib/utils";
@@ -98,8 +99,10 @@ export function MasterLocationDialog({
       };
       if (mode === "create") {
         await createAdminLocation(body);
+        toast.success("Lokasi berhasil ditambahkan.");
       } else if (mode === "edit" && row?.id != null) {
         await updateAdminLocation(Number(row.id), body);
+        toast.success("Lokasi berhasil diperbarui.");
       }
       onSaved();
       onOpenChange(false);
@@ -111,6 +114,7 @@ export function MasterLocationDialog({
             ? e.message
             : "Gagal menyimpan.";
       setError(msg);
+      toast.error(msg);
     } finally {
       setSaving(false);
     }

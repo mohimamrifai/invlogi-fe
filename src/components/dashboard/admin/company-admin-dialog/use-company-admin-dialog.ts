@@ -182,10 +182,12 @@ export function useCompanyAdminDialog(params: Params) {
       if (mode === "create") {
         body.status = "active";
         await createAdminCompany(body);
+        toast.success("Customer berhasil ditambahkan.");
         onSaved();
         onOpenChange(false);
       } else if (mode === "detail" && companyId != null) {
         await updateAdminCompany(companyId, body);
+        toast.success("Data customer diperbarui.");
         await loadDetail();
         onSaved();
       }
@@ -197,6 +199,7 @@ export function useCompanyAdminDialog(params: Params) {
             ? e.message
             : "Gagal menyimpan.";
       setError(msg);
+      toast.error(msg);
     } finally {
       setSaving(false);
     }
@@ -237,8 +240,10 @@ export function useCompanyAdminDialog(params: Params) {
       };
       if (branchEdit?.id != null) {
         await updateAdminBranch(companyId, Number(branchEdit.id), body);
+        toast.success("Cabang berhasil diperbarui.");
       } else {
         await createAdminBranch(companyId, body);
+        toast.success("Cabang berhasil ditambahkan.");
       }
       setBranchOpen(false);
       await loadDetail();
@@ -286,8 +291,10 @@ export function useCompanyAdminDialog(params: Params) {
       };
       if (discEdit?.id != null) {
         await updateAdminCustomerDiscount(companyId, Number(discEdit.id), body);
+        toast.success("Diskon berhasil diperbarui.");
       } else {
         await createAdminCustomerDiscount(companyId, body);
+        toast.success("Diskon berhasil ditambahkan.");
       }
       setDiscOpen(false);
       await loadDetail();
@@ -304,6 +311,7 @@ export function useCompanyAdminDialog(params: Params) {
     setDelLoading(true);
     try {
       await deleteAdminBranch(companyId, Number(deleteBranch.id));
+      toast.success("Cabang berhasil dihapus.");
       setDeleteBranch(null);
       await loadDetail();
       onSaved();
@@ -319,6 +327,7 @@ export function useCompanyAdminDialog(params: Params) {
     setDelLoading(true);
     try {
       await deleteAdminCustomerDiscount(companyId, Number(deleteDisc.id));
+      toast.success("Diskon berhasil dihapus.");
       setDeleteDisc(null);
       await loadDetail();
       onSaved();

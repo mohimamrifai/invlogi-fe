@@ -1,11 +1,17 @@
 "use client";
 
-import { Link, usePathname } from "@/i18n/routing";
-import { Button } from "@/components/ui/button";
+import { Link, usePathname, useRouter } from "@/i18n/routing";
+import { buttonVariants } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/lib/store";
 import { useAuthPersistHydrated } from "@/lib/use-auth-hydrated";
-import { Box, Layers, MapPin, PackagePlus, Plus, Settings2, Truck } from "lucide-react";
+import { Box, ChevronDown, Layers, MapPin, PackagePlus, Plus, Settings2, Truck } from "lucide-react";
 
 const NAV = [
   { href: "/dashboard/admin/master/locations", label: "Lokasi", Icon: MapPin },
@@ -13,10 +19,13 @@ const NAV = [
   { href: "/dashboard/admin/master/service-types", label: "Service types", Icon: Layers },
   { href: "/dashboard/admin/master/container-types", label: "Jenis kontainer", Icon: Box },
   { href: "/dashboard/admin/master/additional-services", label: "Layanan tambahan", Icon: PackagePlus },
-];
+] as const;
+
+const CREATE_QUERY = "?create=1";
 
 export function MasterLayoutShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const authHydrated = useAuthPersistHydrated();
   const { user } = useAuthStore();
   const roles = user?.roles ?? [];
@@ -36,10 +45,31 @@ export function MasterLayoutShell({ children }: { children: React.ReactNode }) {
         </div>
         {canManageMaster ? (
           <div className="flex w-full shrink-0 sm:w-auto sm:justify-end">
-            <Button className="h-9 w-full gap-1.5 px-4 sm:w-auto" type="button" disabled>
-              <Plus className="h-4 w-4 shrink-0" />
-              Tambah Master Data
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                type="button"
+                className={cn(
+                  buttonVariants(),
+                  "h-9 w-full gap-1.5 px-4 sm:w-auto inline-flex items-center justify-center"
+                )}
+              >
+                <Plus className="h-4 w-4 shrink-0" />
+                Tambah Master Data
+                <ChevronDown className="h-4 w-4 shrink-0 opacity-70" aria-hidden />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="min-w-56">
+                {NAV.map(({ href, label, Icon }) => (
+                  <DropdownMenuItem
+                    key={href}
+                    className="cursor-pointer gap-2"
+                    onClick={() => router.push(`${href}${CREATE_QUERY}`)}
+                  >
+                    <Icon className="h-4 w-4 shrink-0 opacity-80" aria-hidden />
+                    {label}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         ) : null}
       </div>

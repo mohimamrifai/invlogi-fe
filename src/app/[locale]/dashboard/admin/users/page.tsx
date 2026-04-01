@@ -153,6 +153,7 @@ export default function AdminUsersPage() {
           role,
           status: "active",
         });
+        toast.success("Pengguna berhasil ditambahkan.");
       } else if (editRow?.id != null) {
         const body: Record<string, unknown> = {
           name: name.trim(),
@@ -163,6 +164,7 @@ export default function AdminUsersPage() {
         };
         if (password.trim()) body.password = password.trim();
         await updateAdminUser(Number(editRow.id), body);
+        toast.success("Pengguna berhasil diperbarui.");
       }
       setDialogOpen(false);
       await load();
@@ -174,6 +176,7 @@ export default function AdminUsersPage() {
             ? e.message
             : "Gagal menyimpan.";
       setFormError(msg);
+      toast.error(msg);
     } finally {
       setSaving(false);
     }
@@ -184,6 +187,7 @@ export default function AdminUsersPage() {
     setDeleteLoading(true);
     try {
       await deleteAdminUser(Number(deleteRow.id));
+      toast.success("Pengguna berhasil dihapus.");
       setDeleteOpen(false);
       setDeleteRow(null);
       await load();

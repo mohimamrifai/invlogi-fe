@@ -140,7 +140,9 @@ export default function CreateBookingPage() {
           : JSON.stringify(r)
       );
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "Gagal estimasi");
+      const msg = e instanceof ApiError ? e.message : "Gagal estimasi";
+      setError(msg);
+      toast.error(msg);
     }
   };
 
@@ -153,7 +155,9 @@ export default function CreateBookingPage() {
       toast.success("Booking berhasil diajukan.");
       router.push("/dashboard");
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Gagal menyimpan");
+      const msg = err instanceof ApiError ? err.message : "Gagal menyimpan";
+      setError(msg);
+      toast.error(msg);
     } finally {
       setSubmitting(false);
     }

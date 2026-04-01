@@ -29,6 +29,7 @@ import { firstLaravelError } from "@/lib/laravel-errors";
 import type { LaravelPaginated } from "@/lib/types-api";
 import { Plus, Trash2 } from "lucide-react";
 import { DIALOG_CREATE_HEADER_CLASS } from "@/lib/dialog-create-header";
+import { toast } from "sonner";
 
 type ItemLine = { key: string; description: string; quantity: string; unit_price: string };
 
@@ -139,14 +140,14 @@ export function InvoiceCreateDialog({
         })),
       };
       await createAdminInvoice(body);
+      toast.success("Invoice berhasil dibuat.");
       onOpenChange(false);
       onCreated();
     } catch (e) {
-      if (e instanceof ApiError) {
-        setError(firstLaravelError(e) ?? e.message);
-      } else {
-        setError("Gagal membuat invoice.");
-      }
+      const msg =
+        e instanceof ApiError ? firstLaravelError(e.body) ?? e.message : "Gagal membuat invoice.";
+      setError(msg);
+      toast.error(msg);
     } finally {
       setSaving(false);
     }

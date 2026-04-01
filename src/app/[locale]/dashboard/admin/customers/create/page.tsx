@@ -21,6 +21,7 @@ import { firstLaravelError } from "@/lib/laravel-errors";
 import { getAdminCustomerCapabilities } from "@/lib/admin-customer-capabilities";
 import { useAuthStore } from "@/lib/store";
 import { useAuthPersistHydrated } from "@/lib/use-auth-hydrated";
+import { toast } from "sonner";
 
 export default function AdminCustomerCreatePage() {
   const params = useParams();
@@ -77,6 +78,7 @@ export default function AdminCustomerCreatePage() {
         phone: cleanedPhone || null,
         status: "active",
       });
+      toast.success("Customer berhasil ditambahkan.");
       router.push(backPath);
     } catch (e) {
       const msg =
@@ -86,6 +88,7 @@ export default function AdminCustomerCreatePage() {
             ? e.message
             : "Gagal menyimpan.";
       setError(msg);
+      toast.error(msg);
     } finally {
       setSaving(false);
     }

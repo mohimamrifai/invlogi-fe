@@ -24,6 +24,7 @@ import { ApiError } from "@/lib/api-client";
 import { firstLaravelError } from "@/lib/laravel-errors";
 import type { LaravelPaginated } from "@/lib/types-api";
 import { DIALOG_CREATE_HEADER_CLASS } from "@/lib/dialog-create-header";
+import { toast } from "sonner";
 
 export type VendorServiceOption = { id: number; label: string };
 
@@ -122,14 +123,13 @@ export function VendorPricingDialog({
       if (effectiveTo.trim()) body.effective_to = effectiveTo.trim();
 
       await createAdminVendorPricing(vsId, body);
+      toast.success("Tarif berhasil ditambahkan.");
       onOpenChange(false);
       onSaved();
     } catch (e) {
-      if (e instanceof ApiError) {
-        setError(firstLaravelError(e) ?? e.message);
-      } else {
-        setError("Gagal menyimpan.");
-      }
+      const msg = e instanceof ApiError ? firstLaravelError(e.body) ?? e.message : "Gagal menyimpan.";
+      setError(msg);
+      toast.error(msg);
     } finally {
       setSaving(false);
     }

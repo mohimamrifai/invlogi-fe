@@ -17,6 +17,7 @@ import { ApiError } from "@/lib/api-client";
 import { firstLaravelError } from "@/lib/laravel-errors";
 import { DIALOG_CREATE_HEADER_CLASS } from "@/lib/dialog-create-header";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 type Row = Record<string, unknown>;
 
@@ -80,8 +81,10 @@ export function VendorFormDialog({
       };
       if (mode === "create") {
         await createAdminVendor(body);
+        toast.success("Vendor berhasil ditambahkan.");
       } else if (row?.id != null) {
         await updateAdminVendor(Number(row.id), body);
+        toast.success("Vendor berhasil diperbarui.");
       }
       onSaved();
       onOpenChange(false);
@@ -93,6 +96,7 @@ export function VendorFormDialog({
             ? e.message
             : "Gagal menyimpan.";
       setError(msg);
+      toast.error(msg);
     } finally {
       setSaving(false);
     }

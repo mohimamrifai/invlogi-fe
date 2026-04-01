@@ -28,6 +28,7 @@ import { MasterActiveBadge } from "../_components/master-active-badge";
 import { actionsCellClass, actionsHeadClass } from "../_components/master-table-classes";
 import { STATUS_FILTER_OPTIONS } from "../_components/master-filters";
 import { MasterContainerTypeDialog } from "../_components/master-container-type-dialog";
+import { useMasterOpenCreateFromQuery } from "../_components/use-master-open-create-from-query";
 import type { SimpleDialogMode } from "../_components/master-transport-mode-dialog";
 import { ConfirmDeleteDialog } from "@/components/dashboard/admin/confirm-delete-dialog";
 import { Plus } from "lucide-react";
@@ -90,6 +91,18 @@ export default function MasterContainerTypesPage() {
     void load();
   }, [load]);
 
+  const openCreate = useCallback(() => {
+    setContainerDialogRow(null);
+    setContainerDialogMode("create");
+    setContainerDialogOpen(true);
+  }, []);
+
+  useMasterOpenCreateFromQuery({
+    authHydrated,
+    canManage: canManageMaster,
+    onOpenCreate: openCreate,
+  });
+
   const toolbar = (
     <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
       <div className="min-w-0 flex-1">
@@ -104,15 +117,7 @@ export default function MasterContainerTypesPage() {
         />
       </div>
       {canManageMaster ? (
-        <Button
-          type="button"
-          className="shrink-0 gap-1.5"
-          onClick={() => {
-            setContainerDialogRow(null);
-            setContainerDialogMode("create");
-            setContainerDialogOpen(true);
-          }}
-        >
+        <Button type="button" className="shrink-0 gap-1.5" onClick={openCreate}>
           <Plus className="h-4 w-4" />
           Tambah jenis kontainer
         </Button>
@@ -125,6 +130,7 @@ export default function MasterContainerTypesPage() {
     setDeleteLoading(true);
     try {
       await deleteAdminContainerType(Number(deleteRow.id));
+      toast.success("Jenis kontainer berhasil dihapus.");
       setDeleteOpen(false);
       setDeleteRow(null);
       await load();

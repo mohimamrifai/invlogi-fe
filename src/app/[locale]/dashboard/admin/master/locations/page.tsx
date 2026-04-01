@@ -34,6 +34,7 @@ import {
   MasterLocationDialog,
   type LocationDialogMode,
 } from "../_components/master-location-dialog";
+import { useMasterOpenCreateFromQuery } from "../_components/use-master-open-create-from-query";
 import { ConfirmDeleteDialog } from "@/components/dashboard/admin/confirm-delete-dialog";
 import { Plus } from "lucide-react";
 
@@ -107,11 +108,17 @@ export default function MasterLocationsPage() {
     void load();
   }, [load]);
 
-  const openCreate = () => {
+  const openCreate = useCallback(() => {
     setLocationDialogRow(null);
     setLocationDialogMode("create");
     setLocationDialogOpen(true);
-  };
+  }, []);
+
+  useMasterOpenCreateFromQuery({
+    authHydrated,
+    canManage: canManageMaster,
+    onOpenCreate: openCreate,
+  });
 
   const openView = (row: Row) => {
     setLocationDialogRow(row);
@@ -135,6 +142,7 @@ export default function MasterLocationsPage() {
     setDeleteLoading(true);
     try {
       await deleteAdminLocation(Number(deleteRow.id));
+      toast.success("Lokasi berhasil dihapus.");
       setDeleteOpen(false);
       setDeleteRow(null);
       await load();

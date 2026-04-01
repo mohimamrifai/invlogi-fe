@@ -23,6 +23,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { createAdminServiceType, updateAdminServiceType } from "@/lib/admin-api";
 import { ApiError } from "@/lib/api-client";
+import { toast } from "sonner";
 import { firstLaravelError } from "@/lib/laravel-errors";
 import { DIALOG_CREATE_HEADER_CLASS } from "@/lib/dialog-create-header";
 import { cn } from "@/lib/utils";
@@ -87,8 +88,10 @@ export function MasterServiceTypeDialog({
       };
       if (mode === "create") {
         await createAdminServiceType(body);
+        toast.success("Service type berhasil ditambahkan.");
       } else if (mode === "edit" && row?.id != null) {
         await updateAdminServiceType(Number(row.id), body);
+        toast.success("Service type berhasil diperbarui.");
       }
       onSaved();
       onOpenChange(false);
@@ -100,6 +103,7 @@ export function MasterServiceTypeDialog({
             ? e.message
             : "Gagal menyimpan.";
       setError(msg);
+      toast.error(msg);
     } finally {
       setSaving(false);
     }

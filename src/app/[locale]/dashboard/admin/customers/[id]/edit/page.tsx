@@ -186,6 +186,7 @@ export default function AdminCustomerEditPage() {
             ? e.message
             : "Gagal menyimpan.";
       setError(msg);
+      toast.error(msg);
     } finally {
       setSaving(false);
     }

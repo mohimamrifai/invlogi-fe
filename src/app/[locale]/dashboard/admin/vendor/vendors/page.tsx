@@ -119,6 +119,7 @@ export default function AdminVendorListPage() {
     setDeleteLoading(true);
     try {
       await deleteAdminVendor(Number(deleteRow.id));
+      toast.success("Vendor berhasil dihapus.");
       setDeleteOpen(false);
       setDeleteRow(null);
       await load();

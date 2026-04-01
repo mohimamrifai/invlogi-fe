@@ -23,6 +23,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { createAdminAdditionalService, updateAdminAdditionalService } from "@/lib/admin-api";
 import { ApiError } from "@/lib/api-client";
+import { toast } from "sonner";
 import { firstLaravelError } from "@/lib/laravel-errors";
 import { DIALOG_CREATE_HEADER_CLASS } from "@/lib/dialog-create-header";
 import { cn } from "@/lib/utils";
@@ -91,8 +92,10 @@ export function MasterAdditionalServiceDialog({
       };
       if (mode === "create") {
         await createAdminAdditionalService(body);
+        toast.success("Layanan tambahan berhasil ditambahkan.");
       } else if (mode === "edit" && row?.id != null) {
         await updateAdminAdditionalService(Number(row.id), body);
+        toast.success("Layanan tambahan berhasil diperbarui.");
       }
       onSaved();
       onOpenChange(false);
@@ -104,6 +107,7 @@ export function MasterAdditionalServiceDialog({
             ? e.message
             : "Gagal menyimpan.";
       setError(msg);
+      toast.error(msg);
     } finally {
       setSaving(false);
     }

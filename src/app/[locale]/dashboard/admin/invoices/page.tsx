@@ -104,6 +104,7 @@ function AdminInvoiceActionsMenu({
       a.download = `invoice-${invoiceNumber}.pdf`;
       a.click();
       URL.revokeObjectURL(url);
+      toast.success("PDF invoice berhasil diunduh.");
     } catch (e) {
       toast.error(e instanceof ApiError ? e.message : "Gagal mengunduh PDF.");
     }

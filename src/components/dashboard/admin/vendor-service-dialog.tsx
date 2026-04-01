@@ -28,6 +28,7 @@ import { ApiError } from "@/lib/api-client";
 import { firstLaravelError } from "@/lib/laravel-errors";
 import type { LaravelPaginated } from "@/lib/types-api";
 import { DIALOG_CREATE_HEADER_CLASS } from "@/lib/dialog-create-header";
+import { toast } from "sonner";
 
 type Opt = { id: number; label: string };
 
@@ -121,14 +122,13 @@ export function VendorServiceDialog({
         destination_location_id: Number(destinationId),
         is_active: isActive,
       });
+      toast.success("Layanan vendor berhasil ditambahkan.");
       onOpenChange(false);
       onSaved();
     } catch (e) {
-      if (e instanceof ApiError) {
-        setError(firstLaravelError(e) ?? e.message);
-      } else {
-        setError("Gagal menyimpan.");
-      }
+      const msg = e instanceof ApiError ? firstLaravelError(e.body) ?? e.message : "Gagal menyimpan.";
+      setError(msg);
+      toast.error(msg);
     } finally {
       setSaving(false);
     }
