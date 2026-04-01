@@ -28,6 +28,7 @@ import { ApiError } from "@/lib/api-client";
 import { firstLaravelError } from "@/lib/laravel-errors";
 import type { LaravelPaginated } from "@/lib/types-api";
 import { Plus, Trash2 } from "lucide-react";
+import { DIALOG_CREATE_HEADER_CLASS } from "@/lib/dialog-create-header";
 
 type ItemLine = { key: string; description: string; quantity: string; unit_price: string };
 
@@ -172,7 +173,7 @@ export function InvoiceCreateDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
-        <DialogHeader>
+        <DialogHeader className={DIALOG_CREATE_HEADER_CLASS}>
           <DialogTitle>Buat invoice</DialogTitle>
         </DialogHeader>
         {error ? (

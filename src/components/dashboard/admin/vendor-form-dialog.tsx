@@ -15,6 +15,8 @@ import { Label } from "@/components/ui/label";
 import { createAdminVendor, updateAdminVendor } from "@/lib/admin-api";
 import { ApiError } from "@/lib/api-client";
 import { firstLaravelError } from "@/lib/laravel-errors";
+import { DIALOG_CREATE_HEADER_CLASS } from "@/lib/dialog-create-header";
+import { cn } from "@/lib/utils";
 
 type Row = Record<string, unknown>;
 
@@ -99,7 +101,7 @@ export function VendorFormDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md" showCloseButton>
-        <DialogHeader>
+        <DialogHeader className={cn(mode === "create" && DIALOG_CREATE_HEADER_CLASS)}>
           <DialogTitle>{mode === "create" ? "Tambah vendor" : "Edit vendor"}</DialogTitle>
         </DialogHeader>
         {error ? (
@@ -108,29 +110,54 @@ export function VendorFormDialog({
         <div className="grid gap-3 py-2">
           <div className="space-y-1">
             <Label>Nama</Label>
-            <Input value={name} onChange={(e) => setName(e.target.value)} />
+            <Input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder={mode === "create" ? "Nama vendor" : undefined}
+            />
           </div>
           <div className="space-y-1">
             <Label>Kode</Label>
-            <Input value={code} onChange={(e) => setCode(e.target.value)} />
+            <Input
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              placeholder={mode === "create" ? "Kode singkat (opsional)" : undefined}
+            />
           </div>
           <div className="space-y-1">
             <Label>Alamat</Label>
-            <Input value={address} onChange={(e) => setAddress(e.target.value)} />
+            <Input
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              placeholder={mode === "create" ? "Alamat kantor / gudang" : undefined}
+            />
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div className="space-y-1">
               <Label>Telepon</Label>
-              <Input value={phone} onChange={(e) => setPhone(e.target.value)} />
+              <Input
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder={mode === "create" ? "Nomor telepon" : undefined}
+              />
             </div>
             <div className="space-y-1">
               <Label>Email</Label>
-              <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+              <Input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder={mode === "create" ? "email@vendor.com" : undefined}
+              />
             </div>
           </div>
           <div className="space-y-1">
             <Label>Kontak person</Label>
-            <Input value={contactPerson} onChange={(e) => setContactPerson(e.target.value)} />
+            <Input
+              value={contactPerson}
+              onChange={(e) => setContactPerson(e.target.value)}
+              placeholder={mode === "create" ? "Nama PIC" : undefined}
+            />
           </div>
           <div className="flex items-center gap-2">
             <Checkbox id="v-act" checked={isActive} onCheckedChange={(v) => setIsActive(v === true)} />

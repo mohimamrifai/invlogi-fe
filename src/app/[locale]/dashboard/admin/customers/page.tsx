@@ -38,6 +38,7 @@ import type { LaravelPaginated } from "@/lib/types-api";
 import { ApiError } from "@/lib/api-client";
 import { rowNumber } from "@/lib/list-query";
 import { useDebouncedValue } from "@/lib/use-debounced-value";
+import { billingCycleLabel } from "@/lib/billing-cycle-labels";
 
 const PER_PAGE = 10;
 const STATS_CAP = 1000;
@@ -54,16 +55,6 @@ const actionsHeadClass =
 
 const actionsCellClass =
   "max-md:sticky max-md:right-0 max-md:z-10 max-md:border-l max-md:border-border max-md:bg-card max-md:shadow-[-8px_0_12px_-8px_rgba(0,0,0,0.08)] max-md:group-hover:bg-muted/50 md:static md:z-auto md:border-l-0 md:shadow-none md:group-hover:bg-transparent";
-
-function billingCycleLabel(code: string): string {
-  const m: Record<string, string> = {
-    half_monthly_1: "Setengah bulan (1)",
-    half_monthly_2: "Setengah bulan (2)",
-    both_half: "Dua periode",
-    end_of_month: "Akhir bulan",
-  };
-  return m[code] ?? code;
-}
 
 type CompanyRow = Record<string, unknown>;
 

@@ -40,6 +40,8 @@ import { useDebouncedValue } from "@/lib/use-debounced-value";
 import { ConfirmDeleteDialog } from "@/components/dashboard/admin/confirm-delete-dialog";
 import { firstLaravelError } from "@/lib/laravel-errors";
 import { Plus, Trash2 } from "lucide-react";
+import { DIALOG_CREATE_HEADER_CLASS } from "@/lib/dialog-create-header";
+import { cn } from "@/lib/utils";
 
 const PER_PAGE = 10;
 
@@ -290,7 +292,7 @@ export default function AdminUsersPage() {
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="sm:max-w-md" showCloseButton>
-          <DialogHeader>
+          <DialogHeader className={cn(dialogMode === "create" && DIALOG_CREATE_HEADER_CLASS)}>
             <DialogTitle>{dialogMode === "create" ? "Tambah pengguna" : "Edit pengguna"}</DialogTitle>
           </DialogHeader>
           {formError ? (
@@ -299,19 +301,39 @@ export default function AdminUsersPage() {
           <div className="grid gap-3 py-2">
             <div className="space-y-1">
               <Label>Nama</Label>
-              <Input value={name} onChange={(e) => setName(e.target.value)} />
+              <Input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder={dialogMode === "create" ? "Nama lengkap" : undefined}
+              />
             </div>
             <div className="space-y-1">
               <Label>Email</Label>
-              <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} disabled={dialogMode === "edit"} />
+              <Input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                disabled={dialogMode === "edit"}
+                placeholder={dialogMode === "create" ? "email@perusahaan.com" : undefined}
+              />
             </div>
             <div className="space-y-1">
               <Label>{dialogMode === "create" ? "Password" : "Password (kosongkan jika tidak diubah)"}</Label>
-              <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" />
+              <Input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="new-password"
+                placeholder={dialogMode === "create" ? "Minimal sesuai kebijakan keamanan" : undefined}
+              />
             </div>
             <div className="space-y-1">
               <Label>Telepon</Label>
-              <Input value={phone} onChange={(e) => setPhone(e.target.value)} />
+              <Input
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder={dialogMode === "create" ? "+62… (opsional)" : undefined}
+              />
             </div>
             <div className="space-y-1">
               <Label>Role</Label>

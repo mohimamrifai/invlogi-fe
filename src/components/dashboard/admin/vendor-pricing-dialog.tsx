@@ -23,6 +23,7 @@ import { createAdminVendorPricing, fetchAdminContainerTypes } from "@/lib/admin-
 import { ApiError } from "@/lib/api-client";
 import { firstLaravelError } from "@/lib/laravel-errors";
 import type { LaravelPaginated } from "@/lib/types-api";
+import { DIALOG_CREATE_HEADER_CLASS } from "@/lib/dialog-create-header";
 
 export type VendorServiceOption = { id: number; label: string };
 
@@ -140,7 +141,7 @@ export function VendorPricingDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-md">
-        <DialogHeader>
+        <DialogHeader className={DIALOG_CREATE_HEADER_CLASS}>
           <DialogTitle>Tambah tarif</DialogTitle>
         </DialogHeader>
         {error ? (

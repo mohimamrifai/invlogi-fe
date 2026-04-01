@@ -23,6 +23,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { createAdminLocation, updateAdminLocation } from "@/lib/admin-api";
 import { ApiError } from "@/lib/api-client";
 import { firstLaravelError } from "@/lib/laravel-errors";
+import { DIALOG_CREATE_HEADER_CLASS } from "@/lib/dialog-create-header";
+import { cn } from "@/lib/utils";
 
 const TYPES = [
   { value: "port", label: "Pelabuhan" },
@@ -120,7 +122,7 @@ export function MasterLocationSheet({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-md">
-        <DialogHeader>
+        <DialogHeader className={cn(mode === "create" && DIALOG_CREATE_HEADER_CLASS)}>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>Origin, destination & terminal.</DialogDescription>
         </DialogHeader>
@@ -136,11 +138,18 @@ export function MasterLocationSheet({
               onChange={(e) => setName(e.target.value)}
               disabled={readOnly}
               required
+              placeholder={mode === "create" ? "Nama lokasi (pelabuhan, kota, hub…)" : undefined}
             />
           </div>
           <div className="space-y-2">
             <Label htmlFor="loc-code">Kode</Label>
-            <Input id="loc-code" value={code} onChange={(e) => setCode(e.target.value)} disabled={readOnly} />
+            <Input
+              id="loc-code"
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              disabled={readOnly}
+              placeholder={mode === "create" ? "Kode singkat (opsional)" : undefined}
+            />
           </div>
           <div className="space-y-2">
             <Label>Tipe</Label>
@@ -165,15 +174,33 @@ export function MasterLocationSheet({
           </div>
           <div className="space-y-2">
             <Label htmlFor="loc-city">Kota</Label>
-            <Input id="loc-city" value={city} onChange={(e) => setCity(e.target.value)} disabled={readOnly} />
+            <Input
+              id="loc-city"
+              value={city}
+              onChange={(e) => setCity(e.target.value)}
+              disabled={readOnly}
+              placeholder={mode === "create" ? "Kota / kabupaten" : undefined}
+            />
           </div>
           <div className="space-y-2">
             <Label htmlFor="loc-prov">Provinsi</Label>
-            <Input id="loc-prov" value={province} onChange={(e) => setProvince(e.target.value)} disabled={readOnly} />
+            <Input
+              id="loc-prov"
+              value={province}
+              onChange={(e) => setProvince(e.target.value)}
+              disabled={readOnly}
+              placeholder={mode === "create" ? "Provinsi" : undefined}
+            />
           </div>
           <div className="space-y-2">
             <Label htmlFor="loc-addr">Alamat</Label>
-            <Input id="loc-addr" value={address} onChange={(e) => setAddress(e.target.value)} disabled={readOnly} />
+            <Input
+              id="loc-addr"
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              disabled={readOnly}
+              placeholder={mode === "create" ? "Alamat detail (opsional)" : undefined}
+            />
           </div>
           <div className="flex items-center gap-2">
             <Checkbox

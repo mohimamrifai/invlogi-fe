@@ -50,15 +50,11 @@ import { ConfirmDeleteDialog } from "./confirm-delete-dialog";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { customerStatusBadgeClass, customerStatusLabelFromApi } from "@/lib/customer-status";
+import { BILLING_CYCLE_OPTIONS } from "@/lib/billing-cycle-labels";
+import { DIALOG_CREATE_HEADER_CLASS } from "@/lib/dialog-create-header";
+import { cn } from "@/lib/utils";
 
 type Row = Record<string, unknown>;
-
-const BILLING = [
-  { value: "half_monthly_1", label: "Setengah bulan (1–15)" },
-  { value: "half_monthly_2", label: "Setengah bulan (16–akhir)" },
-  { value: "both_half", label: "Dua periode" },
-  { value: "end_of_month", label: "Akhir bulan" },
-];
 
 type SheetMode = "create" | "detail";
 
@@ -392,7 +388,7 @@ export function CompanyAdminSheet({
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
-          <DialogHeader>
+          <DialogHeader className={cn(mode === "create" && DIALOG_CREATE_HEADER_CLASS)}>
             <DialogTitle>{mode === "create" ? "Tambah customer" : "Detail customer"}</DialogTitle>
             <DialogDescription>Data perusahaan B2B.</DialogDescription>
           </DialogHeader>
@@ -447,48 +443,99 @@ export function CompanyAdminSheet({
 
               <div className="space-y-2">
                 <Label htmlFor="co-name">Nama perusahaan</Label>
-                <Input id="co-name" value={name} onChange={(e) => setName(e.target.value)} />
+                <Input
+                  id="co-name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder={mode === "create" ? "Nama resmi perusahaan" : undefined}
+                />
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-2">
                   <Label htmlFor="co-npwp">NPWP</Label>
-                  <Input id="co-npwp" value={npwp} onChange={(e) => setNpwp(e.target.value)} />
+                  <Input
+                    id="co-npwp"
+                    value={npwp}
+                    onChange={(e) => setNpwp(e.target.value)}
+                    placeholder={mode === "create" ? "00.000.000.0-000.000" : undefined}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="co-nib">NIB</Label>
-                  <Input id="co-nib" value={nib} onChange={(e) => setNib(e.target.value)} />
+                  <Input
+                    id="co-nib"
+                    value={nib}
+                    onChange={(e) => setNib(e.target.value)}
+                    placeholder={mode === "create" ? "Nomor Induk Berusaha" : undefined}
+                  />
                 </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="co-addr">Alamat</Label>
-                <Input id="co-addr" value={address} onChange={(e) => setAddress(e.target.value)} />
+                <Input
+                  id="co-addr"
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  placeholder={mode === "create" ? "Alamat lengkap jalan & gedung" : undefined}
+                />
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-2">
                   <Label htmlFor="co-city">Kota</Label>
-                  <Input id="co-city" value={city} onChange={(e) => setCity(e.target.value)} />
+                  <Input
+                    id="co-city"
+                    value={city}
+                    onChange={(e) => setCity(e.target.value)}
+                    placeholder={mode === "create" ? "Kota / kabupaten" : undefined}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="co-prov">Provinsi</Label>
-                  <Input id="co-prov" value={province} onChange={(e) => setProvince(e.target.value)} />
+                  <Input
+                    id="co-prov"
+                    value={province}
+                    onChange={(e) => setProvince(e.target.value)}
+                    placeholder={mode === "create" ? "Provinsi" : undefined}
+                  />
                 </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="co-post">Kode pos</Label>
-                <Input id="co-post" value={postalCode} onChange={(e) => setPostalCode(e.target.value)} />
+                <Input
+                  id="co-post"
+                  value={postalCode}
+                  onChange={(e) => setPostalCode(e.target.value)}
+                  placeholder={mode === "create" ? "00000" : undefined}
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="co-pic">PIC</Label>
-                <Input id="co-pic" value={contactPerson} onChange={(e) => setContactPerson(e.target.value)} />
+                <Input
+                  id="co-pic"
+                  value={contactPerson}
+                  onChange={(e) => setContactPerson(e.target.value)}
+                  placeholder={mode === "create" ? "Nama penanggung jawab" : undefined}
+                />
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-2">
                   <Label htmlFor="co-email">Email</Label>
-                  <Input id="co-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+                  <Input
+                    id="co-email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder={mode === "create" ? "perusahaan@domain.com" : undefined}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="co-phone">Telepon</Label>
-                  <Input id="co-phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
+                  <Input
+                    id="co-phone"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder={mode === "create" ? "+62 812 3456 7890" : undefined}
+                  />
                 </div>
               </div>
               <div className="space-y-2">
@@ -503,7 +550,7 @@ export function CompanyAdminSheet({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {BILLING.map((b) => (
+                    {BILLING_CYCLE_OPTIONS.map((b) => (
                       <SelectItem key={b.value} value={b.value}>
                         {b.label}
                       </SelectItem>
@@ -617,29 +664,49 @@ export function CompanyAdminSheet({
 
       <Dialog open={branchOpen} onOpenChange={setBranchOpen}>
         <DialogContent showCloseButton>
-          <DialogHeader>
+          <DialogHeader className={cn(!branchEdit && DIALOG_CREATE_HEADER_CLASS)}>
             <DialogTitle>{branchEdit ? "Edit cabang" : "Tambah cabang"}</DialogTitle>
           </DialogHeader>
           <div className="grid gap-3 py-2">
             <div className="space-y-1">
               <Label>Nama</Label>
-              <Input value={bName} onChange={(e) => setBName(e.target.value)} />
+              <Input
+                value={bName}
+                onChange={(e) => setBName(e.target.value)}
+                placeholder={!branchEdit ? "Nama cabang / gudang" : undefined}
+              />
             </div>
             <div className="space-y-1">
               <Label>Alamat</Label>
-              <Input value={bAddr} onChange={(e) => setBAddr(e.target.value)} />
+              <Input
+                value={bAddr}
+                onChange={(e) => setBAddr(e.target.value)}
+                placeholder={!branchEdit ? "Alamat cabang" : undefined}
+              />
             </div>
             <div className="space-y-1">
               <Label>Kota</Label>
-              <Input value={bCity} onChange={(e) => setBCity(e.target.value)} />
+              <Input
+                value={bCity}
+                onChange={(e) => setBCity(e.target.value)}
+                placeholder={!branchEdit ? "Kota" : undefined}
+              />
             </div>
             <div className="space-y-1">
               <Label>Telepon</Label>
-              <Input value={bPhone} onChange={(e) => setBPhone(e.target.value)} />
+              <Input
+                value={bPhone}
+                onChange={(e) => setBPhone(e.target.value)}
+                placeholder={!branchEdit ? "Nomor telepon cabang" : undefined}
+              />
             </div>
             <div className="space-y-1">
               <Label>PIC</Label>
-              <Input value={bPic} onChange={(e) => setBPic(e.target.value)} />
+              <Input
+                value={bPic}
+                onChange={(e) => setBPic(e.target.value)}
+                placeholder={!branchEdit ? "Kontak person" : undefined}
+              />
             </div>
             <div className="flex items-center gap-2">
               <Checkbox id="b-a" checked={bActive} onCheckedChange={(v) => setBActive(v === true)} />
@@ -661,7 +728,7 @@ export function CompanyAdminSheet({
 
       <Dialog open={discOpen} onOpenChange={setDiscOpen}>
         <DialogContent showCloseButton>
-          <DialogHeader>
+          <DialogHeader className={cn(!discEdit && DIALOG_CREATE_HEADER_CLASS)}>
             <DialogTitle>{discEdit ? "Edit diskon" : "Tambah diskon"}</DialogTitle>
           </DialogHeader>
           <div className="grid gap-3 py-2">
@@ -700,7 +767,14 @@ export function CompanyAdminSheet({
             </div>
             <div className="space-y-1">
               <Label>Nilai</Label>
-              <Input type="number" min={0} step="0.01" value={dVal} onChange={(e) => setDVal(e.target.value)} />
+              <Input
+                type="number"
+                min={0}
+                step="0.01"
+                value={dVal}
+                onChange={(e) => setDVal(e.target.value)}
+                placeholder={!discEdit ? "Contoh: 10 untuk 10% atau nominal" : undefined}
+              />
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div className="space-y-1">

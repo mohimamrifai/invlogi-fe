@@ -129,6 +129,7 @@ export function InvoiceEditDialog({
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={3}
+              placeholder="Catatan tambahan (opsional)"
             />
           </div>
         </div>

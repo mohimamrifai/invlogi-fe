@@ -52,6 +52,7 @@ import { ConfirmDeleteDialog } from "@/components/dashboard/admin/confirm-delete
 import { ArrowLeft, Download, Package, Plus } from "lucide-react";
 import { Link } from "@/i18n/routing";
 import { cn } from "@/lib/utils";
+import { DIALOG_CREATE_HEADER_CLASS } from "@/lib/dialog-create-header";
 
 type Row = Record<string, unknown>;
 
@@ -62,6 +63,17 @@ function downloadBlob(blob: Blob, filename: string) {
   a.download = filename;
   a.click();
   URL.revokeObjectURL(url);
+}
+
+const PLACEMENT_LABELS: Record<string, string> = {
+  rack: "Rack",
+  floor: "Lantai",
+};
+
+function placementTypeLabel(v: unknown): string {
+  const s = String(v ?? "").trim();
+  if (!s) return "—";
+  return PLACEMENT_LABELS[s] ?? s.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 export default function AdminShipmentDetailPage() {
@@ -540,7 +552,7 @@ export default function AdminShipmentDetailPage() {
                   <TableCell>{String(it.name ?? "")}</TableCell>
                   <TableCell>{String(it.quantity ?? "")}</TableCell>
                   <TableCell>{String(it.gross_weight ?? "")}</TableCell>
-                  <TableCell>{String(it.placement_type ?? "")}</TableCell>
+                  <TableCell>{placementTypeLabel(it.placement_type)}</TableCell>
                   <TableCell className="text-right">
                     <Button type="button" size="sm" variant="ghost" onClick={() => openEditItem(it)}>
                       Edit
@@ -582,7 +594,12 @@ export default function AdminShipmentDetailPage() {
             </div>
             <div className="space-y-1">
               <Label>Catatan</Label>
-              <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} />
+              <Textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                rows={3}
+                placeholder="Catatan pengiriman (opsional)"
+              />
             </div>
           </div>
           <DialogFooter>
@@ -598,7 +615,7 @@ export default function AdminShipmentDetailPage() {
 
       <Dialog open={trackOpen} onOpenChange={setTrackOpen}>
         <DialogContent showCloseButton className="sm:max-w-md">
-          <DialogHeader>
+          <DialogHeader className={DIALOG_CREATE_HEADER_CLASS}>
             <DialogTitle>Update tracking</DialogTitle>
           </DialogHeader>
           <div className="grid gap-3 py-2">
@@ -628,7 +645,12 @@ export default function AdminShipmentDetailPage() {
             </div>
             <div className="space-y-1">
               <Label>Catatan</Label>
-              <Textarea value={trackNotes} onChange={(e) => setTrackNotes(e.target.value)} rows={2} />
+              <Textarea
+                value={trackNotes}
+                onChange={(e) => setTrackNotes(e.target.value)}
+                rows={2}
+                placeholder="Keterangan singkat (opsional)"
+              />
             </div>
             <div className="space-y-1">
               <Label>Foto (opsional)</Label>
@@ -653,7 +675,7 @@ export default function AdminShipmentDetailPage() {
 
       <Dialog open={contOpen} onOpenChange={setContOpen}>
         <DialogContent showCloseButton>
-          <DialogHeader>
+          <DialogHeader className={DIALOG_CREATE_HEADER_CLASS}>
             <DialogTitle>Tambah kontainer</DialogTitle>
           </DialogHeader>
           <div className="grid gap-3 py-2">
@@ -679,11 +701,15 @@ export default function AdminShipmentDetailPage() {
             </div>
             <div className="space-y-1">
               <Label>Nomor kontainer</Label>
-              <Input value={contNum} onChange={(e) => setContNum(e.target.value)} />
+              <Input
+                value={contNum}
+                onChange={(e) => setContNum(e.target.value)}
+                placeholder="Mis. ABCD1234567"
+              />
             </div>
             <div className="space-y-1">
               <Label>Segel</Label>
-              <Input value={contSeal} onChange={(e) => setContSeal(e.target.value)} />
+              <Input value={contSeal} onChange={(e) => setContSeal(e.target.value)} placeholder="Nomor segel (opsional)" />
             </div>
           </div>
           <DialogFooter>
@@ -721,26 +747,48 @@ export default function AdminShipmentDetailPage() {
 
       <Dialog open={itemOpen} onOpenChange={setItemOpen}>
         <DialogContent showCloseButton className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
+          <DialogHeader className={cn(itemMode === "create" && DIALOG_CREATE_HEADER_CLASS)}>
             <DialogTitle>{itemMode === "create" ? "Tambah item" : "Edit item"}</DialogTitle>
           </DialogHeader>
           <div className="grid gap-3 py-2">
             <div className="space-y-1">
               <Label>Nama</Label>
-              <Input value={itemName} onChange={(e) => setItemName(e.target.value)} />
+              <Input
+                value={itemName}
+                onChange={(e) => setItemName(e.target.value)}
+                placeholder={itemMode === "create" ? "Nama barang / komoditas" : undefined}
+              />
             </div>
             <div className="space-y-1">
               <Label>Deskripsi</Label>
-              <Textarea value={itemDesc} onChange={(e) => setItemDesc(e.target.value)} rows={2} />
+              <Textarea
+                value={itemDesc}
+                onChange={(e) => setItemDesc(e.target.value)}
+                rows={2}
+                placeholder={itemMode === "create" ? "Detail kemasan, HS code, dsb. (opsional)" : undefined}
+              />
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div className="space-y-1">
                 <Label>Qty</Label>
-                <Input type="number" min={1} value={itemQty} onChange={(e) => setItemQty(e.target.value)} />
+                <Input
+                  type="number"
+                  min={1}
+                  value={itemQty}
+                  onChange={(e) => setItemQty(e.target.value)}
+                  placeholder={itemMode === "create" ? "1" : undefined}
+                />
               </div>
               <div className="space-y-1">
                 <Label>Berat (kg)</Label>
-                <Input type="number" min={0} step="0.01" value={itemWeight} onChange={(e) => setItemWeight(e.target.value)} />
+                <Input
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  value={itemWeight}
+                  onChange={(e) => setItemWeight(e.target.value)}
+                  placeholder={itemMode === "create" ? "0" : undefined}
+                />
               </div>
             </div>
             <div className="space-y-1">

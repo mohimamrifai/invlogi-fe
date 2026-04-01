@@ -16,6 +16,8 @@ import { Label } from "@/components/ui/label";
 import { createAdminTransportMode, updateAdminTransportMode } from "@/lib/admin-api";
 import { ApiError } from "@/lib/api-client";
 import { firstLaravelError } from "@/lib/laravel-errors";
+import { DIALOG_CREATE_HEADER_CLASS } from "@/lib/dialog-create-header";
+import { cn } from "@/lib/utils";
 
 export type SimpleDialogMode = "create" | "edit" | "view";
 
@@ -86,7 +88,7 @@ export function MasterTransportModeDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md" showCloseButton>
-        <DialogHeader>
+        <DialogHeader className={cn(mode === "create" && DIALOG_CREATE_HEADER_CLASS)}>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>Kode unik disarankan untuk integrasi.</DialogDescription>
         </DialogHeader>
@@ -96,11 +98,23 @@ export function MasterTransportModeDialog({
         <div className="grid gap-4 py-2">
           <div className="space-y-2">
             <Label htmlFor="tm-name">Nama</Label>
-            <Input id="tm-name" value={name} onChange={(e) => setName(e.target.value)} disabled={readOnly} />
+            <Input
+              id="tm-name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              disabled={readOnly}
+              placeholder={mode === "create" ? "Mis. Laut, Darat, Udara" : undefined}
+            />
           </div>
           <div className="space-y-2">
             <Label htmlFor="tm-code">Kode</Label>
-            <Input id="tm-code" value={code} onChange={(e) => setCode(e.target.value)} disabled={readOnly} />
+            <Input
+              id="tm-code"
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              disabled={readOnly}
+              placeholder={mode === "create" ? "Kode unik (opsional)" : undefined}
+            />
           </div>
           <div className="flex items-center gap-2">
             <Checkbox

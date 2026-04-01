@@ -24,6 +24,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { createAdminAdditionalService, updateAdminAdditionalService } from "@/lib/admin-api";
 import { ApiError } from "@/lib/api-client";
 import { firstLaravelError } from "@/lib/laravel-errors";
+import { DIALOG_CREATE_HEADER_CLASS } from "@/lib/dialog-create-header";
+import { cn } from "@/lib/utils";
 import type { SimpleDialogMode } from "./master-transport-mode-dialog";
 
 type Row = Record<string, unknown>;
@@ -117,7 +119,7 @@ export function MasterAdditionalServiceDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md" showCloseButton>
-        <DialogHeader>
+        <DialogHeader className={cn(mode === "create" && DIALOG_CREATE_HEADER_CLASS)}>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>Pickup, packing, handling.</DialogDescription>
         </DialogHeader>
@@ -158,6 +160,7 @@ export function MasterAdditionalServiceDialog({
               onChange={(e) => setDescription(e.target.value)}
               disabled={readOnly}
               rows={2}
+              placeholder={mode === "create" ? "Detail layanan (opsional)" : undefined}
             />
           </div>
           <div className="space-y-2">
@@ -170,6 +173,7 @@ export function MasterAdditionalServiceDialog({
               value={basePrice}
               onChange={(e) => setBasePrice(e.target.value)}
               disabled={readOnly}
+              placeholder={mode === "create" ? "0" : undefined}
             />
           </div>
           <div className="flex items-center gap-2">

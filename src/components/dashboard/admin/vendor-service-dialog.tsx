@@ -27,6 +27,7 @@ import {
 import { ApiError } from "@/lib/api-client";
 import { firstLaravelError } from "@/lib/laravel-errors";
 import type { LaravelPaginated } from "@/lib/types-api";
+import { DIALOG_CREATE_HEADER_CLASS } from "@/lib/dialog-create-header";
 
 type Opt = { id: number; label: string };
 
@@ -145,7 +146,7 @@ export function VendorServiceDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-md">
-        <DialogHeader>
+        <DialogHeader className={DIALOG_CREATE_HEADER_CLASS}>
           <DialogTitle>Tambah layanan vendor</DialogTitle>
         </DialogHeader>
         {error ? (

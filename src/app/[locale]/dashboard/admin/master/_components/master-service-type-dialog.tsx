@@ -24,6 +24,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { createAdminServiceType, updateAdminServiceType } from "@/lib/admin-api";
 import { ApiError } from "@/lib/api-client";
 import { firstLaravelError } from "@/lib/laravel-errors";
+import { DIALOG_CREATE_HEADER_CLASS } from "@/lib/dialog-create-header";
+import { cn } from "@/lib/utils";
 import type { SimpleDialogMode } from "./master-transport-mode-dialog";
 
 type Row = Record<string, unknown>;
@@ -109,7 +111,7 @@ export function MasterServiceTypeDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto" showCloseButton>
-        <DialogHeader>
+        <DialogHeader className={cn(mode === "create" && DIALOG_CREATE_HEADER_CLASS)}>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>FCL / LCL per moda transport.</DialogDescription>
         </DialogHeader>
@@ -140,11 +142,23 @@ export function MasterServiceTypeDialog({
           </div>
           <div className="space-y-2">
             <Label htmlFor="st-name">Nama</Label>
-            <Input id="st-name" value={name} onChange={(e) => setName(e.target.value)} disabled={readOnly} />
+            <Input
+              id="st-name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              disabled={readOnly}
+              placeholder={mode === "create" ? "Mis. FCL Export" : undefined}
+            />
           </div>
           <div className="space-y-2">
             <Label htmlFor="st-code">Kode</Label>
-            <Input id="st-code" value={code} onChange={(e) => setCode(e.target.value)} disabled={readOnly} />
+            <Input
+              id="st-code"
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              disabled={readOnly}
+              placeholder={mode === "create" ? "Kode (opsional)" : undefined}
+            />
           </div>
           <div className="space-y-2">
             <Label htmlFor="st-desc">Deskripsi</Label>
@@ -154,6 +168,7 @@ export function MasterServiceTypeDialog({
               onChange={(e) => setDescription(e.target.value)}
               disabled={readOnly}
               rows={3}
+              placeholder={mode === "create" ? "Penjelasan singkat layanan (opsional)" : undefined}
             />
           </div>
           <div className="flex items-center gap-2">

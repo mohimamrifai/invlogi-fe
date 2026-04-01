@@ -16,6 +16,8 @@ import {
 import { createAdminContainerType, updateAdminContainerType } from "@/lib/admin-api";
 import { ApiError } from "@/lib/api-client";
 import { firstLaravelError } from "@/lib/laravel-errors";
+import { DIALOG_CREATE_HEADER_CLASS } from "@/lib/dialog-create-header";
+import { cn } from "@/lib/utils";
 import type { SimpleDialogMode } from "./master-transport-mode-dialog";
 
 type Row = Record<string, unknown>;
@@ -120,7 +122,7 @@ export function MasterContainerTypeSheet({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-md">
-        <DialogHeader>
+        <DialogHeader className={cn(mode === "create" && DIALOG_CREATE_HEADER_CLASS)}>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>Ukuran dan kapasitas kontainer.</DialogDescription>
         </DialogHeader>
@@ -130,34 +132,76 @@ export function MasterContainerTypeSheet({
           ) : null}
           <div className="space-y-2">
             <Label htmlFor="ct-name">Nama</Label>
-            <Input id="ct-name" value={name} onChange={(e) => setName(e.target.value)} disabled={readOnly} />
+            <Input
+              id="ct-name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              disabled={readOnly}
+              placeholder={mode === "create" ? "Mis. Dry 20ft" : undefined}
+            />
           </div>
           <div className="space-y-2">
             <Label htmlFor="ct-size">Ukuran (mis. 20ft)</Label>
-            <Input id="ct-size" value={size} onChange={(e) => setSize(e.target.value)} disabled={readOnly} />
+            <Input
+              id="ct-size"
+              value={size}
+              onChange={(e) => setSize(e.target.value)}
+              disabled={readOnly}
+              placeholder={mode === "create" ? "20ft, 40ft, 40HC…" : undefined}
+            />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label htmlFor="ct-w">Berat max</Label>
-              <Input id="ct-w" value={capacityWeight} onChange={(e) => setCapacityWeight(e.target.value)} disabled={readOnly} />
+              <Input
+                id="ct-w"
+                value={capacityWeight}
+                onChange={(e) => setCapacityWeight(e.target.value)}
+                disabled={readOnly}
+                placeholder={mode === "create" ? "kg" : undefined}
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="ct-cbm">CBM max</Label>
-              <Input id="ct-cbm" value={capacityCbm} onChange={(e) => setCapacityCbm(e.target.value)} disabled={readOnly} />
+              <Input
+                id="ct-cbm"
+                value={capacityCbm}
+                onChange={(e) => setCapacityCbm(e.target.value)}
+                disabled={readOnly}
+                placeholder={mode === "create" ? "CBM" : undefined}
+              />
             </div>
           </div>
           <div className="grid grid-cols-3 gap-2">
             <div className="space-y-2">
               <Label htmlFor="ct-l">P</Label>
-              <Input id="ct-l" value={length} onChange={(e) => setLength(e.target.value)} disabled={readOnly} />
+              <Input
+                id="ct-l"
+                value={length}
+                onChange={(e) => setLength(e.target.value)}
+                disabled={readOnly}
+                placeholder={mode === "create" ? "m" : undefined}
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="ct-wd">L</Label>
-              <Input id="ct-wd" value={width} onChange={(e) => setWidth(e.target.value)} disabled={readOnly} />
+              <Input
+                id="ct-wd"
+                value={width}
+                onChange={(e) => setWidth(e.target.value)}
+                disabled={readOnly}
+                placeholder={mode === "create" ? "m" : undefined}
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="ct-h">T</Label>
-              <Input id="ct-h" value={height} onChange={(e) => setHeight(e.target.value)} disabled={readOnly} />
+              <Input
+                id="ct-h"
+                value={height}
+                onChange={(e) => setHeight(e.target.value)}
+                disabled={readOnly}
+                placeholder={mode === "create" ? "m" : undefined}
+              />
             </div>
           </div>
           <div className="flex items-center gap-2">
