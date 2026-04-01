@@ -50,26 +50,29 @@ import { ConfirmDeleteDialog } from "./confirm-delete-dialog";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { customerStatusBadgeClass, customerStatusLabelFromApi } from "@/lib/customer-status";
-import { BILLING_CYCLE_OPTIONS } from "@/lib/billing-cycle-labels";
+import { BILLING_CYCLE_OPTIONS, billingCycleLabel } from "@/lib/billing-cycle-labels";
+import type { AdminCustomerCapabilities } from "@/lib/admin-customer-capabilities";
 import { DIALOG_CREATE_HEADER_CLASS } from "@/lib/dialog-create-header";
 import { cn } from "@/lib/utils";
 
 type Row = Record<string, unknown>;
 
-type SheetMode = "create" | "detail";
+type CompanyDialogMode = "create" | "detail";
 
-export function CompanyAdminSheet({
+export function CompanyAdminDialog({
   open,
   onOpenChange,
   mode,
   companyId,
   onSaved,
+  capabilities,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  mode: SheetMode;
+  mode: CompanyDialogMode;
   companyId: number | null;
   onSaved: () => void;
+  capabilities: AdminCustomerCapabilities;
 }) {
   const [loading, setLoading] = useState(false);
   const [detail, setDetail] = useState<Row | null>(null);
@@ -85,7 +88,7 @@ export function CompanyAdminSheet({
   const [contactPerson, setContactPerson] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
-  const [billingCycle, setBillingCycle] = useState("end_of_month");
+  const [billingCycle, setBillingCycle] = useState("");
   const [saving, setSaving] = useState(false);
 
   const [rejectOpen, setRejectOpen] = useState(false);
@@ -135,7 +138,7 @@ export function CompanyAdminSheet({
       setContactPerson(String(d.contact_person ?? ""));
       setEmail(String(d.email ?? ""));
       setPhone(String(d.phone ?? ""));
-      setBillingCycle(String(d.billing_cycle ?? "end_of_month"));
+      setBillingCycle(String(d.billing_cycle ?? ""));
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Gagal memuat data.");
       setDetail(null);
@@ -158,7 +161,7 @@ export function CompanyAdminSheet({
       setContactPerson("");
       setEmail("");
       setPhone("");
-      setBillingCycle("end_of_month");
+      setBillingCycle("");
       setError(null);
     } else if (mode === "detail" && companyId != null) {
       void loadDetail();
@@ -193,9 +196,16 @@ export function CompanyAdminSheet({
   }, [open, discOpen]);
 
   const saveCompany = async () => {
+    if (mode === "create" && !capabilities.canCreateCustomer) return;
+    if (mode === "detail" && !capabilities.canEditCompanyData) return;
     setSaving(true);
     setError(null);
     try {
+      if (mode === "create" && !billingCycle.trim()) {
+        setError("Pilih siklus penagihan.");
+        setSaving(false);
+        return;
+      }
       const body: Record<string, unknown> = {
         name: name.trim(),
         npwp: npwp.trim() || null,
@@ -207,7 +217,7 @@ export function CompanyAdminSheet({
         contact_person: contactPerson.trim() || null,
         email: email.trim() || null,
         phone: phone.trim() || null,
-        billing_cycle: billingCycle,
+        billing_cycle: billingCycle.trim() || null,
       };
       if (mode === "create") {
         body.status = "pending";
@@ -254,6 +264,7 @@ export function CompanyAdminSheet({
   };
 
   const saveBranch = async () => {
+    if (!capabilities.canManageBranches) return;
     if (companyId == null) return;
     setSavingBranch(true);
     try {
@@ -303,6 +314,7 @@ export function CompanyAdminSheet({
   };
 
   const saveDisc = async () => {
+    if (!capabilities.canManageDiscounts) return;
     if (companyId == null) return;
     setSavingDisc(true);
     try {
@@ -377,6 +389,10 @@ export function CompanyAdminSheet({
   };
 
   const st = String(detail?.status ?? "");
+  const companyFieldsReadOnly =
+    (mode === "detail" && !capabilities.canEditCompanyData) ||
+    (mode === "create" && !capabilities.canCreateCustomer);
+
   const branches =
     (detail?.branches as Row[] | undefined) ?? (detail?.Branches as Row[] | undefined) ?? [];
   const discounts =
@@ -406,7 +422,7 @@ export function CompanyAdminSheet({
                   <Badge variant="outline" className={customerStatusBadgeClass(st)}>
                     {customerStatusLabelFromApi(st)}
                   </Badge>
-                  {st === "pending" ? (
+                  {capabilities.canApproveReject && st === "pending" ? (
                     <>
                       <Button
                         type="button"
@@ -448,6 +464,7 @@ export function CompanyAdminSheet({
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder={mode === "create" ? "Nama resmi perusahaan" : undefined}
+                  disabled={companyFieldsReadOnly}
                 />
               </div>
               <div className="grid grid-cols-2 gap-2">
@@ -458,6 +475,7 @@ export function CompanyAdminSheet({
                     value={npwp}
                     onChange={(e) => setNpwp(e.target.value)}
                     placeholder={mode === "create" ? "00.000.000.0-000.000" : undefined}
+                    disabled={companyFieldsReadOnly}
                   />
                 </div>
                 <div className="space-y-2">
@@ -467,6 +485,7 @@ export function CompanyAdminSheet({
                     value={nib}
                     onChange={(e) => setNib(e.target.value)}
                     placeholder={mode === "create" ? "Nomor Induk Berusaha" : undefined}
+                    disabled={companyFieldsReadOnly}
                   />
                 </div>
               </div>
@@ -477,6 +496,7 @@ export function CompanyAdminSheet({
                   value={address}
                   onChange={(e) => setAddress(e.target.value)}
                   placeholder={mode === "create" ? "Alamat lengkap jalan & gedung" : undefined}
+                  disabled={companyFieldsReadOnly}
                 />
               </div>
               <div className="grid grid-cols-2 gap-2">
@@ -487,6 +507,7 @@ export function CompanyAdminSheet({
                     value={city}
                     onChange={(e) => setCity(e.target.value)}
                     placeholder={mode === "create" ? "Kota / kabupaten" : undefined}
+                    disabled={companyFieldsReadOnly}
                   />
                 </div>
                 <div className="space-y-2">
@@ -496,6 +517,7 @@ export function CompanyAdminSheet({
                     value={province}
                     onChange={(e) => setProvince(e.target.value)}
                     placeholder={mode === "create" ? "Provinsi" : undefined}
+                    disabled={companyFieldsReadOnly}
                   />
                 </div>
               </div>
@@ -506,6 +528,7 @@ export function CompanyAdminSheet({
                   value={postalCode}
                   onChange={(e) => setPostalCode(e.target.value)}
                   placeholder={mode === "create" ? "00000" : undefined}
+                  disabled={companyFieldsReadOnly}
                 />
               </div>
               <div className="space-y-2">
@@ -515,6 +538,7 @@ export function CompanyAdminSheet({
                   value={contactPerson}
                   onChange={(e) => setContactPerson(e.target.value)}
                   placeholder={mode === "create" ? "Nama penanggung jawab" : undefined}
+                  disabled={companyFieldsReadOnly}
                 />
               </div>
               <div className="grid grid-cols-2 gap-2">
@@ -526,6 +550,7 @@ export function CompanyAdminSheet({
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder={mode === "create" ? "perusahaan@domain.com" : undefined}
+                    disabled={companyFieldsReadOnly}
                   />
                 </div>
                 <div className="space-y-2">
@@ -535,19 +560,23 @@ export function CompanyAdminSheet({
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     placeholder={mode === "create" ? "+62 812 3456 7890" : undefined}
+                    disabled={companyFieldsReadOnly}
                   />
                 </div>
               </div>
               <div className="space-y-2">
                 <Label>Siklus penagihan</Label>
                 <Select
-                  value={billingCycle}
+                  value={billingCycle || undefined}
                   onValueChange={(v) => {
                     if (v != null) setBillingCycle(v);
                   }}
+                  disabled={companyFieldsReadOnly}
                 >
-                  <SelectTrigger>
-                    <SelectValue />
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Pilih siklus penagihan">
+                      {billingCycle ? billingCycleLabel(billingCycle) : null}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {BILLING_CYCLE_OPTIONS.map((b) => (
@@ -564,9 +593,11 @@ export function CompanyAdminSheet({
                   <div className="border-t pt-4 space-y-2">
                     <div className="flex items-center justify-between gap-2">
                       <h3 className="text-sm font-medium">Cabang</h3>
-                      <Button type="button" size="sm" variant="outline" onClick={() => openBranch()}>
-                        + Cabang
-                      </Button>
+                      {capabilities.canManageBranches ? (
+                        <Button type="button" size="sm" variant="outline" onClick={() => openBranch()}>
+                          + Cabang
+                        </Button>
+                      ) : null}
                     </div>
                     {branches.length === 0 ? (
                       <p className="text-xs text-muted-foreground">Belum ada cabang.</p>
@@ -583,18 +614,24 @@ export function CompanyAdminSheet({
                             <TableRow key={String(b.id)}>
                               <TableCell>{String(b.name ?? "")}</TableCell>
                               <TableCell className="text-right">
-                                <Button type="button" size="sm" variant="ghost" onClick={() => openBranch(b)}>
-                                  Edit
-                                </Button>
-                                <Button
-                                  type="button"
-                                  size="sm"
-                                  variant="ghost"
-                                  className="text-destructive"
-                                  onClick={() => setDeleteBranch(b)}
-                                >
-                                  Hapus
-                                </Button>
+                                {capabilities.canManageBranches ? (
+                                  <>
+                                    <Button type="button" size="sm" variant="ghost" onClick={() => openBranch(b)}>
+                                      Edit
+                                    </Button>
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      variant="ghost"
+                                      className="text-destructive"
+                                      onClick={() => setDeleteBranch(b)}
+                                    >
+                                      Hapus
+                                    </Button>
+                                  </>
+                                ) : (
+                                  <span className="text-xs text-muted-foreground">—</span>
+                                )}
                               </TableCell>
                             </TableRow>
                           ))}
@@ -606,9 +643,11 @@ export function CompanyAdminSheet({
                   <div className="border-t pt-4 space-y-2">
                     <div className="flex items-center justify-between gap-2">
                       <h3 className="text-sm font-medium">Diskon</h3>
-                      <Button type="button" size="sm" variant="outline" onClick={() => openDisc()}>
-                        + Diskon
-                      </Button>
+                      {capabilities.canManageDiscounts ? (
+                        <Button type="button" size="sm" variant="outline" onClick={() => openDisc()}>
+                          + Diskon
+                        </Button>
+                      ) : null}
                     </div>
                     {discounts.length === 0 ? (
                       <p className="text-xs text-muted-foreground">Belum ada diskon.</p>
@@ -627,18 +666,24 @@ export function CompanyAdminSheet({
                               <TableCell>{String(d.discount_type ?? "")}</TableCell>
                               <TableCell>{String(d.discount_value ?? "")}</TableCell>
                               <TableCell className="text-right">
-                                <Button type="button" size="sm" variant="ghost" onClick={() => openDisc(d)}>
-                                  Edit
-                                </Button>
-                                <Button
-                                  type="button"
-                                  size="sm"
-                                  variant="ghost"
-                                  className="text-destructive"
-                                  onClick={() => setDeleteDisc(d)}
-                                >
-                                  Hapus
-                                </Button>
+                                {capabilities.canManageDiscounts ? (
+                                  <>
+                                    <Button type="button" size="sm" variant="ghost" onClick={() => openDisc(d)}>
+                                      Edit
+                                    </Button>
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      variant="ghost"
+                                      className="text-destructive"
+                                      onClick={() => setDeleteDisc(d)}
+                                    >
+                                      Hapus
+                                    </Button>
+                                  </>
+                                ) : (
+                                  <span className="text-xs text-muted-foreground">—</span>
+                                )}
                               </TableCell>
                             </TableRow>
                           ))}
@@ -655,9 +700,11 @@ export function CompanyAdminSheet({
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
               Tutup
             </Button>
-            <Button type="button" onClick={() => void saveCompany()} disabled={saving || !name.trim()}>
-              {saving ? "Menyimpan…" : "Simpan"}
-            </Button>
+            {(mode === "create" ? capabilities.canCreateCustomer : capabilities.canEditCompanyData) ? (
+              <Button type="button" onClick={() => void saveCompany()} disabled={saving || !name.trim()}>
+                {saving ? "Menyimpan…" : "Simpan"}
+              </Button>
+            ) : null}
           </DialogFooter>
         </DialogContent>
       </Dialog>

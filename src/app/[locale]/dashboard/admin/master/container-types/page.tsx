@@ -27,7 +27,7 @@ import { MasterTableShell } from "../_components/master-table-shell";
 import { MasterActiveBadge } from "../_components/master-active-badge";
 import { actionsCellClass, actionsHeadClass } from "../_components/master-table-classes";
 import { STATUS_FILTER_OPTIONS } from "../_components/master-filters";
-import { MasterContainerTypeSheet } from "../_components/master-container-type-sheet";
+import { MasterContainerTypeDialog } from "../_components/master-container-type-dialog";
 import type { SimpleDialogMode } from "../_components/master-transport-mode-dialog";
 import { ConfirmDeleteDialog } from "@/components/dashboard/admin/confirm-delete-dialog";
 import { Plus } from "lucide-react";
@@ -52,9 +52,9 @@ export default function MasterContainerTypesPage() {
   const debouncedSearch = useDebouncedValue(searchInput, 400);
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const [sheetOpen, setSheetOpen] = useState(false);
-  const [sheetMode, setSheetMode] = useState<SimpleDialogMode>("create");
-  const [sheetRow, setSheetRow] = useState<Row | null>(null);
+  const [containerDialogOpen, setContainerDialogOpen] = useState(false);
+  const [containerDialogMode, setContainerDialogMode] = useState<SimpleDialogMode>("create");
+  const [containerDialogRow, setContainerDialogRow] = useState<Row | null>(null);
 
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteRow, setDeleteRow] = useState<Row | null>(null);
@@ -108,9 +108,9 @@ export default function MasterContainerTypesPage() {
           type="button"
           className="shrink-0 gap-1.5"
           onClick={() => {
-            setSheetRow(null);
-            setSheetMode("create");
-            setSheetOpen(true);
+            setContainerDialogRow(null);
+            setContainerDialogMode("create");
+            setContainerDialogOpen(true);
           }}
         >
           <Plus className="h-4 w-4" />
@@ -180,14 +180,14 @@ export default function MasterContainerTypesPage() {
                           entityLabel="jenis kontainer"
                           canManage={canManageMaster}
                           onView={() => {
-                            setSheetRow(c);
-                            setSheetMode("view");
-                            setSheetOpen(true);
+                            setContainerDialogRow(c);
+                            setContainerDialogMode("view");
+                            setContainerDialogOpen(true);
                           }}
                           onEdit={canManageMaster ? () => {
-                            setSheetRow(c);
-                            setSheetMode("edit");
-                            setSheetOpen(true);
+                            setContainerDialogRow(c);
+                            setContainerDialogMode("edit");
+                            setContainerDialogOpen(true);
                           } : undefined}
                           onDelete={canManageMaster ? () => {
                             setDeleteRow(c);
@@ -219,11 +219,11 @@ export default function MasterContainerTypesPage() {
         ) : null}
       </MasterTableShell>
 
-      <MasterContainerTypeSheet
-        open={sheetOpen}
-        onOpenChange={setSheetOpen}
-        mode={sheetMode}
-        row={sheetRow}
+      <MasterContainerTypeDialog
+        open={containerDialogOpen}
+        onOpenChange={setContainerDialogOpen}
+        mode={containerDialogMode}
+        row={containerDialogRow}
         onSaved={() => void load()}
       />
 

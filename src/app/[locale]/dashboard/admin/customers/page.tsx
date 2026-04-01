@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
@@ -14,6 +14,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -28,17 +29,20 @@ import {
 import { PaginationBar } from "@/components/data-table/pagination-bar";
 import { TableToolbar } from "@/components/data-table/table-toolbar";
 import { cn } from "@/lib/utils";
-import { Building2, ClipboardClock, Eye, MoreHorizontal, Plus, UserCheck, Users } from "lucide-react";
+import { Building2, ClipboardClock, Eye, MoreHorizontal, Pencil, Plus, Trash2, UserCheck, Users } from "lucide-react";
 import { customerStatusBadgeClass, customerStatusLabelFromApi } from "@/lib/customer-status";
 import { useAuthStore } from "@/lib/store";
 import { useAuthPersistHydrated } from "@/lib/use-auth-hydrated";
-import { fetchAdminCompanies } from "@/lib/admin-api";
-import { CompanyAdminSheet } from "@/components/dashboard/admin/company-admin-sheet";
+import { deleteAdminCompany, fetchAdminCompanies } from "@/lib/admin-api";
+import { getAdminCustomerCapabilities } from "@/lib/admin-customer-capabilities";
+import { CompanyAdminDialog } from "@/components/dashboard/admin/company-admin-dialog";
 import type { LaravelPaginated } from "@/lib/types-api";
 import { ApiError } from "@/lib/api-client";
 import { rowNumber } from "@/lib/list-query";
 import { useDebouncedValue } from "@/lib/use-debounced-value";
 import { billingCycleLabel } from "@/lib/billing-cycle-labels";
+import { ConfirmDeleteDialog } from "@/components/dashboard/admin/confirm-delete-dialog";
+import { toast } from "sonner";
 
 const PER_PAGE = 10;
 const STATS_CAP = 1000;
@@ -59,11 +63,15 @@ const actionsCellClass =
 type CompanyRow = Record<string, unknown>;
 
 function CustomerActionsMenu({
-  companyId,
-  onDetail,
+  onOpen,
+  canEditCompany,
+  canDelete,
+  onDelete,
 }: {
-  companyId: number;
-  onDetail: () => void;
+  onOpen: () => void;
+  canEditCompany: boolean;
+  canDelete: boolean;
+  onDelete: () => void;
 }) {
   return (
     <DropdownMenu>
@@ -73,11 +81,27 @@ function CustomerActionsMenu({
         <MoreHorizontal className="h-4 w-4" />
         <span className="sr-only">Menu aksi</span>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="min-w-40">
-        <DropdownMenuItem className="cursor-pointer" onClick={onDetail}>
-          <Eye className="h-4 w-4" />
-          Detail
+      <DropdownMenuContent align="end" className="min-w-44">
+        <DropdownMenuItem className="cursor-pointer" onClick={onOpen}>
+          {canEditCompany ? (
+            <Pencil className="h-4 w-4" />
+          ) : (
+            <Eye className="h-4 w-4" />
+          )}
+          {canEditCompany ? "Kelola customer" : "Lihat detail"}
         </DropdownMenuItem>
+        {canDelete ? (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              className="cursor-pointer text-destructive focus:text-destructive"
+              onClick={onDelete}
+            >
+              <Trash2 className="h-4 w-4" />
+              Hapus customer
+            </DropdownMenuItem>
+          </>
+        ) : null}
       </DropdownMenuContent>
     </DropdownMenu>
   );
@@ -87,8 +111,8 @@ export default function AdminCustomersPage() {
   const authHydrated = useAuthPersistHydrated();
   const { user } = useAuthStore();
   const roles = user?.roles ?? [];
-  const canCreateOrApproveCustomer =
-    authHydrated && (roles.includes("super_admin") || roles.includes("sales"));
+  const caps = useMemo(() => getAdminCustomerCapabilities(roles), [roles]);
+  const canCreateCustomer = authHydrated && caps.canCreateCustomer;
 
   const [rows, setRows] = useState<CompanyRow[]>([]);
   const [statsRows, setStatsRows] = useState<CompanyRow[]>([]);
@@ -102,9 +126,32 @@ export default function AdminCustomersPage() {
   const debouncedSearch = useDebouncedValue(searchInput, 400);
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const [sheetOpen, setSheetOpen] = useState(false);
-  const [sheetMode, setSheetMode] = useState<"create" | "detail">("detail");
-  const [sheetCompanyId, setSheetCompanyId] = useState<number | null>(null);
+  const [companyDialogOpen, setCompanyDialogOpen] = useState(false);
+  const [companyDialogMode, setCompanyDialogMode] = useState<"create" | "detail">("detail");
+  const [companyDialogId, setCompanyDialogId] = useState<number | null>(null);
+
+  const [deleteCompanyId, setDeleteCompanyId] = useState<number | null>(null);
+  const [deleteCompanyLoading, setDeleteCompanyLoading] = useState(false);
+
+  const handleConfirmDeleteCompany = async () => {
+    const idToDelete = deleteCompanyId;
+    if (idToDelete == null) return;
+    setDeleteCompanyLoading(true);
+    try {
+      await deleteAdminCompany(idToDelete);
+      toast.success("Customer dihapus.");
+      setDeleteCompanyId(null);
+      if (companyDialogMode === "detail" && companyDialogId === idToDelete) {
+        setCompanyDialogOpen(false);
+      }
+      void load();
+      void loadStats();
+    } catch (e) {
+      toast.error(e instanceof ApiError ? e.message : "Gagal menghapus customer.");
+    } finally {
+      setDeleteCompanyLoading(false);
+    }
+  };
 
   useEffect(() => {
     setPage(1);
@@ -175,15 +222,15 @@ export default function AdminCustomersPage() {
             <p className="mt-1 text-sm text-muted-foreground">Perusahaan customer & aktivasi.</p>
           </div>
         </div>
-        {canCreateOrApproveCustomer && (
+        {canCreateCustomer && (
           <div className="flex w-full shrink-0 sm:w-auto sm:justify-end">
             <Button
               className="h-9 w-full gap-1.5 px-4 sm:w-auto"
               type="button"
               onClick={() => {
-                setSheetCompanyId(null);
-                setSheetMode("create");
-                setSheetOpen(true);
+                setCompanyDialogId(null);
+                setCompanyDialogMode("create");
+                setCompanyDialogOpen(true);
               }}
             >
               <Plus className="h-4 w-4 shrink-0" />
@@ -296,12 +343,14 @@ export default function AdminCustomersPage() {
                         <TableCell className={cn(actionsCellClass, "p-2 text-right")}>
                           <div className="flex justify-end">
                             <CustomerActionsMenu
-                              companyId={id}
-                              onDetail={() => {
-                                setSheetCompanyId(id);
-                                setSheetMode("detail");
-                                setSheetOpen(true);
+                              canEditCompany={caps.canEditCompanyData}
+                              canDelete={caps.canDeleteCompany}
+                              onOpen={() => {
+                                setCompanyDialogId(id);
+                                setCompanyDialogMode("detail");
+                                setCompanyDialogOpen(true);
                               }}
+                              onDelete={() => setDeleteCompanyId(id)}
                             />
                           </div>
                         </TableCell>
@@ -330,15 +379,25 @@ export default function AdminCustomersPage() {
         </CardContent>
       </Card>
 
-      <CompanyAdminSheet
-        open={sheetOpen}
-        onOpenChange={setSheetOpen}
-        mode={sheetMode}
-        companyId={sheetMode === "detail" ? sheetCompanyId : null}
+      <CompanyAdminDialog
+        open={companyDialogOpen}
+        onOpenChange={setCompanyDialogOpen}
+        mode={companyDialogMode}
+        companyId={companyDialogMode === "detail" ? companyDialogId : null}
+        capabilities={caps}
         onSaved={() => {
           void load();
           void loadStats();
         }}
+      />
+
+      <ConfirmDeleteDialog
+        open={deleteCompanyId != null}
+        onOpenChange={(o) => !o && setDeleteCompanyId(null)}
+        title="Hapus customer?"
+        description="Data perusahaan dan relasi terkait akan dihapus permanen. Tindakan ini tidak dapat dibatalkan."
+        loading={deleteCompanyLoading}
+        onConfirm={handleConfirmDeleteCompany}
       />
     </div>
   );

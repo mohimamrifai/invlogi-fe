@@ -33,11 +33,11 @@ const TYPES = [
   { value: "warehouse", label: "Gudang" },
 ];
 
-export type LocationSheetMode = "create" | "edit" | "view";
+export type LocationDialogMode = "create" | "edit" | "view";
 
 type Row = Record<string, unknown>;
 
-export function MasterLocationSheet({
+export function MasterLocationDialog({
   open,
   onOpenChange,
   mode,
@@ -46,7 +46,7 @@ export function MasterLocationSheet({
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  mode: LocationSheetMode;
+  mode: LocationDialogMode;
   row: Row | null;
   onSaved: () => void;
 }) {

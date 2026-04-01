@@ -31,9 +31,9 @@ import {
   STATUS_FILTER_OPTIONS,
 } from "../_components/master-filters";
 import {
-  MasterLocationSheet,
-  type LocationSheetMode,
-} from "../_components/master-location-sheet";
+  MasterLocationDialog,
+  type LocationDialogMode,
+} from "../_components/master-location-dialog";
 import { ConfirmDeleteDialog } from "@/components/dashboard/admin/confirm-delete-dialog";
 import { Plus } from "lucide-react";
 
@@ -68,9 +68,9 @@ export default function MasterLocationsPage() {
   const [typeFilter, setTypeFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const [sheetOpen, setSheetOpen] = useState(false);
-  const [sheetMode, setSheetMode] = useState<LocationSheetMode>("create");
-  const [sheetRow, setSheetRow] = useState<Row | null>(null);
+  const [locationDialogOpen, setLocationDialogOpen] = useState(false);
+  const [locationDialogMode, setLocationDialogMode] = useState<LocationDialogMode>("create");
+  const [locationDialogRow, setLocationDialogRow] = useState<Row | null>(null);
 
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteRow, setDeleteRow] = useState<Row | null>(null);
@@ -108,21 +108,21 @@ export default function MasterLocationsPage() {
   }, [load]);
 
   const openCreate = () => {
-    setSheetRow(null);
-    setSheetMode("create");
-    setSheetOpen(true);
+    setLocationDialogRow(null);
+    setLocationDialogMode("create");
+    setLocationDialogOpen(true);
   };
 
   const openView = (row: Row) => {
-    setSheetRow(row);
-    setSheetMode("view");
-    setSheetOpen(true);
+    setLocationDialogRow(row);
+    setLocationDialogMode("view");
+    setLocationDialogOpen(true);
   };
 
   const openEdit = (row: Row) => {
-    setSheetRow(row);
-    setSheetMode("edit");
-    setSheetOpen(true);
+    setLocationDialogRow(row);
+    setLocationDialogMode("edit");
+    setLocationDialogOpen(true);
   };
 
   const openDelete = (row: Row) => {
@@ -247,11 +247,11 @@ export default function MasterLocationsPage() {
         ) : null}
       </MasterTableShell>
 
-      <MasterLocationSheet
-        open={sheetOpen}
-        onOpenChange={setSheetOpen}
-        mode={sheetMode}
-        row={sheetRow}
+      <MasterLocationDialog
+        open={locationDialogOpen}
+        onOpenChange={setLocationDialogOpen}
+        mode={locationDialogMode}
+        row={locationDialogRow}
         onSaved={() => void load()}
       />
 

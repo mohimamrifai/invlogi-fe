@@ -22,7 +22,7 @@ import type { SimpleDialogMode } from "./master-transport-mode-dialog";
 
 type Row = Record<string, unknown>;
 
-export function MasterContainerTypeSheet({
+export function MasterContainerTypeDialog({
   open,
   onOpenChange,
   mode,
