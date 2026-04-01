@@ -107,7 +107,7 @@ export function CompanyAdminDialog({
 
   const [discOpen, setDiscOpen] = useState(false);
   const [discEdit, setDiscEdit] = useState<Row | null>(null);
-  const [dVsId, setDVsId] = useState("_none");
+  const [dVsId, setDVsId] = useState("");
   const [dType, setDType] = useState<"percentage" | "fixed">("percentage");
   const [dVal, setDVal] = useState("");
   const [dFrom, setDFrom] = useState("");
@@ -201,6 +201,12 @@ export function CompanyAdminDialog({
     setSaving(true);
     setError(null);
     try {
+      const cleanedPhone = phone.trim();
+      if (cleanedPhone && !/^(0|62)\d+$/.test(cleanedPhone)) {
+        setError("Format telepon harus diawali 0 atau 62 tanpa tanda +.");
+        setSaving(false);
+        return;
+      }
       if (mode === "create" && !billingCycle.trim()) {
         setError("Pilih siklus penagihan.");
         setSaving(false);
@@ -216,11 +222,11 @@ export function CompanyAdminDialog({
         postal_code: postalCode.trim() || null,
         contact_person: contactPerson.trim() || null,
         email: email.trim() || null,
-        phone: phone.trim() || null,
+        phone: cleanedPhone || null,
         billing_cycle: billingCycle.trim() || null,
       };
       if (mode === "create") {
-        body.status = "pending";
+        body.status = "active";
         await createAdminCompany(body);
         onSaved();
         onOpenChange(false);
@@ -295,7 +301,7 @@ export function CompanyAdminDialog({
     if (row) {
       setDiscEdit(row);
       const vs = row.vendor_service as { id?: number } | undefined;
-      setDVsId(vs?.id != null ? String(vs.id) : "_none");
+      setDVsId(vs?.id != null ? String(vs.id) : "");
       setDType((row.discount_type as "percentage" | "fixed") ?? "percentage");
       setDVal(String(row.discount_value ?? ""));
       setDFrom(row.effective_from ? String(row.effective_from).slice(0, 10) : "");
@@ -303,7 +309,7 @@ export function CompanyAdminDialog({
       setDActive(row.is_active !== false);
     } else {
       setDiscEdit(null);
-      setDVsId("_none");
+      setDVsId("");
       setDType("percentage");
       setDVal("");
       setDFrom("");
@@ -319,7 +325,7 @@ export function CompanyAdminDialog({
     setSavingDisc(true);
     try {
       const body: Record<string, unknown> = {
-        vendor_service_id: dVsId !== "_none" ? Number(dVsId) : null,
+        vendor_service_id: dVsId && dVsId !== "__none__" ? Number(dVsId) : null,
         discount_type: dType,
         discount_value: Number(dVal) || 0,
         effective_from: dFrom || null,
@@ -403,7 +409,7 @@ export function CompanyAdminDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+        <DialogContent className="sm:max-w-4xl">
           <DialogHeader className={cn(mode === "create" && DIALOG_CREATE_HEADER_CLASS)}>
             <DialogTitle>{mode === "create" ? "Tambah customer" : "Detail customer"}</DialogTitle>
             <DialogDescription>Data perusahaan B2B.</DialogDescription>
@@ -416,9 +422,9 @@ export function CompanyAdminDialog({
           {mode === "detail" && loading ? (
             <p className="text-sm text-muted-foreground">Memuat…</p>
           ) : (
-            <div className="flex flex-col gap-4 pb-2">
+            <div className="grid gap-4 pb-2 md:grid-cols-2">
               {mode === "detail" && detail ? (
-                <div className="flex flex-wrap items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2 md:col-span-2">
                   <Badge variant="outline" className={customerStatusBadgeClass(st)}>
                     {customerStatusLabelFromApi(st)}
                   </Badge>
@@ -457,7 +463,7 @@ export function CompanyAdminDialog({
                 </div>
               ) : null}
 
-              <div className="space-y-2">
+              <div className="space-y-2 md:col-span-1">
                 <Label htmlFor="co-name">Nama perusahaan</Label>
                 <Input
                   id="co-name"
@@ -467,71 +473,70 @@ export function CompanyAdminDialog({
                   disabled={companyFieldsReadOnly}
                 />
               </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div className="space-y-2">
-                  <Label htmlFor="co-npwp">NPWP</Label>
-                  <Input
-                    id="co-npwp"
-                    value={npwp}
-                    onChange={(e) => setNpwp(e.target.value)}
-                    placeholder={mode === "create" ? "00.000.000.0-000.000" : undefined}
-                    disabled={companyFieldsReadOnly}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="co-nib">NIB</Label>
-                  <Input
-                    id="co-nib"
-                    value={nib}
-                    onChange={(e) => setNib(e.target.value)}
-                    placeholder={mode === "create" ? "Nomor Induk Berusaha" : undefined}
-                    disabled={companyFieldsReadOnly}
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="co-addr">Alamat</Label>
+              <div className="space-y-2 md:col-span-1">
+                <Label htmlFor="co-npwp">NPWP</Label>
                 <Input
+                  id="co-npwp"
+                  value={npwp}
+                  onChange={(e) => setNpwp(e.target.value)}
+                  placeholder={mode === "create" ? "00.000.000.0-000.000" : undefined}
+                  disabled={companyFieldsReadOnly}
+                />
+              </div>
+              <div className="space-y-2 md:col-span-1">
+                <Label htmlFor="co-nib">NIB</Label>
+                <Input
+                  id="co-nib"
+                  value={nib}
+                  onChange={(e) => setNib(e.target.value)}
+                  placeholder={mode === "create" ? "Nomor Induk Berusaha" : undefined}
+                  disabled={companyFieldsReadOnly}
+                />
+              </div>
+              <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="co-addr">Alamat</Label>
+                <Textarea
                   id="co-addr"
                   value={address}
                   onChange={(e) => setAddress(e.target.value)}
                   placeholder={mode === "create" ? "Alamat lengkap jalan & gedung" : undefined}
                   disabled={companyFieldsReadOnly}
+                  rows={3}
                 />
               </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div className="space-y-2">
-                  <Label htmlFor="co-city">Kota</Label>
-                  <Input
-                    id="co-city"
-                    value={city}
-                    onChange={(e) => setCity(e.target.value)}
-                    placeholder={mode === "create" ? "Kota / kabupaten" : undefined}
-                    disabled={companyFieldsReadOnly}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="co-prov">Provinsi</Label>
-                  <Input
-                    id="co-prov"
-                    value={province}
-                    onChange={(e) => setProvince(e.target.value)}
-                    placeholder={mode === "create" ? "Provinsi" : undefined}
-                    disabled={companyFieldsReadOnly}
-                  />
-                </div>
+              <div className="space-y-2 md:col-span-1">
+                <Label htmlFor="co-city">Kota</Label>
+                <Input
+                  id="co-city"
+                  value={city}
+                  onChange={(e) => setCity(e.target.value)}
+                  placeholder={mode === "create" ? "Kota / kabupaten" : undefined}
+                  disabled={companyFieldsReadOnly}
+                />
               </div>
-              <div className="space-y-2">
+              <div className="space-y-2 md:col-span-1">
+                <Label htmlFor="co-prov">Provinsi</Label>
+                <Input
+                  id="co-prov"
+                  value={province}
+                  onChange={(e) => setProvince(e.target.value)}
+                  placeholder={mode === "create" ? "Provinsi" : undefined}
+                  disabled={companyFieldsReadOnly}
+                />
+              </div>
+              <div className="space-y-2 md:col-span-1">
                 <Label htmlFor="co-post">Kode pos</Label>
                 <Input
                   id="co-post"
                   value={postalCode}
-                  onChange={(e) => setPostalCode(e.target.value)}
+                  onChange={(e) => setPostalCode(e.target.value.replace(/\D/g, ""))}
                   placeholder={mode === "create" ? "00000" : undefined}
                   disabled={companyFieldsReadOnly}
+                  inputMode="numeric"
+                  pattern="[0-9]*"
                 />
               </div>
-              <div className="space-y-2">
+              <div className="space-y-2 md:col-span-1">
                 <Label htmlFor="co-pic">PIC</Label>
                 <Input
                   id="co-pic"
@@ -541,30 +546,30 @@ export function CompanyAdminDialog({
                   disabled={companyFieldsReadOnly}
                 />
               </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div className="space-y-2">
-                  <Label htmlFor="co-email">Email</Label>
-                  <Input
-                    id="co-email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder={mode === "create" ? "perusahaan@domain.com" : undefined}
-                    disabled={companyFieldsReadOnly}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="co-phone">Telepon</Label>
-                  <Input
-                    id="co-phone"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder={mode === "create" ? "+62 812 3456 7890" : undefined}
-                    disabled={companyFieldsReadOnly}
-                  />
-                </div>
+              <div className="space-y-2 md:col-span-1">
+                <Label htmlFor="co-email">Email</Label>
+                <Input
+                  id="co-email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder={mode === "create" ? "perusahaan@domain.com" : undefined}
+                  disabled={companyFieldsReadOnly}
+                />
               </div>
-              <div className="space-y-2">
+              <div className="space-y-2 md:col-span-1">
+                <Label htmlFor="co-phone">Telepon</Label>
+                <Input
+                  id="co-phone"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
+                  placeholder={mode === "create" ? "081234567890 atau 6281234567890" : undefined}
+                  disabled={companyFieldsReadOnly}
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                />
+              </div>
+              <div className="space-y-2 md:col-span-2">
                 <Label>Siklus penagihan</Label>
                 <Select
                   value={billingCycle || undefined}
@@ -590,7 +595,7 @@ export function CompanyAdminDialog({
 
               {mode === "detail" && detail ? (
                 <>
-                  <div className="border-t pt-4 space-y-2">
+                  <div className="border-t pt-4 space-y-2 md:col-span-2">
                     <div className="flex items-center justify-between gap-2">
                       <h3 className="text-sm font-medium">Cabang</h3>
                       {capabilities.canManageBranches ? (
@@ -640,7 +645,7 @@ export function CompanyAdminDialog({
                     )}
                   </div>
 
-                  <div className="border-t pt-4 space-y-2">
+                  <div className="border-t pt-4 space-y-2 md:col-span-2">
                     <div className="flex items-center justify-between gap-2">
                       <h3 className="text-sm font-medium">Diskon</h3>
                       {capabilities.canManageDiscounts ? (
@@ -782,16 +787,16 @@ export function CompanyAdminDialog({
             <div className="space-y-1">
               <Label>Vendor service (opsional)</Label>
               <Select
-                value={dVsId}
+                value={dVsId || "__none__"}
                 onValueChange={(v) => {
                   if (v != null) setDVsId(v);
                 }}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="—" />
+                  <SelectValue placeholder="Pilih vendor service (opsional)" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="_none">—</SelectItem>
+                  <SelectItem value="__none__">Tidak terkait vendor service</SelectItem>
                   {vendorServiceOptions.map((o) => (
                     <SelectItem key={o.id} value={String(o.id)}>
                       {o.label}
