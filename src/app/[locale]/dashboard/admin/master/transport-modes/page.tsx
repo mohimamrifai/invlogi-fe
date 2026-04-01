@@ -1,5 +1,6 @@
 "use client";
 
+import { toast } from "sonner";
 import { useCallback, useEffect, useState } from "react";
 import {
   Table,
@@ -10,12 +11,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
 import { PaginationBar } from "@/components/data-table/pagination-bar";
 import { TableToolbar } from "@/components/data-table/table-toolbar";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/lib/store";
 import { useAuthPersistHydrated } from "@/lib/use-auth-hydrated";
-import { fetchAdminTransportModes } from "@/lib/admin-api";
+import { deleteAdminTransportMode, fetchAdminTransportModes } from "@/lib/admin-api";
 import type { LaravelPaginated } from "@/lib/types-api";
 import { ApiError } from "@/lib/api-client";
 import { rowNumber } from "@/lib/list-query";
@@ -25,6 +27,12 @@ import { MasterTableShell } from "../_components/master-table-shell";
 import { MasterActiveBadge } from "../_components/master-active-badge";
 import { actionsCellClass, actionsHeadClass } from "../_components/master-table-classes";
 import { STATUS_FILTER_OPTIONS } from "../_components/master-filters";
+import {
+  MasterTransportModeDialog,
+  type SimpleDialogMode,
+} from "../_components/master-transport-mode-dialog";
+import { ConfirmDeleteDialog } from "@/components/dashboard/admin/confirm-delete-dialog";
+import { Plus } from "lucide-react";
 
 const PER_PAGE = 10;
 
@@ -45,6 +53,14 @@ export default function MasterTransportModesPage() {
   const [searchInput, setSearchInput] = useState("");
   const debouncedSearch = useDebouncedValue(searchInput, 400);
   const [statusFilter, setStatusFilter] = useState("all");
+
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [dialogMode, setDialogMode] = useState<SimpleDialogMode>("create");
+  const [dialogRow, setDialogRow] = useState<Row | null>(null);
+
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteRow, setDeleteRow] = useState<Row | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   useEffect(() => {
     setPage(1);
@@ -77,16 +93,49 @@ export default function MasterTransportModesPage() {
   }, [load]);
 
   const toolbar = (
-    <TableToolbar
-      searchPlaceholder="Cari kode atau nama moda…"
-      searchValue={searchInput}
-      onSearchChange={setSearchInput}
-      filterLabel="Status"
-      filterValue={statusFilter}
-      onFilterChange={setStatusFilter}
-      filterOptions={STATUS_FILTER_OPTIONS}
-    />
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+      <div className="min-w-0 flex-1">
+        <TableToolbar
+          searchPlaceholder="Cari kode atau nama moda…"
+          searchValue={searchInput}
+          onSearchChange={setSearchInput}
+          filterLabel="Status"
+          filterValue={statusFilter}
+          onFilterChange={setStatusFilter}
+          filterOptions={STATUS_FILTER_OPTIONS}
+        />
+      </div>
+      {canManageMaster ? (
+        <Button
+          type="button"
+          className="shrink-0 gap-1.5"
+          onClick={() => {
+            setDialogRow(null);
+            setDialogMode("create");
+            setDialogOpen(true);
+          }}
+        >
+          <Plus className="h-4 w-4" />
+          Tambah moda
+        </Button>
+      ) : null}
+    </div>
   );
+
+  const handleDelete = async () => {
+    if (deleteRow?.id == null) return;
+    setDeleteLoading(true);
+    try {
+      await deleteAdminTransportMode(Number(deleteRow.id));
+      setDeleteOpen(false);
+      setDeleteRow(null);
+      await load();
+    } catch (e) {
+      toast.error(e instanceof ApiError ? e.message : "Gagal menghapus.");
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
 
   return (
     <>
@@ -131,8 +180,21 @@ export default function MasterTransportModesPage() {
                       <div className="flex justify-end">
                         <MasterRowActions
                           entityLabel="moda transport"
-                          rowCode={code}
                           canManage={canManageMaster}
+                          onView={() => {
+                            setDialogRow(m);
+                            setDialogMode("view");
+                            setDialogOpen(true);
+                          }}
+                          onEdit={canManageMaster ? () => {
+                            setDialogRow(m);
+                            setDialogMode("edit");
+                            setDialogOpen(true);
+                          } : undefined}
+                          onDelete={canManageMaster ? () => {
+                            setDeleteRow(m);
+                            setDeleteOpen(true);
+                          } : undefined}
                         />
                       </div>
                     </TableCell>
@@ -158,6 +220,23 @@ export default function MasterTransportModesPage() {
           />
         ) : null}
       </MasterTableShell>
+
+      <MasterTransportModeDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        mode={dialogMode}
+        row={dialogRow}
+        onSaved={() => void load()}
+      />
+
+      <ConfirmDeleteDialog
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        title="Hapus moda transport?"
+        description={`Yakin hapus "${String(deleteRow?.name ?? "")}"?`}
+        loading={deleteLoading}
+        onConfirm={handleDelete}
+      />
     </>
   );
 }

@@ -138,6 +138,7 @@
       "paymentManagement": "Payment Management",
       "masterOperational": "Master Operational",
       "vendorPricing": "Vendor & Pricing",
+      "internalUsers": "Internal users",
       "logout": "Logout"
     },
     "profile": "Profile",

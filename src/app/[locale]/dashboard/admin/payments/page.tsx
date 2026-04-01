@@ -1,6 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import {
@@ -75,13 +81,17 @@ const actionsCellClass =
 type PayRow = Record<string, unknown>;
 
 function AdminPaymentActionsMenu({
+  payment,
   paymentRef,
   canManageAR,
 }: {
+  payment: PayRow;
   paymentRef: string;
   canManageAR: boolean;
 }) {
+  const [detailOpen, setDetailOpen] = useState(false);
   return (
+    <>
     <DropdownMenu>
       <DropdownMenuTrigger
         className={cn(buttonVariants({ variant: "ghost", size: "icon-sm" }), "shrink-0")}
@@ -90,7 +100,7 @@ function AdminPaymentActionsMenu({
         <span className="sr-only">Menu aksi</span>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-52">
-        <DropdownMenuItem className="cursor-pointer" onClick={() => window.alert(`Payment ${paymentRef}`)}>
+        <DropdownMenuItem className="cursor-pointer" onClick={() => setDetailOpen(true)}>
           <Eye className="h-4 w-4" />
           Lihat detail pembayaran
         </DropdownMenuItem>
@@ -109,6 +119,17 @@ function AdminPaymentActionsMenu({
         ) : null}
       </DropdownMenuContent>
     </DropdownMenu>
+    <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Detail pembayaran {paymentRef || "—"}</DialogTitle>
+        </DialogHeader>
+        <pre className="max-h-[65vh] overflow-auto rounded-md border bg-muted/40 p-3 text-xs leading-relaxed">
+          {JSON.stringify(payment, null, 2)}
+        </pre>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }
 
@@ -337,7 +358,7 @@ export default function AdminPaymentsPage() {
                         </TableCell>
                         <TableCell className={cn(actionsCellClass, "p-2 text-right")}>
                           <div className="flex justify-end">
-                            <AdminPaymentActionsMenu paymentRef={key} canManageAR={canManageAR} />
+                            <AdminPaymentActionsMenu payment={payment} paymentRef={key} canManageAR={canManageAR} />
                           </div>
                         </TableCell>
                       </TableRow>

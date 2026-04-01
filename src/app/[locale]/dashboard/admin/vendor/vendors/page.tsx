@@ -1,5 +1,6 @@
 "use client";
 
+import { toast } from "sonner";
 import { useCallback, useEffect, useState } from "react";
 import {
   Card,
@@ -16,14 +17,34 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
 import { PaginationBar } from "@/components/data-table/pagination-bar";
 import { TableToolbar } from "@/components/data-table/table-toolbar";
 import { useAuthPersistHydrated } from "@/lib/use-auth-hydrated";
-import { fetchAdminVendors } from "@/lib/admin-api";
+import { deleteAdminVendor, fetchAdminVendor, fetchAdminVendors } from "@/lib/admin-api";
 import type { LaravelPaginated } from "@/lib/types-api";
 import { ApiError } from "@/lib/api-client";
 import { rowNumber } from "@/lib/list-query";
 import { useDebouncedValue } from "@/lib/use-debounced-value";
+import { VendorFormDialog } from "@/components/dashboard/admin/vendor-form-dialog";
+import { ConfirmDeleteDialog } from "@/components/dashboard/admin/confirm-delete-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { MoreHorizontal, Pencil, Plus, Trash2 } from "lucide-react";
+import { Eye } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 type VendorRow = Record<string, unknown>;
 
@@ -40,6 +61,17 @@ export default function AdminVendorListPage() {
 
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const [formOpen, setFormOpen] = useState(false);
+  const [formMode, setFormMode] = useState<"create" | "edit">("create");
+  const [formRow, setFormRow] = useState<VendorRow | null>(null);
+
+  const [viewOpen, setViewOpen] = useState(false);
+  const [viewRow, setViewRow] = useState<VendorRow | null>(null);
+
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteRow, setDeleteRow] = useState<VendorRow | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   useEffect(() => {
     setVendorPage(1);
@@ -71,6 +103,32 @@ export default function AdminVendorListPage() {
     void load();
   }, [load]);
 
+  const openView = async (v: VendorRow) => {
+    if (v.id == null) return;
+    try {
+      const d = await fetchAdminVendor(Number(v.id));
+      setViewRow((d as { data: VendorRow }).data);
+      setViewOpen(true);
+    } catch (e) {
+      toast.error(e instanceof ApiError ? e.message : "Gagal memuat detail.");
+    }
+  };
+
+  const handleDelete = async () => {
+    if (deleteRow?.id == null) return;
+    setDeleteLoading(true);
+    try {
+      await deleteAdminVendor(Number(deleteRow.id));
+      setDeleteOpen(false);
+      setDeleteRow(null);
+      await load();
+    } catch (e) {
+      toast.error(e instanceof ApiError ? e.message : "Gagal menghapus.");
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
   return (
     <>
       {error ? (
@@ -78,8 +136,21 @@ export default function AdminVendorListPage() {
       ) : null}
 
       <Card className="min-w-0 overflow-hidden">
-        <CardHeader className="space-y-1">
+        <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-3 space-y-0">
           <CardTitle>Daftar Vendor</CardTitle>
+          <Button
+            type="button"
+            size="sm"
+            className="gap-1.5"
+            onClick={() => {
+              setFormRow(null);
+              setFormMode("create");
+              setFormOpen(true);
+            }}
+          >
+            <Plus className="h-4 w-4" />
+            Tambah vendor
+          </Button>
         </CardHeader>
         <CardContent className="space-y-4">
           <TableToolbar
@@ -99,6 +170,7 @@ export default function AdminVendorListPage() {
                       <TableHead>Kode</TableHead>
                       <TableHead>Nama Vendor</TableHead>
                       <TableHead className="text-right">Layanan</TableHead>
+                      <TableHead className="w-24 text-right">Aksi</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -111,6 +183,45 @@ export default function AdminVendorListPage() {
                         <TableCell>{String(v.name ?? "")}</TableCell>
                         <TableCell className="text-right tabular-nums">
                           {String(v.vendor_services_count ?? 0)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger
+                              className={cn(buttonVariants({ variant: "ghost", size: "icon-sm" }), "shrink-0")}
+                            >
+                              <MoreHorizontal className="h-4 w-4" />
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                className="cursor-pointer"
+                                onClick={() => void openView(v)}
+                              >
+                                <Eye className="h-4 w-4" />
+                                Detail
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                className="cursor-pointer"
+                                onClick={() => {
+                                  setFormRow(v);
+                                  setFormMode("edit");
+                                  setFormOpen(true);
+                                }}
+                              >
+                                <Pencil className="h-4 w-4" />
+                                Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                className="cursor-pointer text-destructive"
+                                onClick={() => {
+                                  setDeleteRow(v);
+                                  setDeleteOpen(true);
+                                }}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                                Hapus
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -136,6 +247,41 @@ export default function AdminVendorListPage() {
           )}
         </CardContent>
       </Card>
+
+      <VendorFormDialog
+        open={formOpen}
+        onOpenChange={setFormOpen}
+        mode={formMode}
+        row={formRow}
+        onSaved={() => void load()}
+      />
+
+      <ConfirmDeleteDialog
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        title="Hapus vendor?"
+        description={`Yakin hapus "${String(deleteRow?.name ?? "")}"?`}
+        loading={deleteLoading}
+        onConfirm={handleDelete}
+      />
+
+      <Dialog open={viewOpen} onOpenChange={setViewOpen}>
+        <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto" showCloseButton>
+          <DialogHeader>
+            <DialogTitle>Detail vendor</DialogTitle>
+          </DialogHeader>
+          {viewRow ? (
+            <pre className="text-xs bg-muted/50 rounded-md p-3 overflow-x-auto whitespace-pre-wrap">
+              {JSON.stringify(viewRow, null, 2)}
+            </pre>
+          ) : null}
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setViewOpen(false)}>
+              Tutup
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

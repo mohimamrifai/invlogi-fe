@@ -1,5 +1,6 @@
 "use client";
 
+import { toast } from "sonner";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Table,
@@ -10,12 +11,17 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
 import { PaginationBar } from "@/components/data-table/pagination-bar";
 import { TableToolbar } from "@/components/data-table/table-toolbar";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/lib/store";
 import { useAuthPersistHydrated } from "@/lib/use-auth-hydrated";
-import { fetchAdminServiceTypes, fetchAdminTransportModes } from "@/lib/admin-api";
+import {
+  deleteAdminServiceType,
+  fetchAdminServiceTypes,
+  fetchAdminTransportModes,
+} from "@/lib/admin-api";
 import type { LaravelPaginated } from "@/lib/types-api";
 import { ApiError } from "@/lib/api-client";
 import { rowNumber } from "@/lib/list-query";
@@ -25,6 +31,10 @@ import { MasterTableShell } from "../_components/master-table-shell";
 import { MasterActiveBadge } from "../_components/master-active-badge";
 import { actionsCellClass, actionsHeadClass } from "../_components/master-table-classes";
 import { STATUS_FILTER_OPTIONS } from "../_components/master-filters";
+import { MasterServiceTypeDialog } from "../_components/master-service-type-dialog";
+import type { SimpleDialogMode } from "../_components/master-transport-mode-dialog";
+import { ConfirmDeleteDialog } from "@/components/dashboard/admin/confirm-delete-dialog";
+import { Plus } from "lucide-react";
 
 const PER_PAGE = 10;
 const TRANSPORT_MODES_CAP = 500;
@@ -48,6 +58,14 @@ export default function MasterServiceTypesPage() {
   const debouncedSearch = useDebouncedValue(searchInput, 400);
   const [transportModeFilter, setTransportModeFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
+
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [dialogMode, setDialogMode] = useState<SimpleDialogMode>("create");
+  const [dialogRow, setDialogRow] = useState<Row | null>(null);
+
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteRow, setDeleteRow] = useState<Row | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   useEffect(() => {
     void (async () => {
@@ -102,20 +120,53 @@ export default function MasterServiceTypesPage() {
   }, [load]);
 
   const toolbar = (
-    <TableToolbar
-      searchPlaceholder="Cari kode atau nama layanan…"
-      searchValue={searchInput}
-      onSearchChange={setSearchInput}
-      filterLabel="Moda"
-      filterValue={transportModeFilter}
-      onFilterChange={setTransportModeFilter}
-      filterOptions={transportModeFilterOptions}
-      filter2Label="Status"
-      filter2Value={statusFilter}
-      onFilter2Change={setStatusFilter}
-      filter2Options={STATUS_FILTER_OPTIONS}
-    />
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+      <div className="min-w-0 flex-1">
+        <TableToolbar
+          searchPlaceholder="Cari kode atau nama layanan…"
+          searchValue={searchInput}
+          onSearchChange={setSearchInput}
+          filterLabel="Moda"
+          filterValue={transportModeFilter}
+          onFilterChange={setTransportModeFilter}
+          filterOptions={transportModeFilterOptions}
+          filter2Label="Status"
+          filter2Value={statusFilter}
+          onFilter2Change={setStatusFilter}
+          filter2Options={STATUS_FILTER_OPTIONS}
+        />
+      </div>
+      {canManageMaster ? (
+        <Button
+          type="button"
+          className="shrink-0 gap-1.5"
+          onClick={() => {
+            setDialogRow(null);
+            setDialogMode("create");
+            setDialogOpen(true);
+          }}
+        >
+          <Plus className="h-4 w-4" />
+          Tambah service type
+        </Button>
+      ) : null}
+    </div>
   );
+
+  const handleDelete = async () => {
+    if (deleteRow?.id == null) return;
+    setDeleteLoading(true);
+    try {
+      await deleteAdminServiceType(Number(deleteRow.id));
+      setDeleteOpen(false);
+      setDeleteRow(null);
+      await load();
+    } catch (e) {
+      toast.error(e instanceof ApiError ? e.message : "Gagal menghapus.");
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
 
   return (
     <>
@@ -163,8 +214,21 @@ export default function MasterServiceTypesPage() {
                       <div className="flex justify-end">
                         <MasterRowActions
                           entityLabel="service type"
-                          rowCode={code}
                           canManage={canManageMaster}
+                          onView={() => {
+                            setDialogRow(svc);
+                            setDialogMode("view");
+                            setDialogOpen(true);
+                          }}
+                          onEdit={canManageMaster ? () => {
+                            setDialogRow(svc);
+                            setDialogMode("edit");
+                            setDialogOpen(true);
+                          } : undefined}
+                          onDelete={canManageMaster ? () => {
+                            setDeleteRow(svc);
+                            setDeleteOpen(true);
+                          } : undefined}
                         />
                       </div>
                     </TableCell>
@@ -190,6 +254,24 @@ export default function MasterServiceTypesPage() {
           />
         ) : null}
       </MasterTableShell>
+
+      <MasterServiceTypeDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        mode={dialogMode}
+        row={dialogRow}
+        transportModes={transportModes}
+        onSaved={() => void load()}
+      />
+
+      <ConfirmDeleteDialog
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        title="Hapus service type?"
+        description={`Yakin hapus "${String(deleteRow?.name ?? "")}"?`}
+        loading={deleteLoading}
+        onConfirm={handleDelete}
+      />
     </>
   );
 }

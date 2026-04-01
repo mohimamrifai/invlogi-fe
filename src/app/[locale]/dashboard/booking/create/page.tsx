@@ -1,5 +1,6 @@
 "use client";
 
+import { toast } from "sonner";
 import { useEffect, useState } from "react";
 import {
   Card,
@@ -149,7 +150,7 @@ export default function CreateBookingPage() {
     setSubmitting(true);
     try {
       await createCustomerBooking(buildPayload() as Record<string, unknown>);
-      window.alert("Booking berhasil diajukan.");
+      toast.success("Booking berhasil diajukan.");
       router.push("/dashboard");
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Gagal menyimpan");

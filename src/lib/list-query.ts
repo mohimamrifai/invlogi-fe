@@ -10,6 +10,9 @@ export type ListQueryParams = {
   transportModeId?: number;
   /** Additional service `category` */
   category?: string;
+  /** User list filter */
+  userType?: string;
+  role?: string;
 };
 
 export function buildListQuery(params?: ListQueryParams): string {
@@ -26,6 +29,10 @@ export function buildListQuery(params?: ListQueryParams): string {
   if (params?.transportModeId != null) q.set("transport_mode_id", String(params.transportModeId));
   const cat = params?.category?.trim();
   if (cat) q.set("category", cat);
+  const ut = params?.userType?.trim();
+  if (ut) q.set("user_type", ut);
+  const rl = params?.role?.trim();
+  if (rl) q.set("role", rl);
   const str = q.toString();
   return str ? `?${str}` : "";
 }

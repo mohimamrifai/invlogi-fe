@@ -1,6 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { toast } from "sonner";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import {
@@ -66,16 +73,19 @@ const actionsCellClass =
 type InvRow = Record<string, unknown>;
 
 function InvoiceActionsMenu({
+  row,
   invoiceId,
   invoiceNumber,
   status,
   onPaid,
 }: {
+  row: InvRow;
   invoiceId: number;
   invoiceNumber: string;
   status: string;
   onPaid: () => void;
 }) {
+  const [detailOpen, setDetailOpen] = useState(false);
   const st = status.toLowerCase();
   const canPay = st === "unpaid" || st === "overdue";
 
@@ -89,7 +99,7 @@ function InvoiceActionsMenu({
       a.click();
       URL.revokeObjectURL(url);
     } catch (e) {
-      window.alert(e instanceof ApiError ? e.message : "Gagal mengunduh PDF.");
+      toast.error(e instanceof ApiError ? e.message : "Gagal mengunduh PDF.");
     }
   };
 
@@ -99,7 +109,7 @@ function InvoiceActionsMenu({
       const res = await payInvoice(invoiceId);
       const token = res.data?.token;
       if (!token) {
-        window.alert("Token pembayaran tidak tersedia.");
+        toast.error("Token pembayaran tidak tersedia.");
         return;
       }
       openMidtransSnap(token, {
@@ -109,11 +119,12 @@ function InvoiceActionsMenu({
         onPending: () => void onPaid(),
       });
     } catch (e) {
-      window.alert(e instanceof ApiError ? e.message : "Gagal membuka pembayaran.");
+      toast.error(e instanceof ApiError ? e.message : "Gagal membuka pembayaran.");
     }
   };
 
   return (
+    <>
     <DropdownMenu>
       <DropdownMenuTrigger
         className={cn(buttonVariants({ variant: "ghost", size: "icon-sm" }), "shrink-0")}
@@ -122,7 +133,7 @@ function InvoiceActionsMenu({
         <span className="sr-only">Menu aksi</span>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-48">
-        <DropdownMenuItem className="cursor-pointer" onClick={() => window.alert(`Invoice #${invoiceNumber}`)}>
+        <DropdownMenuItem className="cursor-pointer" onClick={() => setDetailOpen(true)}>
           <Eye className="h-4 w-4" />
           Lihat detail
         </DropdownMenuItem>
@@ -142,6 +153,17 @@ function InvoiceActionsMenu({
         ) : null}
       </DropdownMenuContent>
     </DropdownMenu>
+    <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Detail invoice {invoiceNumber}</DialogTitle>
+        </DialogHeader>
+        <pre className="max-h-[65vh] overflow-auto rounded-md border bg-muted/40 p-3 text-xs leading-relaxed">
+          {JSON.stringify(row, null, 2)}
+        </pre>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }
 
@@ -357,6 +379,7 @@ export default function CustomerInvoicesPage() {
                         <TableCell className={cn(actionsCellClass, "p-2 text-right")}>
                           <div className="flex justify-end">
                             <InvoiceActionsMenu
+                              row={invoice}
                               invoiceId={id}
                               invoiceNumber={num}
                               status={st}

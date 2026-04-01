@@ -13,12 +13,16 @@ import { Eye, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 
 export function MasterRowActions({
   entityLabel,
-  rowCode,
   canManage,
+  onView,
+  onEdit,
+  onDelete,
 }: {
   entityLabel: string;
-  rowCode: string;
   canManage: boolean;
+  onView?: () => void;
+  onEdit?: () => void;
+  onDelete?: () => void;
 }) {
   return (
     <DropdownMenu>
@@ -29,22 +33,24 @@ export function MasterRowActions({
         <span className="sr-only">Menu aksi {entityLabel}</span>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-44">
-        <DropdownMenuItem className="cursor-pointer" onClick={() => window.alert(`${entityLabel}: ${rowCode}`)}>
-          <Eye className="h-4 w-4" />
-          Lihat detail
-        </DropdownMenuItem>
-        {canManage ? (
-          <>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem className="cursor-pointer" disabled>
-              <Pencil className="h-4 w-4" />
-              Edit
-            </DropdownMenuItem>
-            <DropdownMenuItem className="cursor-pointer" variant="destructive" disabled>
-              <Trash2 className="h-4 w-4" />
-              Hapus
-            </DropdownMenuItem>
-          </>
+        {onView ? (
+          <DropdownMenuItem className="cursor-pointer" onClick={onView}>
+            <Eye className="h-4 w-4" />
+            Lihat detail
+          </DropdownMenuItem>
+        ) : null}
+        {canManage && (onEdit || onDelete) ? <DropdownMenuSeparator /> : null}
+        {canManage && onEdit ? (
+          <DropdownMenuItem className="cursor-pointer" onClick={onEdit}>
+            <Pencil className="h-4 w-4" />
+            Edit
+          </DropdownMenuItem>
+        ) : null}
+        {canManage && onDelete ? (
+          <DropdownMenuItem className="cursor-pointer" variant="destructive" onClick={onDelete}>
+            <Trash2 className="h-4 w-4" />
+            Hapus
+          </DropdownMenuItem>
         ) : null}
       </DropdownMenuContent>
     </DropdownMenu>

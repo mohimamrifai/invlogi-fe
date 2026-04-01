@@ -55,6 +55,7 @@ const MENU_ICONS: Record<DashboardMenuKey, LucideIcon> = {
   invoiceManagement: FileText,
   paymentManagement: CreditCard,
   vendorPricing: Tags,
+  internalUsers: Users,
   createBooking: PlusCircle,
   myShipments: Package,
   shipmentTracking: Activity,

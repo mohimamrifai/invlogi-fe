@@ -55,6 +55,11 @@ export const DASHBOARD_SIDEBAR_ITEM_DEFS = [
     roles: ["super_admin", "sales"] as const,
   },
   {
+    menuKey: "internalUsers",
+    url: "/dashboard/admin/users",
+    roles: ["super_admin"] as const,
+  },
+  {
     menuKey: "createBooking",
     url: "/dashboard/booking/create",
     roles: ["company_admin", "ops_pic"] as const,

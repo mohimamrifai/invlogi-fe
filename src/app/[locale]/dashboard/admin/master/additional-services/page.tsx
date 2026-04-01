@@ -1,5 +1,6 @@
 "use client";
 
+import { toast } from "sonner";
 import { useCallback, useEffect, useState } from "react";
 import {
   Table,
@@ -10,12 +11,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
 import { PaginationBar } from "@/components/data-table/pagination-bar";
 import { TableToolbar } from "@/components/data-table/table-toolbar";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/lib/store";
 import { useAuthPersistHydrated } from "@/lib/use-auth-hydrated";
-import { fetchAdminAdditionalServices } from "@/lib/admin-api";
+import { deleteAdminAdditionalService, fetchAdminAdditionalServices } from "@/lib/admin-api";
 import type { LaravelPaginated } from "@/lib/types-api";
 import { ApiError } from "@/lib/api-client";
 import { rowNumber } from "@/lib/list-query";
@@ -28,6 +30,10 @@ import {
   ADDITIONAL_CATEGORY_FILTER_OPTIONS,
   STATUS_FILTER_OPTIONS,
 } from "../_components/master-filters";
+import { MasterAdditionalServiceDialog } from "../_components/master-additional-service-dialog";
+import type { SimpleDialogMode } from "../_components/master-transport-mode-dialog";
+import { ConfirmDeleteDialog } from "@/components/dashboard/admin/confirm-delete-dialog";
+import { Plus } from "lucide-react";
 
 const PER_PAGE = 10;
 
@@ -59,6 +65,14 @@ export default function MasterAdditionalServicesPage() {
   const debouncedSearch = useDebouncedValue(searchInput, 400);
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
+
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [dialogMode, setDialogMode] = useState<SimpleDialogMode>("create");
+  const [dialogRow, setDialogRow] = useState<Row | null>(null);
+
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteRow, setDeleteRow] = useState<Row | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   useEffect(() => {
     setPage(1);
@@ -92,20 +106,53 @@ export default function MasterAdditionalServicesPage() {
   }, [load]);
 
   const toolbar = (
-    <TableToolbar
-      searchPlaceholder="Cari nama layanan…"
-      searchValue={searchInput}
-      onSearchChange={setSearchInput}
-      filterLabel="Grup"
-      filterValue={categoryFilter}
-      onFilterChange={setCategoryFilter}
-      filterOptions={ADDITIONAL_CATEGORY_FILTER_OPTIONS}
-      filter2Label="Status"
-      filter2Value={statusFilter}
-      onFilter2Change={setStatusFilter}
-      filter2Options={STATUS_FILTER_OPTIONS}
-    />
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+      <div className="min-w-0 flex-1">
+        <TableToolbar
+          searchPlaceholder="Cari nama layanan…"
+          searchValue={searchInput}
+          onSearchChange={setSearchInput}
+          filterLabel="Grup"
+          filterValue={categoryFilter}
+          onFilterChange={setCategoryFilter}
+          filterOptions={ADDITIONAL_CATEGORY_FILTER_OPTIONS}
+          filter2Label="Status"
+          filter2Value={statusFilter}
+          onFilter2Change={setStatusFilter}
+          filter2Options={STATUS_FILTER_OPTIONS}
+        />
+      </div>
+      {canManageMaster ? (
+        <Button
+          type="button"
+          className="shrink-0 gap-1.5"
+          onClick={() => {
+            setDialogRow(null);
+            setDialogMode("create");
+            setDialogOpen(true);
+          }}
+        >
+          <Plus className="h-4 w-4" />
+          Tambah layanan
+        </Button>
+      ) : null}
+    </div>
   );
+
+  const handleDelete = async () => {
+    if (deleteRow?.id == null) return;
+    setDeleteLoading(true);
+    try {
+      await deleteAdminAdditionalService(Number(deleteRow.id));
+      setDeleteOpen(false);
+      setDeleteRow(null);
+      await load();
+    } catch (e) {
+      toast.error(e instanceof ApiError ? e.message : "Gagal menghapus.");
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
 
   return (
     <>
@@ -157,8 +204,21 @@ export default function MasterAdditionalServicesPage() {
                       <div className="flex justify-end">
                         <MasterRowActions
                           entityLabel="layanan tambahan"
-                          rowCode={id}
                           canManage={canManageMaster}
+                          onView={() => {
+                            setDialogRow(s);
+                            setDialogMode("view");
+                            setDialogOpen(true);
+                          }}
+                          onEdit={canManageMaster ? () => {
+                            setDialogRow(s);
+                            setDialogMode("edit");
+                            setDialogOpen(true);
+                          } : undefined}
+                          onDelete={canManageMaster ? () => {
+                            setDeleteRow(s);
+                            setDeleteOpen(true);
+                          } : undefined}
                         />
                       </div>
                     </TableCell>
@@ -184,6 +244,23 @@ export default function MasterAdditionalServicesPage() {
           />
         ) : null}
       </MasterTableShell>
+
+      <MasterAdditionalServiceDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        mode={dialogMode}
+        row={dialogRow}
+        onSaved={() => void load()}
+      />
+
+      <ConfirmDeleteDialog
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        title="Hapus layanan tambahan?"
+        description={`Yakin hapus "${String(deleteRow?.name ?? "")}"?`}
+        loading={deleteLoading}
+        onConfirm={handleDelete}
+      />
     </>
   );
 }

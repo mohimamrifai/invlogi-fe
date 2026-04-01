@@ -14,7 +14,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -30,18 +29,16 @@ import { PaginationBar } from "@/components/data-table/pagination-bar";
 import { TableToolbar } from "@/components/data-table/table-toolbar";
 import { SHIPMENT_STATUS_KEYS, shipmentStatusBadgeClass, shipmentStatusLabel } from "@/lib/shipment-status";
 import { cn } from "@/lib/utils";
-import { useAuthStore } from "@/lib/store";
 import { useAuthPersistHydrated } from "@/lib/use-auth-hydrated";
 import {
   Activity,
   CheckCircle2,
   Eye,
-  MapPin,
   MoreHorizontal,
   PackageSearch,
-  RefreshCcw,
   Sparkles,
 } from "lucide-react";
+import { useRouter } from "@/i18n/routing";
 import { fetchAdminShipments } from "@/lib/admin-api";
 import type { LaravelPaginated } from "@/lib/types-api";
 import { ApiError } from "@/lib/api-client";
@@ -67,39 +64,24 @@ const actionsCellClass =
 
 type ShipRow = Record<string, unknown>;
 
-function ShipmentActionsMenu({
-  waybill,
-  canUpdateShipment,
-}: {
-  waybill: string;
-  canUpdateShipment: boolean;
-}) {
+function ShipmentActionsMenu({ shipmentId, waybill }: { shipmentId: number; waybill: string }) {
+  const router = useRouter();
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
         className={cn(buttonVariants({ variant: "ghost", size: "icon-sm" }), "shrink-0")}
       >
         <MoreHorizontal className="h-4 w-4" />
-        <span className="sr-only">Menu aksi</span>
+        <span className="sr-only">Menu aksi waybill {waybill}</span>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-52">
-        <DropdownMenuItem className="cursor-pointer" onClick={() => window.alert(`Shipment ${waybill}`)}>
+        <DropdownMenuItem
+          className="cursor-pointer"
+          onClick={() => router.push(`/dashboard/admin/shipments/${shipmentId}`)}
+        >
           <Eye className="h-4 w-4" />
           Lihat detail shipment
         </DropdownMenuItem>
-        {canUpdateShipment ? (
-          <>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem className="cursor-pointer" disabled>
-              <RefreshCcw className="h-4 w-4" />
-              Update status
-            </DropdownMenuItem>
-            <DropdownMenuItem className="cursor-pointer" disabled>
-              <MapPin className="h-4 w-4" />
-              Kelola container / rack
-            </DropdownMenuItem>
-          </>
-        ) : null}
       </DropdownMenuContent>
     </DropdownMenu>
   );
@@ -112,11 +94,6 @@ function isInTransitStatus(st: string): boolean {
 
 export default function AdminShipmentsPage() {
   const authHydrated = useAuthPersistHydrated();
-  const { user } = useAuthStore();
-  const roles = user?.roles ?? [];
-  const canUpdateShipment =
-    authHydrated && (roles.includes("super_admin") || roles.includes("operations"));
-
   const [rows, setRows] = useState<ShipRow[]>([]);
   const [statsRows, setStatsRows] = useState<ShipRow[]>([]);
   const [statsMeta, setStatsMeta] = useState<LaravelPaginated<ShipRow> | null>(null);
@@ -323,7 +300,10 @@ export default function AdminShipmentsPage() {
                         </TableCell>
                         <TableCell className={cn(actionsCellClass, "p-2 text-right")}>
                           <div className="flex justify-end">
-                            <ShipmentActionsMenu waybill={wb} canUpdateShipment={canUpdateShipment} />
+                            <ShipmentActionsMenu
+                              shipmentId={Number(shipment.id)}
+                              waybill={wb}
+                            />
                           </div>
                         </TableCell>
                       </TableRow>

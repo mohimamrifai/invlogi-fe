@@ -1,6 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { toast } from "sonner";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import {
@@ -80,6 +87,7 @@ function CustomerPaymentActionsMenu({
   payment: PayRow;
   onUpdated: () => void;
 }) {
+  const [detailOpen, setDetailOpen] = useState(false);
   const st = String(payment.status ?? "").toLowerCase();
   const invoice = payment.invoice as { id?: number; invoice_number?: string } | undefined;
   const invoiceId = invoice?.id;
@@ -88,7 +96,7 @@ function CustomerPaymentActionsMenu({
 
   const openSnap = async () => {
     if (!invoiceId) {
-      window.alert("Invoice tidak ditemukan untuk pembayaran ini.");
+      toast.error("Invoice tidak ditemukan untuk pembayaran ini.");
       return;
     }
     try {
@@ -96,7 +104,7 @@ function CustomerPaymentActionsMenu({
       const res = await payInvoice(invoiceId);
       const token = res.data?.token;
       if (!token) {
-        window.alert("Token pembayaran tidak tersedia.");
+        toast.error("Token pembayaran tidak tersedia.");
         return;
       }
       openMidtransSnap(token, {
@@ -104,11 +112,12 @@ function CustomerPaymentActionsMenu({
         onPending: () => void onUpdated(),
       });
     } catch (e) {
-      window.alert(e instanceof ApiError ? e.message : "Gagal membuka pembayaran.");
+      toast.error(e instanceof ApiError ? e.message : "Gagal membuka pembayaran.");
     }
   };
 
   return (
+    <>
     <DropdownMenu>
       <DropdownMenuTrigger
         className={cn(buttonVariants({ variant: "ghost", size: "icon-sm" }), "shrink-0")}
@@ -117,10 +126,7 @@ function CustomerPaymentActionsMenu({
         <span className="sr-only">Menu aksi</span>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-48">
-        <DropdownMenuItem
-          className="cursor-pointer"
-          onClick={() => window.alert(`Payment ${ref}`)}
-        >
+        <DropdownMenuItem className="cursor-pointer" onClick={() => setDetailOpen(true)}>
           <Eye className="h-4 w-4" />
           Lihat detail
         </DropdownMenuItem>
@@ -135,6 +141,17 @@ function CustomerPaymentActionsMenu({
         ) : null}
       </DropdownMenuContent>
     </DropdownMenu>
+    <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Detail pembayaran {ref || "—"}</DialogTitle>
+        </DialogHeader>
+        <pre className="max-h-[65vh] overflow-auto rounded-md border bg-muted/40 p-3 text-xs leading-relaxed">
+          {JSON.stringify(payment, null, 2)}
+        </pre>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }
 

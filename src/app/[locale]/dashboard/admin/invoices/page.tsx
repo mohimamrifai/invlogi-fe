@@ -1,5 +1,6 @@
 "use client";
 
+import { toast } from "sonner";
 import { useCallback, useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
@@ -39,9 +40,24 @@ import {
   Eye,
   FileText,
   MoreHorizontal,
+  Pencil,
   Receipt,
 } from "lucide-react";
-import { downloadAdminInvoicePdf, fetchAdminInvoices } from "@/lib/admin-api";
+import { Button } from "@/components/ui/button";
+import { InvoiceCreateDialog } from "@/components/dashboard/admin/invoice-create-dialog";
+import { InvoiceEditDialog } from "@/components/dashboard/admin/invoice-edit-dialog";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import {
+  downloadAdminInvoicePdf,
+  fetchAdminInvoice,
+  fetchAdminInvoices,
+} from "@/lib/admin-api";
 import type { LaravelPaginated } from "@/lib/types-api";
 import { ApiError } from "@/lib/api-client";
 import { rowNumber } from "@/lib/list-query";
@@ -70,10 +86,14 @@ function AdminInvoiceActionsMenu({
   invoiceId,
   invoiceNumber,
   canManageInvoices,
+  onViewDetail,
+  onEdit,
 }: {
   invoiceId: number;
   invoiceNumber: string;
   canManageInvoices: boolean;
+  onViewDetail: () => void;
+  onEdit: () => void;
 }) {
   const onPdf = async () => {
     try {
@@ -85,7 +105,7 @@ function AdminInvoiceActionsMenu({
       a.click();
       URL.revokeObjectURL(url);
     } catch (e) {
-      window.alert(e instanceof ApiError ? e.message : "Gagal mengunduh PDF.");
+      toast.error(e instanceof ApiError ? e.message : "Gagal mengunduh PDF.");
     }
   };
 
@@ -98,7 +118,7 @@ function AdminInvoiceActionsMenu({
         <span className="sr-only">Menu aksi</span>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-52">
-        <DropdownMenuItem className="cursor-pointer" onClick={() => window.alert(`Invoice #${invoiceNumber}`)}>
+        <DropdownMenuItem className="cursor-pointer" onClick={onViewDetail}>
           <Eye className="h-4 w-4" />
           Lihat detail invoice
         </DropdownMenuItem>
@@ -109,9 +129,9 @@ function AdminInvoiceActionsMenu({
         {canManageInvoices ? (
           <>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="cursor-pointer" disabled>
-              <FileText className="h-4 w-4" />
-              Generate / cetak ulang
+            <DropdownMenuItem className="cursor-pointer" onClick={onEdit}>
+              <Pencil className="h-4 w-4" />
+              Edit invoice
             </DropdownMenuItem>
           </>
         ) : null}
@@ -137,6 +157,14 @@ export default function AdminInvoicesPage() {
   const [searchInput, setSearchInput] = useState("");
   const debouncedSearch = useDebouncedValue(searchInput, 400);
   const [statusFilter, setStatusFilter] = useState("all");
+
+  const [createOpen, setCreateOpen] = useState(false);
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [detailId, setDetailId] = useState<number | null>(null);
+  const [detailText, setDetailText] = useState("");
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editRow, setEditRow] = useState<InvRow | null>(null);
 
   useEffect(() => {
     setPage(1);
@@ -196,8 +224,60 @@ export default function AdminInvoicesPage() {
   const countPaid = statsRows.filter((i) => String(i.status).toLowerCase() === "paid").length;
   const totalStats = statsMeta?.total ?? 0;
 
+  const openInvoiceDetail = async (id: number) => {
+    setDetailId(id);
+    setDetailOpen(true);
+    setDetailLoading(true);
+    setDetailText("");
+    try {
+      const res = await fetchAdminInvoice(id);
+      setDetailText(JSON.stringify((res as { data: unknown }).data, null, 2));
+    } catch (e) {
+      setDetailText(e instanceof ApiError ? e.message : "Gagal memuat.");
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+
   return (
     <div className="flex min-w-0 w-full flex-1 flex-col gap-6 md:px-2">
+      <InvoiceCreateDialog
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        onCreated={() => {
+          void loadStats();
+          void load();
+        }}
+      />
+      <InvoiceEditDialog
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        invoice={editRow}
+        onSaved={() => {
+          void loadStats();
+          void load();
+        }}
+      />
+      <Sheet open={detailOpen} onOpenChange={setDetailOpen}>
+        <SheetContent className="w-full overflow-y-auto sm:max-w-lg">
+          <SheetHeader>
+            <SheetTitle>Detail invoice</SheetTitle>
+            <SheetDescription>
+              {detailId != null ? `ID #${detailId}` : null}
+            </SheetDescription>
+          </SheetHeader>
+          <div className="mt-4">
+            {detailLoading ? (
+              <p className="text-sm text-muted-foreground">Memuat…</p>
+            ) : (
+              <pre className="max-h-[70vh] overflow-auto rounded-md border bg-muted/40 p-3 text-xs leading-relaxed">
+                {detailText || "—"}
+              </pre>
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
+
       <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
         <div className="flex min-w-0 items-start gap-3">
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-zinc-900/5 text-zinc-900">
@@ -208,6 +288,11 @@ export default function AdminInvoicesPage() {
             <p className="mt-1 text-sm text-muted-foreground">Invoice semua customer: status, jatuh tempo & PDF.</p>
           </div>
         </div>
+        {canManageInvoices ? (
+          <Button type="button" size="sm" onClick={() => setCreateOpen(true)}>
+            Buat invoice
+          </Button>
+        ) : null}
       </div>
 
       {error ? (
@@ -339,6 +424,11 @@ export default function AdminInvoicesPage() {
                               invoiceId={id}
                               invoiceNumber={num}
                               canManageInvoices={canManageInvoices}
+                              onViewDetail={() => void openInvoiceDetail(id)}
+                              onEdit={() => {
+                                setEditRow(invoice);
+                                setEditOpen(true);
+                              }}
                             />
                           </div>
                         </TableCell>

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Poppins } from "next/font/google";
 import { Navbar } from "@/components/navbar";
+import { AppToaster } from "@/components/app-toaster";
 import "../globals.css";
 import {NextIntlClientProvider} from 'next-intl';
 import {getMessages} from 'next-intl/server';
@@ -34,6 +35,7 @@ export default async function RootLayout({
         <NextIntlClientProvider messages={messages}>
           <Navbar />
           {children}
+          <AppToaster />
         </NextIntlClientProvider>
       </body>
     </html>

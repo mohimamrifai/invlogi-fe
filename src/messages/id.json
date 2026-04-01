@@ -138,6 +138,7 @@
       "paymentManagement": "Manajemen Pembayaran",
       "masterOperational": "Master Operasional",
       "vendorPricing": "Vendor & Harga",
+      "internalUsers": "Pengguna internal",
       "logout": "Keluar"
     },
     "profile": "Profil",

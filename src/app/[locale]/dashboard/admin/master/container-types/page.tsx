@@ -1,5 +1,6 @@
 "use client";
 
+import { toast } from "sonner";
 import { useCallback, useEffect, useState } from "react";
 import {
   Table,
@@ -10,12 +11,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
 import { PaginationBar } from "@/components/data-table/pagination-bar";
 import { TableToolbar } from "@/components/data-table/table-toolbar";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/lib/store";
 import { useAuthPersistHydrated } from "@/lib/use-auth-hydrated";
-import { fetchAdminContainerTypes } from "@/lib/admin-api";
+import { deleteAdminContainerType, fetchAdminContainerTypes } from "@/lib/admin-api";
 import type { LaravelPaginated } from "@/lib/types-api";
 import { ApiError } from "@/lib/api-client";
 import { rowNumber } from "@/lib/list-query";
@@ -25,6 +27,10 @@ import { MasterTableShell } from "../_components/master-table-shell";
 import { MasterActiveBadge } from "../_components/master-active-badge";
 import { actionsCellClass, actionsHeadClass } from "../_components/master-table-classes";
 import { STATUS_FILTER_OPTIONS } from "../_components/master-filters";
+import { MasterContainerTypeSheet } from "../_components/master-container-type-sheet";
+import type { SimpleDialogMode } from "../_components/master-transport-mode-dialog";
+import { ConfirmDeleteDialog } from "@/components/dashboard/admin/confirm-delete-dialog";
+import { Plus } from "lucide-react";
 
 const PER_PAGE = 10;
 
@@ -45,6 +51,14 @@ export default function MasterContainerTypesPage() {
   const [searchInput, setSearchInput] = useState("");
   const debouncedSearch = useDebouncedValue(searchInput, 400);
   const [statusFilter, setStatusFilter] = useState("all");
+
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [sheetMode, setSheetMode] = useState<SimpleDialogMode>("create");
+  const [sheetRow, setSheetRow] = useState<Row | null>(null);
+
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteRow, setDeleteRow] = useState<Row | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   useEffect(() => {
     setPage(1);
@@ -77,16 +91,49 @@ export default function MasterContainerTypesPage() {
   }, [load]);
 
   const toolbar = (
-    <TableToolbar
-      searchPlaceholder="Cari nama atau ukuran…"
-      searchValue={searchInput}
-      onSearchChange={setSearchInput}
-      filterLabel="Status"
-      filterValue={statusFilter}
-      onFilterChange={setStatusFilter}
-      filterOptions={STATUS_FILTER_OPTIONS}
-    />
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+      <div className="min-w-0 flex-1">
+        <TableToolbar
+          searchPlaceholder="Cari nama atau ukuran…"
+          searchValue={searchInput}
+          onSearchChange={setSearchInput}
+          filterLabel="Status"
+          filterValue={statusFilter}
+          onFilterChange={setStatusFilter}
+          filterOptions={STATUS_FILTER_OPTIONS}
+        />
+      </div>
+      {canManageMaster ? (
+        <Button
+          type="button"
+          className="shrink-0 gap-1.5"
+          onClick={() => {
+            setSheetRow(null);
+            setSheetMode("create");
+            setSheetOpen(true);
+          }}
+        >
+          <Plus className="h-4 w-4" />
+          Tambah jenis kontainer
+        </Button>
+      ) : null}
+    </div>
   );
+
+  const handleDelete = async () => {
+    if (deleteRow?.id == null) return;
+    setDeleteLoading(true);
+    try {
+      await deleteAdminContainerType(Number(deleteRow.id));
+      setDeleteOpen(false);
+      setDeleteRow(null);
+      await load();
+    } catch (e) {
+      toast.error(e instanceof ApiError ? e.message : "Gagal menghapus.");
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
 
   return (
     <>
@@ -131,8 +178,21 @@ export default function MasterContainerTypesPage() {
                       <div className="flex justify-end">
                         <MasterRowActions
                           entityLabel="jenis kontainer"
-                          rowCode={id}
                           canManage={canManageMaster}
+                          onView={() => {
+                            setSheetRow(c);
+                            setSheetMode("view");
+                            setSheetOpen(true);
+                          }}
+                          onEdit={canManageMaster ? () => {
+                            setSheetRow(c);
+                            setSheetMode("edit");
+                            setSheetOpen(true);
+                          } : undefined}
+                          onDelete={canManageMaster ? () => {
+                            setDeleteRow(c);
+                            setDeleteOpen(true);
+                          } : undefined}
                         />
                       </div>
                     </TableCell>
@@ -158,6 +218,23 @@ export default function MasterContainerTypesPage() {
           />
         ) : null}
       </MasterTableShell>
+
+      <MasterContainerTypeSheet
+        open={sheetOpen}
+        onOpenChange={setSheetOpen}
+        mode={sheetMode}
+        row={sheetRow}
+        onSaved={() => void load()}
+      />
+
+      <ConfirmDeleteDialog
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        title="Hapus jenis kontainer?"
+        description={`Yakin hapus "${String(deleteRow?.name ?? "")}"?`}
+        loading={deleteLoading}
+        onConfirm={handleDelete}
+      />
     </>
   );
 }

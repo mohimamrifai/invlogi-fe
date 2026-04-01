@@ -33,6 +33,7 @@ import { customerStatusBadgeClass, customerStatusLabelFromApi } from "@/lib/cust
 import { useAuthStore } from "@/lib/store";
 import { useAuthPersistHydrated } from "@/lib/use-auth-hydrated";
 import { fetchAdminCompanies } from "@/lib/admin-api";
+import { CompanyAdminSheet } from "@/components/dashboard/admin/company-admin-sheet";
 import type { LaravelPaginated } from "@/lib/types-api";
 import { ApiError } from "@/lib/api-client";
 import { rowNumber } from "@/lib/list-query";
@@ -66,7 +67,13 @@ function billingCycleLabel(code: string): string {
 
 type CompanyRow = Record<string, unknown>;
 
-function CustomerActionsMenu({ companyId }: { companyId: number }) {
+function CustomerActionsMenu({
+  companyId,
+  onDetail,
+}: {
+  companyId: number;
+  onDetail: () => void;
+}) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
@@ -76,7 +83,7 @@ function CustomerActionsMenu({ companyId }: { companyId: number }) {
         <span className="sr-only">Menu aksi</span>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-40">
-        <DropdownMenuItem className="cursor-pointer" onClick={() => window.alert(`Company #${companyId}`)}>
+        <DropdownMenuItem className="cursor-pointer" onClick={onDetail}>
           <Eye className="h-4 w-4" />
           Detail
         </DropdownMenuItem>
@@ -103,6 +110,10 @@ export default function AdminCustomersPage() {
   const [searchInput, setSearchInput] = useState("");
   const debouncedSearch = useDebouncedValue(searchInput, 400);
   const [statusFilter, setStatusFilter] = useState("all");
+
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [sheetMode, setSheetMode] = useState<"create" | "detail">("detail");
+  const [sheetCompanyId, setSheetCompanyId] = useState<number | null>(null);
 
   useEffect(() => {
     setPage(1);
@@ -175,7 +186,15 @@ export default function AdminCustomersPage() {
         </div>
         {canCreateOrApproveCustomer && (
           <div className="flex w-full shrink-0 sm:w-auto sm:justify-end">
-            <Button className="h-9 w-full gap-1.5 px-4 sm:w-auto" type="button" disabled>
+            <Button
+              className="h-9 w-full gap-1.5 px-4 sm:w-auto"
+              type="button"
+              onClick={() => {
+                setSheetCompanyId(null);
+                setSheetMode("create");
+                setSheetOpen(true);
+              }}
+            >
               <Plus className="h-4 w-4 shrink-0" />
               Tambah Customer
             </Button>
@@ -285,7 +304,14 @@ export default function AdminCustomersPage() {
                         <TableCell>{String(cust.contact_person ?? "—")}</TableCell>
                         <TableCell className={cn(actionsCellClass, "p-2 text-right")}>
                           <div className="flex justify-end">
-                            <CustomerActionsMenu companyId={id} />
+                            <CustomerActionsMenu
+                              companyId={id}
+                              onDetail={() => {
+                                setSheetCompanyId(id);
+                                setSheetMode("detail");
+                                setSheetOpen(true);
+                              }}
+                            />
                           </div>
                         </TableCell>
                       </TableRow>
@@ -312,6 +338,17 @@ export default function AdminCustomersPage() {
           )}
         </CardContent>
       </Card>
+
+      <CompanyAdminSheet
+        open={sheetOpen}
+        onOpenChange={setSheetOpen}
+        mode={sheetMode}
+        companyId={sheetMode === "detail" ? sheetCompanyId : null}
+        onSaved={() => {
+          void load();
+          void loadStats();
+        }}
+      />
     </div>
   );
 }

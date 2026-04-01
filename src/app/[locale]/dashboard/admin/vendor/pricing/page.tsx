@@ -27,6 +27,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { PaginationBar } from "@/components/data-table/pagination-bar";
+import { Button } from "@/components/ui/button";
+import { VendorPricingDialog } from "@/components/dashboard/admin/vendor-pricing-dialog";
+import { VendorServiceDialog } from "@/components/dashboard/admin/vendor-service-dialog";
 import { fetchAdminVendor, fetchAdminVendors } from "@/lib/admin-api";
 import type { LaravelPaginated } from "@/lib/types-api";
 import { ApiError } from "@/lib/api-client";
@@ -39,6 +42,14 @@ import {
 } from "../_components/build-pricing-rows";
 
 type VendorRow = Record<string, unknown>;
+
+function vendorServiceLabel(vs: Record<string, unknown>): string {
+  const o = vs.origin_location as { code?: string; name?: string } | undefined;
+  const d = vs.destination_location as { code?: string; name?: string } | undefined;
+  const st = vs.service_type as { name?: string } | undefined;
+  const lane = [o?.code ?? o?.name, d?.code ?? d?.name].filter(Boolean).join(" → ") || "—";
+  return `${lane} · ${st?.name ?? "—"}`;
+}
 
 const PRICING_PER_PAGE = 10;
 const VENDOR_OPTIONS_CAP = 500;
@@ -56,6 +67,9 @@ export default function AdminVendorPricingPage() {
   const [loading, setLoading] = useState(true);
   const [detailLoading, setDetailLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [vendorServicesRaw, setVendorServicesRaw] = useState<Record<string, unknown>[]>([]);
+  const [serviceDialogOpen, setServiceDialogOpen] = useState(false);
+  const [pricingDialogOpen, setPricingDialogOpen] = useState(false);
 
   const loadPricingForVendor = useCallback(async (vendorId: number, label: string) => {
     setDetailLoading(true);
@@ -64,11 +78,14 @@ export default function AdminVendorPricingPage() {
       const detail = await fetchAdminVendor(vendorId);
       const v = detail.data as Record<string, unknown>;
       setPricingRows(buildPricingRowsFromVendorDetail(v));
+      const vss = (v.vendor_services as Record<string, unknown>[] | undefined) ?? [];
+      setVendorServicesRaw(vss);
       setPricingVendorLabel(label);
       setPricingPage(1);
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Gagal memuat detail vendor.");
       setPricingRows([]);
+      setVendorServicesRaw([]);
       setPricingVendorLabel("");
     } finally {
       setDetailLoading(false);
@@ -141,6 +158,16 @@ export default function AdminVendorPricingPage() {
 
   const pricingSlice = pricingMeta.slice;
 
+  const selectedVendorNumericId = selectedVendorId ? Number(selectedVendorId) : null;
+  const vendorServiceOptions = useMemo(
+    () =>
+      vendorServicesRaw.map((vs) => ({
+        id: Number(vs.id),
+        label: vendorServiceLabel(vs),
+      })),
+    [vendorServicesRaw]
+  );
+
   const onVendorChange = (value: string | null) => {
     if (value == null) return;
     setSelectedVendorId(value);
@@ -152,13 +179,54 @@ export default function AdminVendorPricingPage() {
 
   return (
     <>
+      <VendorServiceDialog
+        open={serviceDialogOpen}
+        onOpenChange={setServiceDialogOpen}
+        vendorId={selectedVendorNumericId}
+        onSaved={() => {
+          const id = selectedVendorNumericId;
+          if (id != null) void loadPricingForVendor(id, pricingVendorLabel || `#${id}`);
+        }}
+      />
+      <VendorPricingDialog
+        open={pricingDialogOpen}
+        onOpenChange={setPricingDialogOpen}
+        vendorServiceOptions={vendorServiceOptions}
+        onSaved={() => {
+          const id = selectedVendorNumericId;
+          if (id != null) void loadPricingForVendor(id, pricingVendorLabel || `#${id}`);
+        }}
+      />
       {error ? (
         <p className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{error}</p>
       ) : null}
 
       <Card className="min-w-0 overflow-hidden">
         <CardHeader className="space-y-1">
-          <CardTitle>Pricing</CardTitle>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <CardTitle>Pricing</CardTitle>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                disabled={!selectedVendorNumericId || detailLoading}
+                onClick={() => setServiceDialogOpen(true)}
+              >
+                Tambah layanan vendor
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                disabled={
+                  !selectedVendorNumericId || detailLoading || vendorServiceOptions.length === 0
+                }
+                onClick={() => setPricingDialogOpen(true)}
+              >
+                Tambah tarif
+              </Button>
+            </div>
+          </div>
           <CardDescription className="space-y-2 text-pretty">
             <span className="block">
               Harga di sistem ini disimpan per vendor: satu respons API berisi detail vendor, layanan, dan tarif.

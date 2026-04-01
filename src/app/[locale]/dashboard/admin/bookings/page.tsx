@@ -35,6 +35,7 @@ import { useAuthPersistHydrated } from "@/lib/use-auth-hydrated";
 import {
   approveBooking,
   convertBookingToShipment,
+  fetchAdminBooking,
   fetchAdminBookings,
   rejectBooking,
 } from "@/lib/admin-api";
@@ -52,6 +53,24 @@ import {
   MoreHorizontal,
   XCircle,
 } from "lucide-react";
+import { useRouter } from "@/i18n/routing";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 const PER_PAGE = 10;
 const STATS_CAP = 1000;
@@ -85,12 +104,17 @@ type BookingRow = {
 function BookingActionsMenu({
   booking,
   canProcessOperations,
+  onOpenDetail,
+  onOpenReject,
   onDone,
 }: {
   booking: BookingRow;
   canProcessOperations: boolean;
+  onOpenDetail: (id: number) => void;
+  onOpenReject: (id: number) => void;
   onDone: () => void;
 }) {
+  const router = useRouter();
   const st = booking.status.toLowerCase();
   const showApproveReject =
     canProcessOperations && (st === "submitted" || st === "confirmed");
@@ -106,40 +130,32 @@ function BookingActionsMenu({
         <span className="sr-only">Menu aksi</span>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-52">
-        <DropdownMenuItem className="cursor-pointer" onClick={() => window.alert(`Booking #${booking.id}`)}>
+        <DropdownMenuItem className="cursor-pointer" onClick={() => onOpenDetail(booking.id)}>
           <Eye className="h-4 w-4" />
           Lihat detail
         </DropdownMenuItem>
         {showOpsDivider ? <DropdownMenuSeparator /> : null}
         {showApproveReject ? (
           <>
-            <DropdownMenuItem
-              className="cursor-pointer"
-              onClick={async () => {
-                try {
-                  await approveBooking(booking.id);
-                  onDone();
-                } catch (e) {
-                  window.alert(e instanceof ApiError ? e.message : "Gagal");
-                }
-              }}
-            >
+                <DropdownMenuItem
+                  className="cursor-pointer"
+                  onClick={async () => {
+                    try {
+                      await approveBooking(booking.id);
+                      onDone();
+                      toast.success("Booking disetujui.");
+                    } catch (e) {
+                      toast.error(e instanceof ApiError ? e.message : "Gagal");
+                    }
+                  }}
+                >
               <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
               Setujui booking
             </DropdownMenuItem>
             <DropdownMenuItem
               className="cursor-pointer"
               variant="destructive"
-              onClick={async () => {
-                const reason = window.prompt("Alasan penolakan:");
-                if (!reason) return;
-                try {
-                  await rejectBooking(booking.id, reason);
-                  onDone();
-                } catch (e) {
-                  window.alert(e instanceof ApiError ? e.message : "Gagal");
-                }
-              }}
+              onClick={() => onOpenReject(booking.id)}
             >
               <XCircle className="h-4 w-4" />
               Tolak booking
@@ -151,10 +167,15 @@ function BookingActionsMenu({
             className="cursor-pointer"
             onClick={async () => {
               try {
-                await convertBookingToShipment(booking.id);
+                const res = await convertBookingToShipment(booking.id);
+                const payload = res as { data?: { id?: number } };
+                const sid = payload?.data?.id;
+                if (typeof sid === "number") {
+                  router.push(`/dashboard/admin/shipments/${sid}`);
+                }
                 onDone();
               } catch (e) {
-                window.alert(e instanceof ApiError ? e.message : "Gagal");
+                toast.error(e instanceof ApiError ? e.message : "Gagal");
               }
             }}
           >
@@ -186,6 +207,15 @@ export default function AdminBookingsPage() {
   const [searchInput, setSearchInput] = useState("");
   const debouncedSearch = useDebouncedValue(searchInput, 400);
   const [statusFilter, setStatusFilter] = useState("all");
+
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [detailText, setDetailText] = useState("");
+  const [detailLoading, setDetailLoading] = useState(false);
+
+  const [rejectOpen, setRejectOpen] = useState(false);
+  const [rejectId, setRejectId] = useState<number | null>(null);
+  const [rejectReason, setRejectReason] = useState("");
+  const [rejectSaving, setRejectSaving] = useState(false);
 
   useEffect(() => {
     setPage(1);
@@ -232,10 +262,41 @@ export default function AdminBookingsPage() {
     }
   }, [mounted, authHydrated, page, debouncedSearch, statusParam]);
 
+  const openBookingDetail = useCallback(async (id: number) => {
+    setDetailOpen(true);
+    setDetailLoading(true);
+    setDetailText("");
+    try {
+      const res = await fetchAdminBooking(id);
+      setDetailText(JSON.stringify((res as { data: unknown }).data, null, 2));
+    } catch (e) {
+      setDetailText(e instanceof ApiError ? e.message : "Gagal memuat.");
+    } finally {
+      setDetailLoading(false);
+    }
+  }, []);
+
   const reloadAll = useCallback(async () => {
     await loadStats();
     await loadTable();
   }, [loadStats, loadTable]);
+
+  const submitReject = useCallback(async () => {
+    if (rejectId == null || !rejectReason.trim()) return;
+    setRejectSaving(true);
+    try {
+      await rejectBooking(rejectId, rejectReason.trim());
+      setRejectOpen(false);
+      setRejectId(null);
+      setRejectReason("");
+      await reloadAll();
+      toast.success("Booking ditolak.");
+    } catch (e) {
+      toast.error(e instanceof ApiError ? e.message : "Gagal menolak.");
+    } finally {
+      setRejectSaving(false);
+    }
+  }, [rejectId, rejectReason, reloadAll]);
 
   useEffect(() => {
     setMounted(true);
@@ -391,6 +452,12 @@ export default function AdminBookingsPage() {
                           <BookingActionsMenu
                             booking={booking}
                             canProcessOperations={canProcessOperations}
+                            onOpenDetail={openBookingDetail}
+                            onOpenReject={(id) => {
+                              setRejectId(id);
+                              setRejectReason("");
+                              setRejectOpen(true);
+                            }}
                             onDone={reloadAll}
                           />
                         </div>
@@ -416,6 +483,57 @@ export default function AdminBookingsPage() {
           )}
         </CardContent>
       </Card>
+
+      <Sheet open={detailOpen} onOpenChange={setDetailOpen}>
+        <SheetContent className="w-full overflow-y-auto sm:max-w-lg">
+          <SheetHeader>
+            <SheetTitle>Detail booking</SheetTitle>
+            <SheetDescription>Ringkasan data booking dari server.</SheetDescription>
+          </SheetHeader>
+          <div className="mt-4">
+            {detailLoading ? (
+              <p className="text-sm text-muted-foreground">Memuat…</p>
+            ) : (
+              <pre className="max-h-[70vh] overflow-auto rounded-md border bg-muted/40 p-3 text-xs leading-relaxed">
+                {detailText || "—"}
+              </pre>
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      <Dialog open={rejectOpen} onOpenChange={setRejectOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Tolak booking</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2">
+            <label className="text-sm font-medium" htmlFor="reject-reason">
+              Alasan penolakan
+            </label>
+            <Textarea
+              id="reject-reason"
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              placeholder="Wajib diisi"
+              rows={4}
+            />
+          </div>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button type="button" variant="outline" onClick={() => setRejectOpen(false)}>
+              Batal
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              disabled={!rejectReason.trim() || rejectSaving}
+              onClick={() => void submitReject()}
+            >
+              {rejectSaving ? "Menyimpan…" : "Tolak"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

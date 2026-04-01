@@ -1,5 +1,6 @@
 "use client";
 
+import { toast } from "sonner";
 import { useCallback, useEffect, useState } from "react";
 import {
   Table,
@@ -10,12 +11,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
 import { PaginationBar } from "@/components/data-table/pagination-bar";
 import { TableToolbar } from "@/components/data-table/table-toolbar";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/lib/store";
 import { useAuthPersistHydrated } from "@/lib/use-auth-hydrated";
-import { fetchAdminLocations } from "@/lib/admin-api";
+import { deleteAdminLocation, fetchAdminLocations } from "@/lib/admin-api";
 import type { LaravelPaginated } from "@/lib/types-api";
 import { ApiError } from "@/lib/api-client";
 import { rowNumber } from "@/lib/list-query";
@@ -28,6 +30,12 @@ import {
   LOCATION_TYPE_FILTER_OPTIONS,
   STATUS_FILTER_OPTIONS,
 } from "../_components/master-filters";
+import {
+  MasterLocationSheet,
+  type LocationSheetMode,
+} from "../_components/master-location-sheet";
+import { ConfirmDeleteDialog } from "@/components/dashboard/admin/confirm-delete-dialog";
+import { Plus } from "lucide-react";
 
 const PER_PAGE = 10;
 
@@ -60,6 +68,14 @@ export default function MasterLocationsPage() {
   const [typeFilter, setTypeFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
 
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [sheetMode, setSheetMode] = useState<LocationSheetMode>("create");
+  const [sheetRow, setSheetRow] = useState<Row | null>(null);
+
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteRow, setDeleteRow] = useState<Row | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+
   useEffect(() => {
     setPage(1);
   }, [debouncedSearch, typeFilter, statusFilter]);
@@ -91,20 +107,68 @@ export default function MasterLocationsPage() {
     void load();
   }, [load]);
 
+  const openCreate = () => {
+    setSheetRow(null);
+    setSheetMode("create");
+    setSheetOpen(true);
+  };
+
+  const openView = (row: Row) => {
+    setSheetRow(row);
+    setSheetMode("view");
+    setSheetOpen(true);
+  };
+
+  const openEdit = (row: Row) => {
+    setSheetRow(row);
+    setSheetMode("edit");
+    setSheetOpen(true);
+  };
+
+  const openDelete = (row: Row) => {
+    setDeleteRow(row);
+    setDeleteOpen(true);
+  };
+
+  const handleDelete = async () => {
+    if (deleteRow?.id == null) return;
+    setDeleteLoading(true);
+    try {
+      await deleteAdminLocation(Number(deleteRow.id));
+      setDeleteOpen(false);
+      setDeleteRow(null);
+      await load();
+    } catch (e) {
+      toast.error(e instanceof ApiError ? e.message : "Gagal menghapus.");
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
   const toolbar = (
-    <TableToolbar
-      searchPlaceholder="Cari kode atau nama lokasi…"
-      searchValue={searchInput}
-      onSearchChange={setSearchInput}
-      filterLabel="Tipe"
-      filterValue={typeFilter}
-      onFilterChange={setTypeFilter}
-      filterOptions={LOCATION_TYPE_FILTER_OPTIONS}
-      filter2Label="Status"
-      filter2Value={statusFilter}
-      onFilter2Change={setStatusFilter}
-      filter2Options={STATUS_FILTER_OPTIONS}
-    />
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+      <div className="min-w-0 flex-1">
+        <TableToolbar
+          searchPlaceholder="Cari kode atau nama lokasi…"
+          searchValue={searchInput}
+          onSearchChange={setSearchInput}
+          filterLabel="Tipe"
+          filterValue={typeFilter}
+          onFilterChange={setTypeFilter}
+          filterOptions={LOCATION_TYPE_FILTER_OPTIONS}
+          filter2Label="Status"
+          filter2Value={statusFilter}
+          onFilter2Change={setStatusFilter}
+          filter2Options={STATUS_FILTER_OPTIONS}
+        />
+      </div>
+      {canManageMaster ? (
+        <Button type="button" className="shrink-0 gap-1.5" onClick={openCreate}>
+          <Plus className="h-4 w-4" />
+          Tambah lokasi
+        </Button>
+      ) : null}
+    </div>
   );
 
   return (
@@ -151,7 +215,13 @@ export default function MasterLocationsPage() {
                     </TableCell>
                     <TableCell className={cn(actionsCellClass, "p-2 text-right")}>
                       <div className="flex justify-end">
-                        <MasterRowActions entityLabel="lokasi" rowCode={code} canManage={canManageMaster} />
+                        <MasterRowActions
+                          entityLabel="lokasi"
+                          canManage={canManageMaster}
+                          onView={() => openView(loc)}
+                          onEdit={canManageMaster ? () => openEdit(loc) : undefined}
+                          onDelete={canManageMaster ? () => openDelete(loc) : undefined}
+                        />
                       </div>
                     </TableCell>
                   </TableRow>
@@ -176,6 +246,23 @@ export default function MasterLocationsPage() {
           />
         ) : null}
       </MasterTableShell>
+
+      <MasterLocationSheet
+        open={sheetOpen}
+        onOpenChange={setSheetOpen}
+        mode={sheetMode}
+        row={sheetRow}
+        onSaved={() => void load()}
+      />
+
+      <ConfirmDeleteDialog
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        title="Hapus lokasi?"
+        description={`Yakin hapus lokasi "${String(deleteRow?.name ?? "")}"? Tindakan ini tidak dapat dibatalkan.`}
+        loading={deleteLoading}
+        onConfirm={handleDelete}
+      />
     </>
   );
 }
