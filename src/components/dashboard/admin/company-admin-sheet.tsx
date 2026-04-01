@@ -6,14 +6,6 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
-import {
   Select,
   SelectContent,
   SelectItem,
@@ -23,6 +15,7 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -397,21 +390,21 @@ export function CompanyAdminSheet({
 
   return (
     <>
-      <Sheet open={open} onOpenChange={onOpenChange}>
-        <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto">
-          <SheetHeader>
-            <SheetTitle>{mode === "create" ? "Tambah customer" : "Detail customer"}</SheetTitle>
-            <SheetDescription>Data perusahaan B2B.</SheetDescription>
-          </SheetHeader>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{mode === "create" ? "Tambah customer" : "Detail customer"}</DialogTitle>
+            <DialogDescription>Data perusahaan B2B.</DialogDescription>
+          </DialogHeader>
 
           {error ? (
-            <p className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2 mx-4">{error}</p>
+            <p className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{error}</p>
           ) : null}
 
           {mode === "detail" && loading ? (
-            <p className="text-sm text-muted-foreground px-4">Memuat…</p>
+            <p className="text-sm text-muted-foreground">Memuat…</p>
           ) : (
-            <div className="flex flex-col gap-4 px-4 pb-4">
+            <div className="flex flex-col gap-4 pb-2">
               {mode === "detail" && detail ? (
                 <div className="flex flex-wrap items-center gap-2">
                   <Badge variant="outline" className={customerStatusBadgeClass(st)}>
@@ -611,16 +604,16 @@ export function CompanyAdminSheet({
             </div>
           )}
 
-          <SheetFooter className="sm:justify-end gap-2">
+          <DialogFooter className="sm:justify-end gap-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
               Tutup
             </Button>
             <Button type="button" onClick={() => void saveCompany()} disabled={saving || !name.trim()}>
               {saving ? "Menyimpan…" : "Simpan"}
             </Button>
-          </SheetFooter>
-        </SheetContent>
-      </Sheet>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={branchOpen} onOpenChange={setBranchOpen}>
         <DialogContent showCloseButton>

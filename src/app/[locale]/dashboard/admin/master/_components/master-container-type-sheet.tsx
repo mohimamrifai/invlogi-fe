@@ -6,13 +6,13 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { createAdminContainerType, updateAdminContainerType } from "@/lib/admin-api";
 import { ApiError } from "@/lib/api-client";
 import { firstLaravelError } from "@/lib/laravel-errors";
@@ -118,13 +118,13 @@ export function MasterContainerTypeSheet({
         : "Detail jenis kontainer";
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
-        <SheetHeader>
-          <SheetTitle>{title}</SheetTitle>
-          <SheetDescription>Ukuran dan kapasitas kontainer.</SheetDescription>
-        </SheetHeader>
-        <div className="flex flex-col gap-4 px-4 pb-2">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription>Ukuran dan kapasitas kontainer.</DialogDescription>
+        </DialogHeader>
+        <div className="flex flex-col gap-4 pb-2">
           {error ? (
             <p className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{error}</p>
           ) : null}
@@ -173,16 +173,16 @@ export function MasterContainerTypeSheet({
           </div>
         </div>
         {!readOnly ? (
-          <SheetFooter className="sm:justify-end gap-2">
+          <DialogFooter className="sm:justify-end gap-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
               Batal
             </Button>
             <Button type="button" onClick={() => void save()} disabled={saving || !name.trim() || !size.trim()}>
               {saving ? "Menyimpan…" : "Simpan"}
             </Button>
-          </SheetFooter>
+          </DialogFooter>
         ) : null}
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
   );
 }

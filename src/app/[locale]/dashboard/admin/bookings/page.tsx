@@ -55,15 +55,9 @@ import {
 } from "lucide-react";
 import { useRouter } from "@/i18n/routing";
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
-import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -484,13 +478,13 @@ export default function AdminBookingsPage() {
         </CardContent>
       </Card>
 
-      <Sheet open={detailOpen} onOpenChange={setDetailOpen}>
-        <SheetContent className="w-full overflow-y-auto sm:max-w-lg">
-          <SheetHeader>
-            <SheetTitle>Detail booking</SheetTitle>
-            <SheetDescription>Ringkasan data booking dari server.</SheetDescription>
-          </SheetHeader>
-          <div className="mt-4">
+      <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Detail booking</DialogTitle>
+            <DialogDescription>Ringkasan data booking dari server.</DialogDescription>
+          </DialogHeader>
+          <div className="mt-2">
             {detailLoading ? (
               <p className="text-sm text-muted-foreground">Memuat…</p>
             ) : (
@@ -499,8 +493,8 @@ export default function AdminBookingsPage() {
               </pre>
             )}
           </div>
-        </SheetContent>
-      </Sheet>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={rejectOpen} onOpenChange={setRejectOpen}>
         <DialogContent className="sm:max-w-md">

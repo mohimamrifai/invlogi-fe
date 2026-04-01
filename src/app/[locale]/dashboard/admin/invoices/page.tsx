@@ -47,12 +47,12 @@ import { Button } from "@/components/ui/button";
 import { InvoiceCreateDialog } from "@/components/dashboard/admin/invoice-create-dialog";
 import { InvoiceEditDialog } from "@/components/dashboard/admin/invoice-edit-dialog";
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   downloadAdminInvoicePdf,
   fetchAdminInvoice,
@@ -258,15 +258,15 @@ export default function AdminInvoicesPage() {
           void load();
         }}
       />
-      <Sheet open={detailOpen} onOpenChange={setDetailOpen}>
-        <SheetContent className="w-full overflow-y-auto sm:max-w-lg">
-          <SheetHeader>
-            <SheetTitle>Detail invoice</SheetTitle>
-            <SheetDescription>
+      <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Detail invoice</DialogTitle>
+            <DialogDescription>
               {detailId != null ? `ID #${detailId}` : null}
-            </SheetDescription>
-          </SheetHeader>
-          <div className="mt-4">
+            </DialogDescription>
+          </DialogHeader>
+          <div className="mt-2">
             {detailLoading ? (
               <p className="text-sm text-muted-foreground">Memuat…</p>
             ) : (
@@ -275,8 +275,8 @@ export default function AdminInvoicesPage() {
               </pre>
             )}
           </div>
-        </SheetContent>
-      </Sheet>
+        </DialogContent>
+      </Dialog>
 
       <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
         <div className="flex min-w-0 items-start gap-3">
