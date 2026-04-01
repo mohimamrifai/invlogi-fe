@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
@@ -35,7 +36,6 @@ import { useAuthStore } from "@/lib/store";
 import { useAuthPersistHydrated } from "@/lib/use-auth-hydrated";
 import { deleteAdminCompany, fetchAdminCompanies } from "@/lib/admin-api";
 import { getAdminCustomerCapabilities } from "@/lib/admin-customer-capabilities";
-import { CompanyAdminDialog } from "@/components/dashboard/admin/company-admin-dialog";
 import type { LaravelPaginated } from "@/lib/types-api";
 import { ApiError } from "@/lib/api-client";
 import { rowNumber } from "@/lib/list-query";
@@ -108,6 +108,10 @@ function CustomerActionsMenu({
 }
 
 export default function AdminCustomersPage() {
+  const params = useParams();
+  const router = useRouter();
+  const locale = String(params?.locale ?? "id");
+  const customersBasePath = `/${locale}/dashboard/admin/customers`;
   const authHydrated = useAuthPersistHydrated();
   const { user } = useAuthStore();
   const roles = user?.roles ?? [];
@@ -126,10 +130,6 @@ export default function AdminCustomersPage() {
   const debouncedSearch = useDebouncedValue(searchInput, 400);
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const [companyDialogOpen, setCompanyDialogOpen] = useState(false);
-  const [companyDialogMode, setCompanyDialogMode] = useState<"create" | "detail">("detail");
-  const [companyDialogId, setCompanyDialogId] = useState<number | null>(null);
-
   const [deleteCompanyId, setDeleteCompanyId] = useState<number | null>(null);
   const [deleteCompanyLoading, setDeleteCompanyLoading] = useState(false);
 
@@ -141,9 +141,6 @@ export default function AdminCustomersPage() {
       await deleteAdminCompany(idToDelete);
       toast.success("Customer dihapus.");
       setDeleteCompanyId(null);
-      if (companyDialogMode === "detail" && companyDialogId === idToDelete) {
-        setCompanyDialogOpen(false);
-      }
       void load();
       void loadStats();
     } catch (e) {
@@ -227,11 +224,7 @@ export default function AdminCustomersPage() {
             <Button
               className="h-9 w-full gap-1.5 px-4 sm:w-auto"
               type="button"
-              onClick={() => {
-                setCompanyDialogId(null);
-                setCompanyDialogMode("create");
-                setCompanyDialogOpen(true);
-              }}
+              onClick={() => router.push(`${customersBasePath}/create`)}
             >
               <Plus className="h-4 w-4 shrink-0" />
               Tambah Customer
@@ -346,9 +339,8 @@ export default function AdminCustomersPage() {
                               canEditCompany={caps.canEditCompanyData}
                               canDelete={caps.canDeleteCompany}
                               onOpen={() => {
-                                setCompanyDialogId(id);
-                                setCompanyDialogMode("detail");
-                                setCompanyDialogOpen(true);
+                                if (!caps.canEditCompanyData) return;
+                                router.push(`${customersBasePath}/${id}/edit`);
                               }}
                               onDelete={() => setDeleteCompanyId(id)}
                             />
@@ -378,18 +370,6 @@ export default function AdminCustomersPage() {
           )}
         </CardContent>
       </Card>
-
-      <CompanyAdminDialog
-        open={companyDialogOpen}
-        onOpenChange={setCompanyDialogOpen}
-        mode={companyDialogMode}
-        companyId={companyDialogMode === "detail" ? companyDialogId : null}
-        capabilities={caps}
-        onSaved={() => {
-          void load();
-          void loadStats();
-        }}
-      />
 
       <ConfirmDeleteDialog
         open={deleteCompanyId != null}
