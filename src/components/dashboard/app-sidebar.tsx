@@ -134,7 +134,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                     className={
                       "h-9 text-sm font-medium px-3 rounded-md transition-colors " +
                       (isActive
-                        ? "bg-zinc-900 text-white"
+                        ? "bg-[#0b1b69] text-white shadow-sm data-active:bg-[#0b1b69] data-active:text-white hover:bg-[#0d2280] hover:text-white [&_svg]:text-white"
                         : "text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900")
                     }
                     render={

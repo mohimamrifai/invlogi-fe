@@ -42,11 +42,13 @@ import {
   MoreHorizontal,
   Pencil,
   Receipt,
+  Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { InvoicePdfDownloadProgressDialog } from "@/components/invoice-pdf-download-progress-dialog";
 import { InvoiceCreateDialog } from "@/components/dashboard/admin/invoice-create-dialog";
 import { InvoiceDetailView } from "@/components/dashboard/admin/invoice-detail-view";
+import { ConfirmDeleteDialog } from "@/components/dashboard/admin/confirm-delete-dialog";
 import { InvoiceEditDialog } from "@/components/dashboard/admin/invoice-edit-dialog";
 import {
   Dialog,
@@ -56,6 +58,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
+  deleteAdminInvoice,
   downloadAdminInvoicePdf,
   fetchAdminInvoice,
   fetchAdminInvoices,
@@ -90,12 +93,14 @@ function AdminInvoiceActionsMenu({
   canManageInvoices,
   onViewDetail,
   onEdit,
+  onDelete,
 }: {
   invoiceId: number;
   invoiceNumber: string;
   canManageInvoices: boolean;
   onViewDetail: () => void;
   onEdit: () => void;
+  onDelete: () => void;
 }) {
   const [pdfDialogOpen, setPdfDialogOpen] = useState(false);
   const [pdfBusy, setPdfBusy] = useState(false);
@@ -165,6 +170,13 @@ function AdminInvoiceActionsMenu({
               <Pencil className="h-4 w-4" />
               Edit invoice
             </DropdownMenuItem>
+            <DropdownMenuItem
+              className="cursor-pointer text-destructive focus:text-destructive"
+              onClick={onDelete}
+            >
+              <Trash2 className="h-4 w-4" />
+              Hapus invoice
+            </DropdownMenuItem>
           </>
         ) : null}
       </DropdownMenuContent>
@@ -199,6 +211,9 @@ export default function AdminInvoicesPage() {
   const [detailLoading, setDetailLoading] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [editRow, setEditRow] = useState<InvRow | null>(null);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteRow, setDeleteRow] = useState<InvRow | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   useEffect(() => {
     setPage(1);
@@ -274,6 +289,27 @@ export default function AdminInvoicesPage() {
     }
   };
 
+  const handleDeleteInvoice = async () => {
+    if (deleteRow?.id == null) return;
+    setDeleteLoading(true);
+    try {
+      await deleteAdminInvoice(Number(deleteRow.id));
+      toast.success("Invoice berhasil dihapus.");
+      setDeleteOpen(false);
+      setDeleteRow(null);
+      if (editOpen && editRow?.id === deleteRow.id) {
+        setEditOpen(false);
+        setEditRow(null);
+      }
+      void loadStats();
+      void load();
+    } catch (e) {
+      toast.error(e instanceof ApiError ? e.message : "Gagal menghapus invoice.");
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
   return (
     <div className="flex min-w-0 w-full flex-1 flex-col gap-6 md:px-2">
       <InvoiceCreateDialog
@@ -312,6 +348,15 @@ export default function AdminInvoicesPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDeleteDialog
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        title="Hapus invoice?"
+        description={`Yakin hapus invoice "${String(deleteRow?.invoice_number ?? "")}"? Invoice akan diarsipkan (soft delete). Tidak dapat dihapus jika sudah ada pembayaran sukses.`}
+        loading={deleteLoading}
+        onConfirm={handleDeleteInvoice}
+      />
 
       <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
         <div className="flex min-w-0 items-start gap-3">
@@ -463,6 +508,10 @@ export default function AdminInvoicesPage() {
                               onEdit={() => {
                                 setEditRow(invoice);
                                 setEditOpen(true);
+                              }}
+                              onDelete={() => {
+                                setDeleteRow(invoice);
+                                setDeleteOpen(true);
                               }}
                             />
                           </div>

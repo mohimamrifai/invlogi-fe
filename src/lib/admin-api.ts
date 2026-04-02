@@ -231,6 +231,10 @@ export async function updateAdminInvoice(id: number, body: Record<string, unknow
   return apiFetch(`/admin/invoices/${id}`, { method: "PUT", body: JSON.stringify(body) });
 }
 
+export async function deleteAdminInvoice(id: number) {
+  return apiFetch(`/admin/invoices/${id}`, { method: "DELETE" });
+}
+
 export async function fetchAdminPayments(input?: number | ListQueryParams) {
   const params = normalizeListParams(input);
   return apiFetch<LaravelPaginated<Record<string, unknown>>>(
@@ -241,6 +245,20 @@ export async function fetchAdminPayments(input?: number | ListQueryParams) {
 
 export async function fetchAdminPayment(id: number) {
   return apiFetch<{ data: Record<string, unknown> }>(`/admin/payments/${id}`, { method: "GET" });
+}
+
+export async function syncAdminPaymentMidtrans(id: number) {
+  return apiFetch<{ message: string; data: Record<string, unknown> }>(
+    `/admin/payments/${id}/sync-midtrans`,
+    { method: "POST" }
+  );
+}
+
+export async function verifyAdminPaymentManual(id: number, body?: { note?: string | null }) {
+  return apiFetch<{ message: string; data: Record<string, unknown> }>(
+    `/admin/payments/${id}/verify-manual`,
+    { method: "POST", body: JSON.stringify(body ?? {}) }
+  );
 }
 
 export async function fetchAdminOverdueInvoices() {
