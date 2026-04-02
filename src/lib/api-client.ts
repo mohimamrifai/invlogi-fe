@@ -88,14 +88,22 @@ export async function apiFetch<T = unknown>(
   return body as T;
 }
 
-/** For PDF/binary responses (e.g. invoice download). */
+export type BlobDownloadProgress = {
+  loaded: number;
+  total: number | null;
+};
+
+/** For PDF/binary responses (e.g. invoice download). Streams body when possible so `onProgress` can update UI. */
 export async function apiFetchBlob(
   path: string,
-  options: RequestInit & { token?: string | null } = {}
+  options: RequestInit & {
+    token?: string | null;
+    onProgress?: (p: BlobDownloadProgress) => void;
+  } = {}
 ): Promise<Blob> {
   assertApiBaseConfigured();
 
-  const { token = getStoredToken(), ...init } = options;
+  const { token = getStoredToken(), onProgress, ...init } = options;
   const headers = new Headers(init.headers);
   if (token) headers.set("Authorization", `Bearer ${token}`);
   headers.set("Accept", "application/pdf, */*");
@@ -117,5 +125,30 @@ export async function apiFetchBlob(
     }
     throw new ApiError(msg, res.status);
   }
-  return res.blob();
+
+  if (!res.body) {
+    const blob = await res.blob();
+    onProgress?.({ loaded: blob.size, total: blob.size > 0 ? blob.size : null });
+    return blob;
+  }
+
+  const len = res.headers.get("content-length");
+  const parsed = len != null && len !== "" ? Number(len) : NaN;
+  const total = Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+
+  const reader = res.body.getReader();
+  const chunks: BlobPart[] = [];
+  let loaded = 0;
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    if (value?.byteLength) {
+      chunks.push(value);
+      loaded += value.byteLength;
+      onProgress?.({ loaded, total });
+    }
+  }
+
+  return new Blob(chunks);
 }

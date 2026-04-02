@@ -1,4 +1,4 @@
-import { apiFetch, apiFetchBlob } from "./api-client";
+import { apiFetch, apiFetchBlob, type BlobDownloadProgress } from "./api-client";
 import { buildListQuery, normalizeListParams, type ListQueryParams } from "./list-query";
 import type { LaravelPaginated } from "./types-api";
 
@@ -81,6 +81,12 @@ export async function payInvoice(invoiceId: number) {
   );
 }
 
-export async function downloadCustomerInvoicePdf(invoiceId: number) {
-  return apiFetchBlob(`/customer/invoices/${invoiceId}/pdf`, { method: "GET" });
+export async function downloadCustomerInvoicePdf(
+  invoiceId: number,
+  opts?: { onProgress?: (p: BlobDownloadProgress) => void }
+) {
+  return apiFetchBlob(`/customer/invoices/${invoiceId}/pdf`, {
+    method: "GET",
+    onProgress: opts?.onProgress,
+  });
 }

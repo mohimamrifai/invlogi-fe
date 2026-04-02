@@ -173,7 +173,7 @@ export function InvoiceCreateDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
         <DialogHeader className={DIALOG_CREATE_HEADER_CLASS}>
           <DialogTitle>Buat invoice</DialogTitle>
         </DialogHeader>
@@ -190,7 +190,7 @@ export function InvoiceCreateDialog({
               }}
               disabled={listsLoading}
             >
-              <SelectTrigger>
+              <SelectTrigger className="w-full min-w-0">
                 <SelectValue placeholder={listsLoading ? "Memuat…" : "Pilih shipment"} />
               </SelectTrigger>
               <SelectContent>
@@ -211,7 +211,7 @@ export function InvoiceCreateDialog({
               }}
               disabled={listsLoading}
             >
-              <SelectTrigger>
+              <SelectTrigger className="w-full min-w-0">
                 <SelectValue placeholder={listsLoading ? "Memuat…" : "Pilih"} />
               </SelectTrigger>
               <SelectContent>

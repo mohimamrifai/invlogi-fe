@@ -1,4 +1,4 @@
-import { apiFetch, apiFetchBlob } from "./api-client";
+import { apiFetch, apiFetchBlob, type BlobDownloadProgress } from "./api-client";
 import { buildListQuery, normalizeListParams, type ListQueryParams } from "./list-query";
 import type { LaravelPaginated } from "./types-api";
 
@@ -395,6 +395,12 @@ export async function deleteAdminAdditionalService(id: number) {
   return apiFetch(`/admin/additional-services/${id}`, { method: "DELETE" });
 }
 
-export async function downloadAdminInvoicePdf(invoiceId: number) {
-  return apiFetchBlob(`/admin/invoices/${invoiceId}/pdf`, { method: "GET" });
+export async function downloadAdminInvoicePdf(
+  invoiceId: number,
+  opts?: { onProgress?: (p: BlobDownloadProgress) => void }
+) {
+  return apiFetchBlob(`/admin/invoices/${invoiceId}/pdf`, {
+    method: "GET",
+    onProgress: opts?.onProgress,
+  });
 }

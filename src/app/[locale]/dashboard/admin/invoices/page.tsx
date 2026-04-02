@@ -1,7 +1,7 @@
 "use client";
 
 import { toast } from "sonner";
-import { useCallback, useEffect, useState } from "react";
+import { Fragment, useCallback, useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import {
@@ -44,7 +44,9 @@ import {
   Receipt,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { InvoicePdfDownloadProgressDialog } from "@/components/invoice-pdf-download-progress-dialog";
 import { InvoiceCreateDialog } from "@/components/dashboard/admin/invoice-create-dialog";
+import { InvoiceDetailView } from "@/components/dashboard/admin/invoice-detail-view";
 import { InvoiceEditDialog } from "@/components/dashboard/admin/invoice-edit-dialog";
 import {
   Dialog,
@@ -95,22 +97,51 @@ function AdminInvoiceActionsMenu({
   onViewDetail: () => void;
   onEdit: () => void;
 }) {
+  const [pdfDialogOpen, setPdfDialogOpen] = useState(false);
+  const [pdfBusy, setPdfBusy] = useState(false);
+  const [pdfProgress, setPdfProgress] = useState<number | null>(null);
+
   const onPdf = async () => {
+    setPdfDialogOpen(true);
+    setPdfBusy(true);
+    setPdfProgress(null);
     try {
-      const blob = await downloadAdminInvoicePdf(invoiceId);
+      const blob = await downloadAdminInvoicePdf(invoiceId, {
+        onProgress: ({ loaded, total }) => {
+          if (total != null && total > 0) {
+            setPdfProgress(Math.min(100, Math.round((loaded / total) * 100)));
+          } else {
+            setPdfProgress(null);
+          }
+        },
+      });
+      setPdfProgress(100);
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
       a.download = `invoice-${invoiceNumber}.pdf`;
       a.click();
       URL.revokeObjectURL(url);
+      await new Promise((r) => setTimeout(r, 150));
       toast.success("PDF invoice berhasil diunduh.");
     } catch (e) {
       toast.error(e instanceof ApiError ? e.message : "Gagal mengunduh PDF.");
+    } finally {
+      setPdfBusy(false);
+      setPdfDialogOpen(false);
+      setPdfProgress(null);
     }
   };
 
   return (
+    <Fragment>
+      <InvoicePdfDownloadProgressDialog
+        open={pdfDialogOpen}
+        onOpenChange={setPdfDialogOpen}
+        blocking={pdfBusy}
+        progress={pdfProgress}
+        invoiceLabel={invoiceNumber || String(invoiceId)}
+      />
     <DropdownMenu>
       <DropdownMenuTrigger
         className={cn(buttonVariants({ variant: "ghost", size: "icon-sm" }), "shrink-0")}
@@ -138,6 +169,7 @@ function AdminInvoiceActionsMenu({
         ) : null}
       </DropdownMenuContent>
     </DropdownMenu>
+    </Fragment>
   );
 }
 
@@ -162,7 +194,8 @@ export default function AdminInvoicesPage() {
   const [createOpen, setCreateOpen] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false);
   const [detailId, setDetailId] = useState<number | null>(null);
-  const [detailText, setDetailText] = useState("");
+  const [detailData, setDetailData] = useState<InvRow | null>(null);
+  const [detailError, setDetailError] = useState<string | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [editRow, setEditRow] = useState<InvRow | null>(null);
@@ -229,12 +262,13 @@ export default function AdminInvoicesPage() {
     setDetailId(id);
     setDetailOpen(true);
     setDetailLoading(true);
-    setDetailText("");
+    setDetailData(null);
+    setDetailError(null);
     try {
       const res = await fetchAdminInvoice(id);
-      setDetailText(JSON.stringify((res as { data: unknown }).data, null, 2));
+      setDetailData((res as { data: InvRow }).data ?? null);
     } catch (e) {
-      setDetailText(e instanceof ApiError ? e.message : "Gagal memuat.");
+      setDetailError(e instanceof ApiError ? e.message : "Gagal memuat detail invoice.");
     } finally {
       setDetailLoading(false);
     }
@@ -260,20 +294,20 @@ export default function AdminInvoicesPage() {
         }}
       />
       <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>Detail invoice</DialogTitle>
             <DialogDescription>
-              {detailId != null ? `ID #${detailId}` : null}
+              {detailId != null ? `Referensi internal #${detailId}` : null}
             </DialogDescription>
           </DialogHeader>
           <div className="mt-2">
             {detailLoading ? (
               <p className="text-sm text-muted-foreground">Memuat…</p>
+            ) : detailError ? (
+              <p className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-md px-3 py-2">{detailError}</p>
             ) : (
-              <pre className="max-h-[70vh] overflow-auto rounded-md border bg-muted/40 p-3 text-xs leading-relaxed">
-                {detailText || "—"}
-              </pre>
+              <InvoiceDetailView data={detailData} />
             )}
           </div>
         </DialogContent>

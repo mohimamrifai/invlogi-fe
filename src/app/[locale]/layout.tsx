@@ -13,7 +13,7 @@ const poppins = Poppins({
 });
 
 export const metadata: Metadata = {
-  title: "IDNVerse",
+  title: "Invlogi - Logistik Multimoda",
   description: "Logistik Multimoda, Transparan & Berkelanjutan",
 };
 

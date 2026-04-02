@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { Fragment, useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -46,6 +46,7 @@ import {
   MoreHorizontal,
   Receipt,
 } from "lucide-react";
+import { InvoicePdfDownloadProgressDialog } from "@/components/invoice-pdf-download-progress-dialog";
 import { fetchCustomerInvoices, downloadCustomerInvoicePdf, payInvoice } from "@/lib/customer-api";
 import type { LaravelPaginated } from "@/lib/types-api";
 import { ApiError } from "@/lib/api-client";
@@ -86,21 +87,41 @@ function InvoiceActionsMenu({
   onPaid: () => void;
 }) {
   const [detailOpen, setDetailOpen] = useState(false);
+  const [pdfDialogOpen, setPdfDialogOpen] = useState(false);
+  const [pdfBusy, setPdfBusy] = useState(false);
+  const [pdfProgress, setPdfProgress] = useState<number | null>(null);
   const st = status.toLowerCase();
   const canPay = st === "unpaid" || st === "overdue";
 
   const onPdf = async () => {
+    setPdfDialogOpen(true);
+    setPdfBusy(true);
+    setPdfProgress(null);
     try {
-      const blob = await downloadCustomerInvoicePdf(invoiceId);
+      const blob = await downloadCustomerInvoicePdf(invoiceId, {
+        onProgress: ({ loaded, total }) => {
+          if (total != null && total > 0) {
+            setPdfProgress(Math.min(100, Math.round((loaded / total) * 100)));
+          } else {
+            setPdfProgress(null);
+          }
+        },
+      });
+      setPdfProgress(100);
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
       a.download = `invoice-${invoiceNumber}.pdf`;
       a.click();
       URL.revokeObjectURL(url);
+      await new Promise((r) => setTimeout(r, 150));
       toast.success("PDF invoice berhasil diunduh.");
     } catch (e) {
       toast.error(e instanceof ApiError ? e.message : "Gagal mengunduh PDF.");
+    } finally {
+      setPdfBusy(false);
+      setPdfDialogOpen(false);
+      setPdfProgress(null);
     }
   };
 
@@ -125,7 +146,14 @@ function InvoiceActionsMenu({
   };
 
   return (
-    <>
+    <Fragment>
+      <InvoicePdfDownloadProgressDialog
+        open={pdfDialogOpen}
+        onOpenChange={setPdfDialogOpen}
+        blocking={pdfBusy}
+        progress={pdfProgress}
+        invoiceLabel={invoiceNumber || String(invoiceId)}
+      />
     <DropdownMenu>
       <DropdownMenuTrigger
         className={cn(buttonVariants({ variant: "ghost", size: "icon-sm" }), "shrink-0")}
@@ -164,7 +192,7 @@ function InvoiceActionsMenu({
         </pre>
       </DialogContent>
     </Dialog>
-    </>
+    </Fragment>
   );
 }
 
