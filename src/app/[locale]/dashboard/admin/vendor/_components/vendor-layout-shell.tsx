@@ -1,11 +1,11 @@
 "use client";
 
-import { Link, usePathname } from "@/i18n/routing";
+import { Link, usePathname, useRouter } from "@/i18n/routing";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/lib/store";
 import { useAuthPersistHydrated } from "@/lib/use-auth-hydrated";
-import { Store, Tags } from "lucide-react";
+import { Plus, Store, Tags } from "lucide-react";
 
 const NAV = [
   { href: "/dashboard/admin/vendor/vendors", label: "Vendor", Icon: Store },
@@ -14,6 +14,7 @@ const NAV = [
 
 export function VendorLayoutShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const authHydrated = useAuthPersistHydrated();
   const { user } = useAuthStore();
   const roles = user?.roles ?? [];
@@ -33,13 +34,13 @@ export function VendorLayoutShell({ children }: { children: React.ReactNode }) {
         </div>
         {canManageVendor ? (
           <div className="flex w-full shrink-0 flex-col gap-2 sm:w-auto sm:flex-row sm:justify-end">
-            <Button className="h-9 w-full gap-1.5 px-4 sm:w-auto" type="button" disabled>
-              <Store className="h-4 w-4 shrink-0" />
+            <Button
+              className="h-9 w-full gap-1.5 px-4 sm:w-auto"
+              type="button"
+              onClick={() => router.push("/dashboard/admin/vendor/vendors?create=1")}
+            >
+              <Plus className="h-4 w-4 shrink-0" />
               Tambah Vendor
-            </Button>
-            <Button variant="outline" size="sm" className="h-9 w-full gap-1.5 sm:w-auto" type="button" disabled>
-              <Tags className="h-3.5 w-3.5 shrink-0" />
-              Atur Pricing
             </Button>
           </div>
         ) : null}

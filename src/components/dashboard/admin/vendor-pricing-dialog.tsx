@@ -157,7 +157,7 @@ export function VendorPricingDialog({
               }}
               disabled={listsLoading}
             >
-              <SelectTrigger>
+              <SelectTrigger className="w-full">
                 <SelectValue placeholder="Pilih lane / layanan" />
               </SelectTrigger>
               <SelectContent>
@@ -177,7 +177,7 @@ export function VendorPricingDialog({
                 if (v === "buy" || v === "sell") setPriceType(v);
               }}
             >
-              <SelectTrigger>
+              <SelectTrigger className="w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -195,11 +195,15 @@ export function VendorPricingDialog({
                 setContainerTypeId(v === "__none__" ? "" : v);
               }}
             >
-              <SelectTrigger>
-                <SelectValue placeholder="Semua / umum" />
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Semua / umum">
+                  {containerTypeId
+                    ? containerTypes.find((o) => String(o.id) === containerTypeId)?.label ?? containerTypeId
+                    : "Semua / umum"}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="__none__">—</SelectItem>
+                <SelectItem value="__none__">Semua / umum</SelectItem>
                 {containerTypes.map((o) => (
                   <SelectItem key={o.id} value={String(o.id)}>
                     {o.label}

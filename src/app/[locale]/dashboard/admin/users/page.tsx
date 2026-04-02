@@ -37,11 +37,19 @@ import type { LaravelPaginated } from "@/lib/types-api";
 import { ApiError } from "@/lib/api-client";
 import { rowNumber } from "@/lib/list-query";
 import { useDebouncedValue } from "@/lib/use-debounced-value";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { ConfirmDeleteDialog } from "@/components/dashboard/admin/confirm-delete-dialog";
 import { firstLaravelError } from "@/lib/laravel-errors";
-import { Plus, Trash2 } from "lucide-react";
+import { MoreHorizontal, Pencil, Plus, Trash2 } from "lucide-react";
 import { DIALOG_CREATE_HEADER_CLASS } from "@/lib/dialog-create-header";
 import { cn } from "@/lib/utils";
+import { buttonVariants } from "@/components/ui/button";
 
 const PER_PAGE = 10;
 
@@ -256,23 +264,37 @@ export default function AdminUsersPage() {
                         </TableCell>
                         <TableCell>{String(r.name ?? "")}</TableCell>
                         <TableCell className="font-mono text-xs">{String(r.email ?? "")}</TableCell>
-                        <TableCell>{rr?.[0]?.name ?? "—"}</TableCell>
+                        <TableCell>
+                          {rr?.[0]?.name
+                            ? rr[0].name.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
+                            : "—"}
+                        </TableCell>
                         <TableCell className="text-right">
-                          <Button type="button" size="sm" variant="ghost" onClick={() => openEdit(r)}>
-                            Edit
-                          </Button>
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="ghost"
-                            className="text-destructive"
-                            onClick={() => {
-                              setDeleteRow(r);
-                              setDeleteOpen(true);
-                            }}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger
+                              className={cn(buttonVariants({ variant: "ghost", size: "icon-sm" }), "shrink-0")}
+                            >
+                              <MoreHorizontal className="h-4 w-4" />
+                              <span className="sr-only">Menu aksi</span>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="min-w-44">
+                              <DropdownMenuItem className="cursor-pointer" onClick={() => openEdit(r)}>
+                                <Pencil className="h-4 w-4" />
+                                Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                className="cursor-pointer text-destructive focus:text-destructive"
+                                onClick={() => {
+                                  setDeleteRow(r);
+                                  setDeleteOpen(true);
+                                }}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                                Hapus
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </TableCell>
                       </TableRow>
                     );

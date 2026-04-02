@@ -162,7 +162,7 @@ export function VendorServiceDialog({
               }}
               disabled={listsLoading}
             >
-              <SelectTrigger>
+              <SelectTrigger className="w-full">
                 <SelectValue placeholder={listsLoading ? "Memuat…" : "Pilih"} />
               </SelectTrigger>
               <SelectContent>
@@ -183,7 +183,7 @@ export function VendorServiceDialog({
               }}
               disabled={listsLoading}
             >
-              <SelectTrigger>
+              <SelectTrigger className="w-full">
                 <SelectValue placeholder={listsLoading ? "Memuat…" : "Pilih"} />
               </SelectTrigger>
               <SelectContent>
@@ -204,7 +204,7 @@ export function VendorServiceDialog({
               }}
               disabled={listsLoading}
             >
-              <SelectTrigger>
+              <SelectTrigger className="w-full">
                 <SelectValue placeholder={listsLoading ? "Memuat…" : "Pilih"} />
               </SelectTrigger>
               <SelectContent>
@@ -225,7 +225,7 @@ export function VendorServiceDialog({
               }}
               disabled={listsLoading}
             >
-              <SelectTrigger>
+              <SelectTrigger className="w-full">
                 <SelectValue placeholder={listsLoading ? "Memuat…" : "Pilih"} />
               </SelectTrigger>
               <SelectContent>

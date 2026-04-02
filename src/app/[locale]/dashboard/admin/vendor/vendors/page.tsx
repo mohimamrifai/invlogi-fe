@@ -2,6 +2,7 @@
 
 import { toast } from "sonner";
 import { useCallback, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   Card,
   CardContent,
@@ -36,7 +37,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { MoreHorizontal, Pencil, Plus, Trash2 } from "lucide-react";
+import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { Eye } from "lucide-react";
 import {
   Dialog,
@@ -52,6 +53,7 @@ const VENDOR_PER_PAGE = 10;
 
 export default function AdminVendorListPage() {
   const authHydrated = useAuthPersistHydrated();
+  const searchParams = useSearchParams();
 
   const [vendors, setVendors] = useState<VendorRow[]>([]);
   const [vendorMeta, setVendorMeta] = useState<LaravelPaginated<VendorRow> | null>(null);
@@ -72,6 +74,17 @@ export default function AdminVendorListPage() {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteRow, setDeleteRow] = useState<VendorRow | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
+
+  useEffect(() => {
+    if (searchParams.get("create") === "1") {
+      setFormRow(null);
+      setFormMode("create");
+      setFormOpen(true);
+      const url = new URL(window.location.href);
+      url.searchParams.delete("create");
+      window.history.replaceState({}, "", url.toString());
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     setVendorPage(1);
@@ -137,21 +150,8 @@ export default function AdminVendorListPage() {
       ) : null}
 
       <Card className="min-w-0 overflow-hidden">
-        <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-3 space-y-0">
+        <CardHeader>
           <CardTitle>Daftar Vendor</CardTitle>
-          <Button
-            type="button"
-            size="sm"
-            className="gap-1.5"
-            onClick={() => {
-              setFormRow(null);
-              setFormMode("create");
-              setFormOpen(true);
-            }}
-          >
-            <Plus className="h-4 w-4" />
-            Tambah vendor
-          </Button>
         </CardHeader>
         <CardContent className="space-y-4">
           <TableToolbar
