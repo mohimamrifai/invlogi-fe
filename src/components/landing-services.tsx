@@ -17,7 +17,7 @@ export async function LandingServices() {
   const t = await getTranslations("LandingServices");
 
   return (
-    <section className="border-y border-zinc-200/80 bg-white py-20 md:py-28">
+    <section id="layanan" className=" border-y border-zinc-200/80 bg-white py-20 md:py-28">
       <div className="mx-auto max-w-7xl px-6 md:px-12">
         <div className="mx-auto max-w-2xl text-center">
           <p className="text-xs font-semibold uppercase tracking-widest text-indigo-600">

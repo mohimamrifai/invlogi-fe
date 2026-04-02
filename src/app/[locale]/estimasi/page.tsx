@@ -1,18 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Calculator } from "lucide-react";
+import { Calculator, ArrowRight, Search, Loader2, Package } from "lucide-react";
 import { Link } from "@/i18n/routing";
 import { useTranslations } from "next-intl";
 import {
@@ -32,6 +25,9 @@ type TM = { id: number; name: string; code?: string };
 type ST = { id: number; name: string; code?: string; transport_mode_id: number };
 type CT = { id: number; name: string; size: string };
 type AS = { id: number; name: string; category: string };
+
+const selectClass =
+  "flex h-11 w-full appearance-none rounded-xl border border-zinc-200 bg-white px-4 text-sm text-zinc-900 shadow-sm transition-colors focus:border-[#0b1b69] focus:ring-2 focus:ring-[#0b1b69]/20 focus:outline-none";
 
 export default function PublicEstimatePage() {
   const t = useTranslations("Estimate");
@@ -86,10 +82,8 @@ export default function PublicEstimatePage() {
         if (!c) setLoading(false);
       }
     })();
-    return () => {
-      c = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount once; copy uses t() only for error string
+    return () => { c = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -107,9 +101,7 @@ export default function PublicEstimatePage() {
         setServiceTypes([]);
       }
     })();
-    return () => {
-      c = true;
-    };
+    return () => { c = true; };
   }, [modeId]);
 
   const fmtIdr = (n: number) =>
@@ -147,204 +139,237 @@ export default function PublicEstimatePage() {
 
   if (loading) {
     return (
-      <div className="mx-auto flex min-h-[50vh] w-full max-w-4xl items-center justify-center px-4 pt-24">
-        <p className="text-sm text-muted-foreground">{t("loading")}</p>
+      <div className="flex min-h-[60vh] items-center justify-center pt-24">
+        <div className="flex items-center gap-3 text-sm text-zinc-500">
+          <Loader2 className="h-5 w-5 animate-spin" />
+          {t("loading")}
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-8 px-4 pb-16 pt-24">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex min-w-0 items-start gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-zinc-900/5 text-zinc-900">
-            <Calculator className="h-5 w-5" />
+    <div className="min-h-screen bg-gradient-to-b from-zinc-50 via-white to-zinc-50">
+      <div className="relative overflow-hidden bg-gradient-to-br from-[#0b1b69] via-[#0d2280] to-[#162ea8] pb-16 pt-32 md:pb-20 md:pt-36">
+        <div className="pointer-events-none absolute inset-0">
+          <div className="absolute -top-32 -left-32 h-96 w-96 rounded-full bg-white/5 blur-[100px]" />
+          <div className="absolute -right-32 -bottom-32 h-96 w-96 rounded-full bg-sky-300/10 blur-[100px]" />
+        </div>
+        <div className="relative mx-auto max-w-4xl px-6 text-center md:px-12">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white/10 backdrop-blur">
+            <Calculator className="h-7 w-7 text-white" />
           </div>
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 sm:text-3xl">{t("title")}</h1>
-            <p className="mt-1 max-w-xl text-sm text-muted-foreground">{t("subtitle")}</p>
+          <h1 className="mt-5 text-3xl font-bold tracking-tight text-white sm:text-4xl">
+            {t("title")}
+          </h1>
+          <p className="mx-auto mt-3 max-w-lg text-sm leading-relaxed text-indigo-200 sm:text-base">
+            {t("subtitle")}
+          </p>
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+            <Link
+              href="/tracking"
+              className="inline-flex items-center gap-2 rounded-full border border-white/20 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-white/10"
+            >
+              <Search className="h-4 w-4" />
+              {t("goTracking")}
+            </Link>
           </div>
         </div>
-        <Link
-          href="/tracking"
-          className={cn(buttonVariants({ variant: "outline" }), "shrink-0 rounded-full")}
-        >
-          {t("goTracking")}
-        </Link>
       </div>
 
-      {error ? (
-        <p className="rounded-lg border border-red-100 bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>
-      ) : null}
+      <div className="mx-auto mt-8 max-w-4xl px-6 md:mt-10 md:px-12">
+        {error ? (
+          <div className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {error}
+          </div>
+        ) : null}
 
-      <Card className="border-zinc-200/80 shadow-sm">
-        <CardHeader>
-          <CardTitle>{t("formTitle")}</CardTitle>
-          <CardDescription>{t("formDescription")}</CardDescription>
-        </CardHeader>
-        <CardContent className="grid gap-4 sm:grid-cols-2">
-          <div className="space-y-2">
-            <Label>{t("origin")}</Label>
-            <select
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-              value={originId}
-              onChange={(e) => setOriginId(e.target.value)}
-              required
+        <div className="rounded-2xl border border-zinc-200/80 bg-white p-6 shadow-xl shadow-zinc-200/50 md:p-8">
+          <div className="mb-6">
+            <h2 className="text-lg font-semibold text-zinc-900">{t("formTitle")}</h2>
+            <p className="mt-1 text-sm text-zinc-500">{t("formDescription")}</p>
+          </div>
+
+          <div className="grid gap-5 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
+                {t("origin")}
+              </Label>
+              <select className={selectClass} value={originId} onChange={(e) => setOriginId(e.target.value)} required>
+                <option value="">—</option>
+                {locations.map((l) => (
+                  <option key={l.id} value={l.id}>{l.name} ({l.code})</option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
+                {t("destination")}
+              </Label>
+              <select className={selectClass} value={destId} onChange={(e) => setDestId(e.target.value)} required>
+                <option value="">—</option>
+                {locations.map((l) => (
+                  <option key={l.id} value={l.id}>{l.name} ({l.code})</option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
+                {t("transportMode")}
+              </Label>
+              <select className={selectClass} value={modeId} onChange={(e) => setModeId(e.target.value)} required>
+                {modes.map((m) => (
+                  <option key={m.id} value={m.id}>{m.name} ({m.code})</option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
+                {t("serviceType")}
+              </Label>
+              <select className={selectClass} value={serviceTypeId} onChange={(e) => setServiceTypeId(e.target.value)} required>
+                {serviceTypes.map((s) => (
+                  <option key={s.id} value={s.id}>{s.name} ({s.code})</option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
+                {t("containerType")}
+              </Label>
+              <select className={selectClass} value={containerTypeId} onChange={(e) => setContainerTypeId(e.target.value)}>
+                <option value="">—</option>
+                {containerTypes.map((c) => (
+                  <option key={c.id} value={c.id}>{c.name} ({c.size})</option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
+                {t("containerCount")}
+              </Label>
+              <Input
+                className="h-11 rounded-xl border-zinc-200 shadow-sm focus:border-[#0b1b69] focus:ring-2 focus:ring-[#0b1b69]/20"
+                type="number" min={1} value={containerCount} onChange={(e) => setContainerCount(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
+                {t("weight")}
+              </Label>
+              <Input
+                className="h-11 rounded-xl border-zinc-200 shadow-sm focus:border-[#0b1b69] focus:ring-2 focus:ring-[#0b1b69]/20"
+                type="number" step="0.01" value={weight} onChange={(e) => setWeight(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
+                {t("cbm")}
+              </Label>
+              <Input
+                className="h-11 rounded-xl border-zinc-200 shadow-sm focus:border-[#0b1b69] focus:ring-2 focus:ring-[#0b1b69]/20"
+                type="number" step="0.01" value={cbm} onChange={(e) => setCbm(e.target.value)}
+              />
+            </div>
+            {addServices.length > 0 && (
+              <div className="space-y-3 sm:col-span-2">
+                <Label className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
+                  {t("addOns")}
+                </Label>
+                <div className="grid gap-2 sm:grid-cols-2 md:grid-cols-3">
+                  {addServices.map((a) => (
+                    <label
+                      key={a.id}
+                      className={cn(
+                        "flex cursor-pointer items-center gap-3 rounded-xl border px-4 py-3 text-sm transition-colors",
+                        selectedAddOns.includes(a.id)
+                          ? "border-[#0b1b69]/30 bg-[#0b1b69]/5 text-[#0b1b69]"
+                          : "border-zinc-200 hover:border-zinc-300"
+                      )}
+                    >
+                      <Checkbox
+                        checked={selectedAddOns.includes(a.id)}
+                        onCheckedChange={(v) => {
+                          const on = v === true;
+                          setSelectedAddOns((prev) =>
+                            on ? (prev.includes(a.id) ? prev : [...prev, a.id]) : prev.filter((x) => x !== a.id)
+                          );
+                        }}
+                      />
+                      {a.name}
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="mt-8 flex flex-wrap items-center gap-3 border-t border-zinc-100 pt-6">
+            <Button
+              type="button"
+              className="gap-2 rounded-full bg-[#0b1b69] px-8 py-3 text-sm font-semibold text-white shadow-lg transition-colors hover:bg-[#0d2280]"
+              onClick={() => void onEstimate()}
+              disabled={estimating || !originId || !destId || !modeId || !serviceTypeId}
             >
-              <option value="">—</option>
-              {locations.map((l) => (
-                <option key={l.id} value={l.id}>
-                  {l.name} ({l.code})
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="space-y-2">
-            <Label>{t("destination")}</Label>
-            <select
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-              value={destId}
-              onChange={(e) => setDestId(e.target.value)}
-              required
+              {estimating ? (
+                <><Loader2 className="h-4 w-4 animate-spin" /> {t("estimating")}</>
+              ) : (
+                <><Calculator className="h-4 w-4" /> {t("estimateCta")}</>
+              )}
+            </Button>
+            <Link
+              href="/register"
+              className="inline-flex items-center gap-1 rounded-full px-5 py-3 text-sm font-medium text-zinc-600 transition-colors hover:text-[#0b1b69]"
             >
-              <option value="">—</option>
-              {locations.map((l) => (
-                <option key={l.id} value={l.id}>
-                  {l.name} ({l.code})
-                </option>
-              ))}
-            </select>
+              {t("registerHint")}
+              <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
           </div>
-          <div className="space-y-2">
-            <Label>{t("transportMode")}</Label>
-            <select
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-              value={modeId}
-              onChange={(e) => setModeId(e.target.value)}
-              required
-            >
-              {modes.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.name} ({m.code})
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="space-y-2">
-            <Label>{t("serviceType")}</Label>
-            <select
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-              value={serviceTypeId}
-              onChange={(e) => setServiceTypeId(e.target.value)}
-              required
-            >
-              {serviceTypes.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name} ({s.code})
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="space-y-2">
-            <Label>{t("containerType")}</Label>
-            <select
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-              value={containerTypeId}
-              onChange={(e) => setContainerTypeId(e.target.value)}
-            >
-              <option value="">—</option>
-              {containerTypes.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name} ({c.size})
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="space-y-2">
-            <Label>{t("containerCount")}</Label>
-            <Input
-              type="number"
-              min={1}
-              value={containerCount}
-              onChange={(e) => setContainerCount(e.target.value)}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>{t("weight")}</Label>
-            <Input type="number" step="0.01" value={weight} onChange={(e) => setWeight(e.target.value)} />
-          </div>
-          <div className="space-y-2">
-            <Label>{t("cbm")}</Label>
-            <Input type="number" step="0.01" value={cbm} onChange={(e) => setCbm(e.target.value)} />
-          </div>
-          <div className="sm:col-span-2 space-y-2">
-            <Label>{t("addOns")}</Label>
-            <div className="grid gap-2 sm:grid-cols-2">
-              {addServices.map((a) => (
-                <label key={a.id} className="flex items-center gap-2 text-sm">
-                  <Checkbox
-                    checked={selectedAddOns.includes(a.id)}
-                    onCheckedChange={(v) => {
-                      const on = v === true;
-                      setSelectedAddOns((prev) =>
-                        on ? (prev.includes(a.id) ? prev : [...prev, a.id]) : prev.filter((x) => x !== a.id)
-                      );
-                    }}
-                  />
-                  {a.name}
-                </label>
-              ))}
+        </div>
+
+        {estimate ? (
+          <div className="mt-8 overflow-hidden rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-white shadow-lg">
+            <div className="border-b border-emerald-100 px-6 py-5 md:px-8">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100">
+                  <Package className="h-5 w-5 text-emerald-700" />
+                </div>
+                <div>
+                  <h3 className="text-base font-semibold text-emerald-900">{t("resultTitle")}</h3>
+                  <p className="text-xs text-emerald-700/70">{t("resultNote")}</p>
+                </div>
+              </div>
+            </div>
+            <div className="px-6 py-6 md:px-8">
+              <p className="text-3xl font-bold tracking-tight text-emerald-900">{estimate}</p>
+              {breakdown ? (
+                <div className="mt-4 space-y-2 text-sm">
+                  <div className="flex justify-between text-emerald-800/70">
+                    <span>{t("breakdownBase")}</span>
+                    <span>{fmtIdr(breakdown.base_freight)}</span>
+                  </div>
+                  {breakdown.discount_amount > 0 && (
+                    <div className="flex justify-between text-emerald-700">
+                      <span>{t("breakdownDiscount")}</span>
+                      <span>−{fmtIdr(breakdown.discount_amount)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between text-emerald-800/70">
+                    <span>{t("breakdownAddOns")}</span>
+                    <span>{fmtIdr(breakdown.additional_services_total)}</span>
+                  </div>
+                  <div className="flex justify-between border-t border-emerald-200 pt-2 font-semibold text-emerald-900">
+                    <span>{t("breakdownTotal")}</span>
+                    <span>{fmtIdr(breakdown.total)}</span>
+                  </div>
+                </div>
+              ) : null}
             </div>
           </div>
-        </CardContent>
-      </Card>
+        ) : null}
 
-      <div className="flex flex-wrap items-center gap-3">
-        <Button
-          type="button"
-          className="rounded-full px-8"
-          onClick={() => void onEstimate()}
-          disabled={estimating || !originId || !destId || !modeId || !serviceTypeId}
-        >
-          {estimating ? t("estimating") : t("estimateCta")}
-        </Button>
-        <Link
-          href="/register"
-          className={cn(buttonVariants({ variant: "ghost" }), "rounded-full")}
-        >
-          {t("registerHint")}
-        </Link>
+        <div className="h-16" />
       </div>
-
-      {estimate ? (
-        <Card className="border-emerald-200/80 bg-emerald-50/40">
-          <CardHeader>
-            <CardTitle className="text-lg text-emerald-900">{t("resultTitle")}</CardTitle>
-            <CardDescription className="text-emerald-800/90">{t("resultNote")}</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <p className="text-2xl font-semibold tracking-tight text-emerald-950">{estimate}</p>
-            {breakdown ? (
-              <ul className="text-sm text-emerald-900/80">
-                <li>
-                  {t("breakdownBase")}: {fmtIdr(breakdown.base_freight)}
-                </li>
-                {breakdown.discount_amount > 0 ? (
-                  <li>
-                    {t("breakdownDiscount")}: −{fmtIdr(breakdown.discount_amount)}
-                  </li>
-                ) : null}
-                <li>
-                  {t("breakdownAddOns")}: {fmtIdr(breakdown.additional_services_total)}
-                </li>
-                <li className="font-medium">
-                  {t("breakdownTotal")}: {fmtIdr(breakdown.total)}
-                </li>
-              </ul>
-            ) : null}
-          </CardContent>
-        </Card>
-      ) : null}
     </div>
   );
 }

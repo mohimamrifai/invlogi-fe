@@ -146,6 +146,21 @@
     "ctaPrimary": "Register Free",
     "ctaSecondary": "Log In to Account"
   },
+  "Tracking": {
+    "title": "Track Your Shipment",
+    "subtitle": "Enter your waybill number to see real-time shipment status — no login required.",
+    "placeholder": "Enter waybill number…",
+    "cta": "Track",
+    "notFound": "Shipment not found. Please check your waybill number.",
+    "waybillLabel": "Waybill Number",
+    "origin": "Origin",
+    "destination": "Destination",
+    "estDeparture": "Est. Departure",
+    "estArrival": "Est. Arrival",
+    "timeline": "Shipment Timeline",
+    "emptyState": "Enter a waybill number above to start tracking your shipment.",
+    "goEstimate": "Calculate shipping estimate"
+  },
   "PlaceholderPages": {
     "servicesTitle": "Services",
     "servicesBody": "This page will describe INVLOGI services (rail cargo, FCL/LCL, and more). Marketing and ops can replace this copy anytime.",

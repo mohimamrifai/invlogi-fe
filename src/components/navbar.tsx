@@ -19,6 +19,8 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 
+type NavItem = { href: string; anchor?: boolean };
+
 export function Navbar() {
   const t = useTranslations("Navbar");
   const locale = useLocale();
@@ -27,9 +29,7 @@ export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
 
   useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 10);
-    };
+    const handleScroll = () => setIsScrolled(window.scrollY > 10);
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
@@ -38,22 +38,34 @@ export function Navbar() {
     router.replace(pathname, { locale: newLocale });
   };
 
-  // Hide Navbar on dashboard pages
-  if (pathname.startsWith("/dashboard")) {
-    return null;
-  }
+  if (pathname.startsWith("/dashboard")) return null;
+
+  const isHome = pathname === "/" || pathname === "";
+
+  const navItems: { label: string; href: string; anchor?: boolean }[] = [
+    { label: t("home"), href: "/" },
+    { label: t("estimate"), href: "/estimasi" },
+    { label: t("track"), href: "/tracking" },
+    { label: t("services"), href: isHome ? "#layanan" : "/#layanan", anchor: true },
+    { label: t("information"), href: isHome ? "#informasi" : "/#informasi", anchor: true },
+  ];
+
+  const isActive = (item: { href: string; anchor?: boolean }) => {
+    if (item.anchor) return false;
+    if (item.href === "/") return isHome;
+    return pathname.startsWith(item.href);
+  };
 
   return (
     <header
       className={cn(
         "fixed top-0 left-0 right-0 z-50 transition-all duration-300 ease-in-out py-4",
         isScrolled
-          ? "bg-white backdrop-blur-md border-b shadow-sm py-3"
-          : "bg-transparent border-transparent py-5"
+          ? "bg-white/95 backdrop-blur-md border-b border-zinc-200/80 shadow-sm py-3"
+          : "bg-white border-b border-zinc-200/40 py-5"
       )}
     >
       <div className="container mx-auto flex items-center justify-between px-6 md:px-12">
-        {/* Logo */}
         <Link
           href="/"
           className="group flex shrink-0 items-center transition-transform duration-300 hover:opacity-95"
@@ -61,26 +73,43 @@ export function Navbar() {
           <BrandLogo size="sm" className="group-hover:rotate-[0.5deg]" />
         </Link>
 
-        {/* Navigation Links (Desktop) */}
-        <nav className="hidden md:flex items-center gap-1 bg-white/50 backdrop-blur-sm px-2 py-1.5 rounded-full border border-zinc-200/50 shadow-sm absolute left-1/2 -translate-x-1/2 transition-all duration-300 hover:shadow-md hover:border-zinc-300/80">
-          <NavLink href="/">{t("home")}</NavLink>
-          <NavLink href="/estimasi">{t("estimate")}</NavLink>
-          <NavLink href="/tracking">{t("track")}</NavLink>
-          <NavLink href="/layanan">{t("services")}</NavLink>
-          <NavLink href="/informasi">{t("information")}</NavLink>
+        <nav className="hidden md:flex items-center gap-0.5 bg-white/60 backdrop-blur-sm px-1.5 py-1.5 rounded-full border border-zinc-200/50 shadow-sm absolute left-1/2 -translate-x-1/2">
+          {navItems.map((item) =>
+            item.anchor ? (
+              <a
+                key={item.href}
+                href={item.href.startsWith("#") ? item.href : `/${locale}${item.href}`}
+                className="px-4 py-2 rounded-full text-sm font-medium text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 transition-all duration-200"
+              >
+                {item.label}
+              </a>
+            ) : (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={cn(
+                  "px-4 py-2 rounded-full text-sm font-medium transition-all duration-200",
+                  isActive(item)
+                    ? "bg-[#0b1b69] text-white shadow-sm"
+                    : "text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100"
+                )}
+              >
+                {item.label}
+              </Link>
+            )
+          )}
         </nav>
 
-        {/* Right Actions */}
         <div className="flex items-center gap-3">
           <div className="hidden md:flex items-center gap-3">
             <Link href="/login">
-              <Button 
-                className="rounded-full px-6 font-medium bg-zinc-900 text-white hover:bg-zinc-800 hover:scale-105 transition-all duration-300 shadow-lg shadow-zinc-900/20"
+              <Button
+                className="rounded-full px-6 font-medium bg-[#0b1b69] text-white hover:bg-[#0d2280] transition-all duration-300 shadow-lg shadow-[#0b1b69]/20"
               >
                 {t("login")}
               </Button>
             </Link>
-            
+
             <DropdownMenu>
               <DropdownMenuTrigger
                 className={cn(
@@ -102,7 +131,6 @@ export function Navbar() {
             </DropdownMenu>
           </div>
 
-          {/* Mobile Menu */}
           <Sheet>
             <SheetTrigger
               className={cn(
@@ -118,18 +146,39 @@ export function Navbar() {
                 <div className="mb-8">
                   <BrandLogo size="sm" />
                 </div>
-                
-                <nav className="flex flex-col gap-2 flex-1">
-                  <MobileNavLink href="/">{t("home")}</MobileNavLink>
-                  <MobileNavLink href="/estimasi">{t("estimate")}</MobileNavLink>
-                  <MobileNavLink href="/tracking">{t("track")}</MobileNavLink>
-                  <MobileNavLink href="/layanan">{t("services")}</MobileNavLink>
-                  <MobileNavLink href="/informasi">{t("information")}</MobileNavLink>
+
+                <nav className="flex flex-col gap-1 flex-1">
+                  {navItems.map((item) =>
+                    item.anchor ? (
+                      <a
+                        key={item.href}
+                        href={item.href.startsWith("#") ? item.href : `/${locale}${item.href}`}
+                        className="flex items-center justify-between rounded-xl px-4 py-3 text-base font-medium text-zinc-500 transition-all hover:bg-zinc-100 hover:text-zinc-900"
+                      >
+                        {item.label}
+                        <ChevronDown className="-rotate-90 h-4 w-4 opacity-30" />
+                      </a>
+                    ) : (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        className={cn(
+                          "flex items-center justify-between rounded-xl px-4 py-3 text-base font-medium transition-all",
+                          isActive(item)
+                            ? "bg-[#0b1b69]/10 text-[#0b1b69]"
+                            : "text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900"
+                        )}
+                      >
+                        {item.label}
+                        <ChevronDown className="-rotate-90 h-4 w-4 opacity-30" />
+                      </Link>
+                    )
+                  )}
                 </nav>
 
                 <div className="flex flex-col gap-3 pt-6 border-t mt-auto">
                   <Link href="/login" className="w-full">
-                    <Button className="w-full rounded-full h-12 text-base font-medium shadow-lg shadow-zinc-900/10">
+                    <Button className="w-full rounded-full h-12 text-base font-medium bg-[#0b1b69] text-white hover:bg-[#0d2280] shadow-lg shadow-[#0b1b69]/10">
                       {t("login")}
                     </Button>
                   </Link>
@@ -156,28 +205,5 @@ export function Navbar() {
         </div>
       </div>
     </header>
-  );
-}
-
-function NavLink({ href, children }: { href: string; children: React.ReactNode }) {
-  return (
-    <Link 
-      href={href} 
-      className="px-5 py-2 rounded-full text-sm font-medium text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 transition-all duration-200"
-    >
-      {children}
-    </Link>
-  );
-}
-
-function MobileNavLink({ href, children }: { href: string; children: React.ReactNode }) {
-  return (
-    <Link 
-      href={href} 
-      className="text-lg font-medium text-zinc-600 hover:text-zinc-900 py-3 border-b border-zinc-100 last:border-0 hover:pl-2 transition-all duration-200 flex items-center justify-between group"
-    >
-      {children}
-      <ChevronDown className="-rotate-90 h-4 w-4 opacity-0 group-hover:opacity-50 transition-all" />
-    </Link>
   );
 }

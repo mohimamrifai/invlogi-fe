@@ -12,7 +12,7 @@ export async function LandingFaq() {
   }));
 
   return (
-    <section className="bg-white py-20 md:py-28">
+    <section id="informasi" className="bg-white py-20 md:py-28">
       <div className="mx-auto max-w-3xl px-6 md:px-12">
         <div className="text-center">
           <p className="text-xs font-semibold uppercase tracking-widest text-indigo-600">

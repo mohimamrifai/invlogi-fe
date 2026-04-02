@@ -146,6 +146,21 @@
     "ctaPrimary": "Daftar Gratis",
     "ctaSecondary": "Sudah Punya Akun? Masuk"
   },
+  "Tracking": {
+    "title": "Lacak Pengiriman Anda",
+    "subtitle": "Masukkan nomor waybill untuk melihat status pengiriman secara real-time — tanpa perlu login.",
+    "placeholder": "Masukkan nomor waybill…",
+    "cta": "Lacak",
+    "notFound": "Pengiriman tidak ditemukan. Periksa kembali nomor waybill Anda.",
+    "waybillLabel": "Nomor Waybill",
+    "origin": "Asal",
+    "destination": "Tujuan",
+    "estDeparture": "Est. Berangkat",
+    "estArrival": "Est. Tiba",
+    "timeline": "Timeline Pengiriman",
+    "emptyState": "Masukkan nomor waybill di atas untuk mulai melacak pengiriman Anda.",
+    "goEstimate": "Hitung estimasi biaya"
+  },
   "PlaceholderPages": {
     "servicesTitle": "Layanan",
     "servicesBody": "Halaman ini akan memuat detail layanan INVLOGI (rail cargo, FCL/LCL, dan lainnya). Konten dapat dilengkapi sesuai kebutuhan pemasaran dan operasional.",
