@@ -15,12 +15,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  approveAdminCompany,
   createAdminBranch,
   createAdminCustomerDiscount,
   deleteAdminBranch,
   deleteAdminCustomerDiscount,
   fetchAdminCompany,
   fetchAdminVendors,
+  rejectAdminCompany,
   updateAdminBranch,
   updateAdminCompany,
   updateAdminCustomerDiscount,
@@ -35,8 +37,11 @@ import type { LaravelPaginated } from "@/lib/types-api";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { customerStatusBadgeClass, customerStatusLabelFromApi } from "@/lib/customer-status";
 import { ConfirmDeleteDialog } from "@/components/dashboard/admin/confirm-delete-dialog";
 import { toast } from "sonner";
+import { CheckCircle2, Loader2, XCircle } from "lucide-react";
 
 export default function AdminCustomerEditPage() {
   const params = useParams();
@@ -90,6 +95,8 @@ export default function AdminCustomerEditPage() {
   const [savingDisc, setSavingDisc] = useState(false);
   const [deleteDisc, setDeleteDisc] = useState<Record<string, unknown> | null>(null);
   const [delLoading, setDelLoading] = useState(false);
+  const [approving, setApproving] = useState(false);
+  const [rejecting, setRejecting] = useState(false);
 
   useEffect(() => {
     if (!Number.isFinite(id) || id < 1) {
@@ -339,6 +346,38 @@ export default function AdminCustomerEditPage() {
     );
   }
 
+  const companyStatus = String(detail?.status ?? "").toLowerCase();
+
+  const handleApprove = async () => {
+    if (!Number.isFinite(id) || id < 1) return;
+    setApproving(true);
+    try {
+      await approveAdminCompany(id);
+      toast.success("Customer diaktifkan.");
+      const res = await fetchAdminCompany(id);
+      setDetail((res as { data: Record<string, unknown> }).data);
+    } catch (e) {
+      toast.error(e instanceof ApiError ? e.message : "Gagal mengaktifkan customer.");
+    } finally {
+      setApproving(false);
+    }
+  };
+
+  const handleReject = async () => {
+    if (!Number.isFinite(id) || id < 1) return;
+    setRejecting(true);
+    try {
+      await rejectAdminCompany(id, "Ditolak oleh admin.");
+      toast.success("Customer dinonaktifkan.");
+      const res = await fetchAdminCompany(id);
+      setDetail((res as { data: Record<string, unknown> }).data);
+    } catch (e) {
+      toast.error(e instanceof ApiError ? e.message : "Gagal menonaktifkan customer.");
+    } finally {
+      setRejecting(false);
+    }
+  };
+
   const branches =
     (detail?.branches as Record<string, unknown>[] | undefined) ??
     (detail?.Branches as Record<string, unknown>[] | undefined) ??
@@ -366,6 +405,43 @@ export default function AdminCustomerEditPage() {
         {loading ? <p className="text-sm text-muted-foreground">Memuat…</p> : null}
         {!loading ? (
           <>
+            {detail && caps.canApproveReject ? (
+              <div className="flex flex-wrap items-center gap-3 rounded-lg border bg-muted/30 p-3">
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="font-medium text-muted-foreground">Status:</span>
+                  <Badge variant="outline" className={customerStatusBadgeClass(companyStatus)}>
+                    {customerStatusLabelFromApi(companyStatus)}
+                  </Badge>
+                </div>
+                <div className="ml-auto flex gap-2">
+                  {companyStatus !== "active" ? (
+                    <Button
+                      type="button"
+                      size="sm"
+                      className="gap-1.5"
+                      disabled={approving || rejecting}
+                      onClick={() => void handleApprove()}
+                    >
+                      {approving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
+                      {approving ? "Mengaktifkan…" : "Aktifkan"}
+                    </Button>
+                  ) : null}
+                  {companyStatus !== "inactive" ? (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="gap-1.5"
+                      disabled={approving || rejecting}
+                      onClick={() => void handleReject()}
+                    >
+                      {rejecting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <XCircle className="h-3.5 w-3.5" />}
+                      {rejecting ? "Menonaktifkan…" : "Nonaktifkan"}
+                    </Button>
+                  ) : null}
+                </div>
+              </div>
+            ) : null}
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
                 <Label>Nama perusahaan</Label>

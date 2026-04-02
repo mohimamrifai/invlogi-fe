@@ -30,11 +30,11 @@ import {
 import { PaginationBar } from "@/components/data-table/pagination-bar";
 import { TableToolbar } from "@/components/data-table/table-toolbar";
 import { cn } from "@/lib/utils";
-import { Building2, ClipboardClock, Eye, MoreHorizontal, Pencil, Plus, Trash2, UserCheck, Users } from "lucide-react";
+import { Building2, CheckCircle2, ClipboardClock, Eye, Loader2, MoreHorizontal, Pencil, Plus, Trash2, UserCheck, Users, XCircle } from "lucide-react";
 import { customerStatusBadgeClass, customerStatusLabelFromApi } from "@/lib/customer-status";
 import { useAuthStore } from "@/lib/store";
 import { useAuthPersistHydrated } from "@/lib/use-auth-hydrated";
-import { deleteAdminCompany, fetchAdminCompanies } from "@/lib/admin-api";
+import { approveAdminCompany, deleteAdminCompany, fetchAdminCompanies, rejectAdminCompany } from "@/lib/admin-api";
 import { getAdminCustomerCapabilities } from "@/lib/admin-customer-capabilities";
 import type { LaravelPaginated } from "@/lib/types-api";
 import { ApiError } from "@/lib/api-client";
@@ -63,22 +63,69 @@ const actionsCellClass =
 type CompanyRow = Record<string, unknown>;
 
 function CustomerActionsMenu({
+  companyId,
+  companyStatus,
   onOpen,
   canEditCompany,
+  canApproveReject,
   canDelete,
   onDelete,
+  onStatusChanged,
 }: {
+  companyId: number;
+  companyStatus: string;
   onOpen: () => void;
   canEditCompany: boolean;
+  canApproveReject: boolean;
   canDelete: boolean;
   onDelete: () => void;
+  onStatusChanged: () => void;
 }) {
+  const [approving, setApproving] = useState(false);
+  const [rejecting, setRejecting] = useState(false);
+  const busy = approving || rejecting;
+
+  const st = companyStatus.toLowerCase();
+  const showApprove = canApproveReject && st !== "active";
+  const showReject = canApproveReject && st !== "inactive";
+
+  async function handleApprove() {
+    setApproving(true);
+    try {
+      await approveAdminCompany(companyId);
+      toast.success("Customer diaktifkan.");
+      onStatusChanged();
+    } catch (e) {
+      toast.error(e instanceof ApiError ? e.message : "Gagal mengaktifkan customer.");
+    } finally {
+      setApproving(false);
+    }
+  }
+
+  async function handleReject() {
+    setRejecting(true);
+    try {
+      await rejectAdminCompany(companyId, "Ditolak oleh admin.");
+      toast.success("Customer dinonaktifkan.");
+      onStatusChanged();
+    } catch (e) {
+      toast.error(e instanceof ApiError ? e.message : "Gagal menonaktifkan customer.");
+    } finally {
+      setRejecting(false);
+    }
+  }
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
         className={cn(buttonVariants({ variant: "ghost", size: "icon-sm" }), "shrink-0")}
+        disabled={busy}
       >
-        <MoreHorizontal className="h-4 w-4" />
+        {busy ? (
+          <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+        ) : (
+          <MoreHorizontal className="h-4 w-4" />
+        )}
         <span className="sr-only">Menu aksi</span>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-44">
@@ -90,11 +137,29 @@ function CustomerActionsMenu({
           )}
           {canEditCompany ? "Kelola customer" : "Lihat detail"}
         </DropdownMenuItem>
+        {(showApprove || showReject) ? (
+          <>
+            <DropdownMenuSeparator />
+            {showApprove ? (
+              <DropdownMenuItem className="cursor-pointer" disabled={busy} onClick={() => void handleApprove()}>
+                {approving ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+                {approving ? "Mengaktifkan…" : "Aktifkan customer"}
+              </DropdownMenuItem>
+            ) : null}
+            {showReject ? (
+              <DropdownMenuItem className="cursor-pointer" disabled={busy} onClick={() => void handleReject()}>
+                {rejecting ? <Loader2 className="h-4 w-4 animate-spin" /> : <XCircle className="h-4 w-4" />}
+                {rejecting ? "Menonaktifkan…" : "Nonaktifkan customer"}
+              </DropdownMenuItem>
+            ) : null}
+          </>
+        ) : null}
         {canDelete ? (
           <>
             <DropdownMenuSeparator />
             <DropdownMenuItem
               className="cursor-pointer text-destructive focus:text-destructive"
+              disabled={busy}
               onClick={onDelete}
             >
               <Trash2 className="h-4 w-4" />
@@ -336,13 +401,20 @@ export default function AdminCustomersPage() {
                         <TableCell className={cn(actionsCellClass, "p-2 text-right")}>
                           <div className="flex justify-end">
                             <CustomerActionsMenu
+                              companyId={id}
+                              companyStatus={st}
                               canEditCompany={caps.canEditCompanyData}
+                              canApproveReject={caps.canApproveReject}
                               canDelete={caps.canDeleteCompany}
                               onOpen={() => {
                                 if (!caps.canEditCompanyData) return;
                                 router.push(`${customersBasePath}/${id}/edit`);
                               }}
                               onDelete={() => setDeleteCompanyId(id)}
+                              onStatusChanged={() => {
+                                void load();
+                                void loadStats();
+                              }}
                             />
                           </div>
                         </TableCell>
