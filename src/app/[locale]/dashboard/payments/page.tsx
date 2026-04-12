@@ -146,9 +146,28 @@ function CustomerPaymentActionsMenu({
         <DialogHeader>
           <DialogTitle>Detail pembayaran {ref || "—"}</DialogTitle>
         </DialogHeader>
-        <pre className="max-h-[65vh] overflow-auto rounded-md border bg-muted/40 p-3 text-xs leading-relaxed">
-          {JSON.stringify(payment, null, 2)}
-        </pre>
+        <div className="grid grid-cols-3 gap-3 px-1 text-sm max-h-[65vh] overflow-y-auto">
+          <div className="text-muted-foreground">ID Pembayaran (Lokal)</div>
+          <div className="col-span-2 font-medium">{String(payment.id ?? "—")}</div>
+          
+          <div className="text-muted-foreground">Ref. Midtrans</div>
+          <div className="col-span-2 font-medium">{String(payment.midtrans_order_id ?? "—")}</div>
+          
+          <div className="text-muted-foreground">Metode Pembayaran</div>
+          <div className="col-span-2 font-medium capitalize">{String(payment.payment_type ?? "—").replace(/_/g, " ")}</div>
+          
+          <div className="text-muted-foreground">Nominal</div>
+          <div className="col-span-2 font-medium tabular-nums text-emerald-600">Rp {Number(payment.amount ?? 0).toLocaleString("id-ID")}</div>
+          
+          <div className="text-muted-foreground">Tanggal Transaksi</div>
+          <div className="col-span-2 font-medium">{String(payment.transaction_time ?? "—")}</div>
+          
+          <div className="text-muted-foreground">Tanggal Settlement</div>
+          <div className="col-span-2 font-medium">{payment.settlement_time ? String(payment.settlement_time) : "—"}</div>
+          
+          <div className="text-muted-foreground">Status Pembayaran</div>
+          <div className="col-span-2 font-medium capitalize">{String(payment.status ?? "—")}</div>
+        </div>
       </DialogContent>
     </Dialog>
     </>

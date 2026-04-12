@@ -187,9 +187,22 @@ function InvoiceActionsMenu({
         <DialogHeader>
           <DialogTitle>Detail invoice {invoiceNumber}</DialogTitle>
         </DialogHeader>
-        <pre className="max-h-[65vh] overflow-auto rounded-md border bg-muted/40 p-3 text-xs leading-relaxed">
-          {JSON.stringify(row, null, 2)}
-        </pre>
+        <div className="grid grid-cols-3 gap-3 px-1 text-sm max-h-[65vh] overflow-y-auto">
+          <div className="text-muted-foreground">No. Invoice</div>
+          <div className="col-span-2 font-medium">{String(row.invoice_number ?? "—")}</div>
+          
+          <div className="text-muted-foreground">Total Tagihan</div>
+          <div className="col-span-2 font-medium tabular-nums text-emerald-600">Rp {Number(row.total_amount ?? 0).toLocaleString("id-ID")}</div>
+          
+          <div className="text-muted-foreground">Jatuh Tempo</div>
+          <div className="col-span-2 font-medium">{String(row.due_date ?? "—").slice(0, 10)}</div>
+          
+          <div className="text-muted-foreground">Status</div>
+          <div className="col-span-2 font-medium capitalize">{status}</div>
+          
+          <div className="text-muted-foreground">Catatan / Deskripsi</div>
+          <div className="col-span-2 whitespace-pre-wrap">{String(row.notes ?? "—")}</div>
+        </div>
       </DialogContent>
     </Dialog>
     </Fragment>

@@ -272,9 +272,25 @@ export default function AdminVendorListPage() {
             <DialogTitle>Detail vendor</DialogTitle>
           </DialogHeader>
           {viewRow ? (
-            <pre className="text-xs bg-muted/50 rounded-md p-3 overflow-x-auto whitespace-pre-wrap">
-              {JSON.stringify(viewRow, null, 2)}
-            </pre>
+            <div className="grid grid-cols-3 gap-3 px-1 text-sm max-h-[65vh] overflow-y-auto">
+              <div className="text-muted-foreground">Kode</div>
+              <div className="col-span-2 font-medium">{String(viewRow.code ?? "—")}</div>
+              
+              <div className="text-muted-foreground">Nama Vendor</div>
+              <div className="col-span-2 font-medium">{String(viewRow.name ?? "—")}</div>
+              
+              <div className="text-muted-foreground">PIC</div>
+              <div className="col-span-2 font-medium">{String(viewRow.contact_person ?? "—")}</div>
+              
+              <div className="text-muted-foreground">Email</div>
+              <div className="col-span-2 font-medium">{String(viewRow.email ?? "—")}</div>
+              
+              <div className="text-muted-foreground">Phone</div>
+              <div className="col-span-2 font-medium">{String(viewRow.phone ?? "—")}</div>
+              
+              <div className="text-muted-foreground">Alamat</div>
+              <div className="col-span-2 whitespace-pre-wrap leading-relaxed">{String(viewRow.address ?? "—")}</div>
+            </div>
           ) : null}
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setViewOpen(false)}>

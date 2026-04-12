@@ -22,6 +22,7 @@ import { LayoutDashboard } from "lucide-react";
 
 export default function DashboardPage() {
   const { user } = useAuthStore();
+  const t = useTranslations("Dashboard.roleTitles");
   const [mounted, setMounted] = useState(false);
   const [loading, setLoading] = useState(true);
   const [adminData, setAdminData] = useState<AdminDashboardPayload | null>(null);
@@ -122,8 +123,6 @@ export default function DashboardPage() {
         );
     }
   };
-
-  const t = useTranslations("Dashboard.roleTitles");
 
   const title = ((): string => {
     const key = effectiveRole as Parameters<typeof t>[0];

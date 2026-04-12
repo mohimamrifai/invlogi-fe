@@ -225,7 +225,7 @@ export default function AdminCreateBookingPage() {
           ? new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR" }).format(
               Number(inner.estimated_price)
             )
-          : JSON.stringify(r)
+          : "Estimasi tidak tersedia"
       );
     } catch (e) {
       const msg = e instanceof ApiError ? e.message : "Gagal estimasi";

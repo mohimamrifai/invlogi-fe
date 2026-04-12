@@ -92,15 +92,26 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
   const navItems = useMemo(() => {
     if (!menuRole) return [];
+    const isInternal = user?.user_type === "internal";
+
     return allMenuItems.filter((item) => {
-      // Find matching index in DASHBOARD_SIDEBAR_ITEM_DEFS to get requiredPermission
       const def = DASHBOARD_SIDEBAR_ITEM_DEFS.find((d) => d.url === item.url);
-      if (def?.requiredPermission != null) {
+      if (!def) return false;
+
+      const isDashboardHome = def.url === "/dashboard";
+      const isInternalRoute = def.url.startsWith("/dashboard/admin");
+
+      if (!isDashboardHome) {
+        if (isInternalRoute && !isInternal) return false;
+        if (!isInternalRoute && isInternal) return false;
+      }
+
+      if (def.requiredPermission != null) {
         return userPerms.includes(def.requiredPermission);
       }
       return item.roles.includes(menuRole);
     });
-  }, [allMenuItems, menuRole, userPerms]);
+  }, [allMenuItems, menuRole, userPerms, user?.user_type]);
 
   if (!hydrated) return null;
 
