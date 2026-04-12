@@ -20,6 +20,10 @@ export async function downloadCustomerConsignmentNotePdf(id: number) {
   return apiFetchBlob(`/customer/shipments/${id}/consignment-note-pdf`, { method: "GET" });
 }
 
+export async function downloadCustomerWaybillPdf(id: number) {
+  return apiFetchBlob(`/customer/shipments/${id}/waybill-pdf`, { method: "GET" });
+}
+
 export async function fetchCustomerInvoices(input?: number | ListQueryParams) {
   const params = normalizeListParams(input);
   return apiFetch<LaravelPaginated<Record<string, unknown>>>(

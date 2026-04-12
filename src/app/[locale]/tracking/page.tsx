@@ -16,8 +16,15 @@ import {
   Clock,
   Package,
   CheckCircle2,
+  Camera,
+  X,
 } from "lucide-react";
 import { Link } from "@/i18n/routing";
+
+type TrackingPhoto = {
+  path?: string;
+  url?: string;
+};
 
 type TrackingData = {
   waybill_number: string;
@@ -31,8 +38,39 @@ type TrackingData = {
     notes?: string | null;
     location?: string | null;
     tracked_at?: string;
+    photos?: TrackingPhoto[];
   }>;
 };
+
+function PhotoLightbox({
+  src,
+  alt,
+  onClose,
+}: {
+  src: string;
+  alt: string;
+  onClose: () => void;
+}) {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+      onClick={onClose}
+    >
+      <button
+        className="absolute top-4 right-4 flex h-10 w-10 items-center justify-center rounded-full bg-white/20 text-white transition-colors hover:bg-white/40"
+        onClick={onClose}
+      >
+        <X className="h-5 w-5" />
+      </button>
+      <img
+        src={src}
+        alt={alt}
+        className="max-h-[85vh] max-w-[90vw] rounded-lg object-contain shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      />
+    </div>
+  );
+}
 
 export default function PublicTrackingPage() {
   const t = useTranslations("Tracking");
@@ -41,6 +79,7 @@ export default function PublicTrackingPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<TrackingData | null>(null);
+  const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
 
   const search = async (q?: string) => {
     const wb = (q ?? waybill).trim();
@@ -196,27 +235,58 @@ export default function PublicTrackingPage() {
                   </h3>
                   <div className="relative space-y-0 pl-6">
                     <div className="absolute top-2 bottom-2 left-[9px] w-px bg-zinc-200" />
-                    {(data.timeline ?? []).map((entry, i) => (
-                      <div key={i} className="relative pb-6 last:pb-0">
-                        <div className="absolute -left-6 top-1.5 flex h-[18px] w-[18px] items-center justify-center rounded-full border-2 border-white bg-[#0b1b69] shadow-sm">
-                          <div className="h-1.5 w-1.5 rounded-full bg-white" />
+                    {(data.timeline ?? []).map((entry, i) => {
+                      const photos = Array.isArray(entry.photos) ? entry.photos : [];
+                      return (
+                        <div key={i} className="relative pb-6 last:pb-0">
+                          <div className="absolute -left-6 top-1.5 flex h-[18px] w-[18px] items-center justify-center rounded-full border-2 border-white bg-[#0b1b69] shadow-sm">
+                            <div className="h-1.5 w-1.5 rounded-full bg-white" />
+                          </div>
+                          <div className="ml-2">
+                            <p className="text-sm font-semibold text-zinc-900">
+                              {shipmentStatusLabel(entry.status)}
+                            </p>
+                            {entry.location && (
+                              <p className="mt-0.5 text-xs text-zinc-500">{entry.location}</p>
+                            )}
+                            {entry.notes && (
+                              <p className="mt-1 text-xs text-zinc-500">{entry.notes}</p>
+                            )}
+                            {entry.tracked_at && (
+                              <p className="mt-1 text-xs text-zinc-400">{fmtDateTime(entry.tracked_at)}</p>
+                            )}
+
+                            {/* ── Photos ── */}
+                            {photos.length > 0 && (
+                              <div className="mt-2.5 flex flex-wrap gap-2">
+                                {photos.map((photo, idx) => {
+                                  const imgUrl = photo.url || photo.path || "";
+                                  if (!imgUrl) return null;
+                                  return (
+                                    <button
+                                      key={idx}
+                                      type="button"
+                                      className="group relative h-20 w-20 overflow-hidden rounded-xl border border-zinc-200 bg-zinc-50 shadow-sm transition-all hover:border-zinc-400 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[#0b1b69]/30"
+                                      onClick={() => setLightboxSrc(imgUrl)}
+                                    >
+                                      <img
+                                        src={imgUrl}
+                                        alt={`Foto ${idx + 1}`}
+                                        className="h-full w-full object-cover transition-transform group-hover:scale-110"
+                                        loading="lazy"
+                                      />
+                                      <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition-colors group-hover:bg-black/20">
+                                        <Camera className="h-4 w-4 text-white opacity-0 transition-opacity group-hover:opacity-100" />
+                                      </div>
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
                         </div>
-                        <div className="ml-2">
-                          <p className="text-sm font-semibold text-zinc-900">
-                            {shipmentStatusLabel(entry.status)}
-                          </p>
-                          {entry.location && (
-                            <p className="mt-0.5 text-xs text-zinc-500">{entry.location}</p>
-                          )}
-                          {entry.notes && (
-                            <p className="mt-1 text-xs text-zinc-500">{entry.notes}</p>
-                          )}
-                          {entry.tracked_at && (
-                            <p className="mt-1 text-xs text-zinc-400">{fmtDateTime(entry.tracked_at)}</p>
-                          )}
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -240,6 +310,15 @@ export default function PublicTrackingPage() {
 
         <div className="h-16" />
       </div>
+
+      {/* Lightbox overlay */}
+      {lightboxSrc && (
+        <PhotoLightbox
+          src={lightboxSrc}
+          alt="Tracking photo"
+          onClose={() => setLightboxSrc(null)}
+        />
+      )}
     </div>
   );
 }

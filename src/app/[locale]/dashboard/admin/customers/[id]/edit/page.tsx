@@ -29,6 +29,8 @@ import { BranchManagement } from "@/components/dashboard/admin/customers/branch-
 import { DiscountManagement } from "@/components/dashboard/admin/customers/discount-management";
 import { StatusManagerSection } from "@/components/dashboard/admin/customers/status-manager-section";
 
+import { cn } from "@/lib/utils";
+
 export default function AdminCustomerEditPage() {
   const params = useParams();
   const router = useRouter();
@@ -174,15 +176,15 @@ export default function AdminCustomerEditPage() {
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
                 <Label>Nama perusahaan</Label>
-                <Input value={name} onChange={(e) => setName(e.target.value)} />
+                <Input className="h-9" value={name} onChange={(e) => setName(e.target.value)} />
               </div>
               <div className="space-y-2">
                 <Label>NPWP</Label>
-                <Input value={npwp} onChange={(e) => setNpwp(e.target.value)} />
+                <Input className="h-9" value={npwp} onChange={(e) => setNpwp(e.target.value)} />
               </div>
               <div className="space-y-2">
                 <Label>NIB</Label>
-                <Input value={nib} onChange={(e) => setNib(e.target.value)} />
+                <Input className="h-9" value={nib} onChange={(e) => setNib(e.target.value)} />
               </div>
               <div className="space-y-2">
                 <Label>Siklus penagihan</Label>
@@ -190,7 +192,7 @@ export default function AdminCustomerEditPage() {
                   value={billingCycle}
                   onValueChange={(v) => v && setBillingCycle(v)}
                 >
-                  <SelectTrigger className="w-full">
+                  <SelectTrigger className="h-9 w-full rounded-lg">
                     <SelectValue placeholder="Pilih siklus penagihan">
                       {billingCycleLabel(billingCycle)}
                     </SelectValue>
@@ -206,19 +208,20 @@ export default function AdminCustomerEditPage() {
               </div>
               <div className="space-y-2">
                 <Label>Alamat</Label>
-                <Textarea value={address} onChange={(e) => setAddress(e.target.value)} rows={3} />
+                <Textarea className="min-h-[80px]" value={address} onChange={(e) => setAddress(e.target.value)} rows={3} />
               </div>
               <div className="space-y-2">
                 <Label>Kota</Label>
-                <Input value={city} onChange={(e) => setCity(e.target.value)} />
+                <Input className="h-9" value={city} onChange={(e) => setCity(e.target.value)} />
               </div>
               <div className="space-y-2">
                 <Label>Provinsi</Label>
-                <Input value={province} onChange={(e) => setProvince(e.target.value)} />
+                <Input className="h-9" value={province} onChange={(e) => setProvince(e.target.value)} />
               </div>
               <div className="space-y-2">
                 <Label>Kode pos</Label>
                 <Input
+                  className="h-9"
                   value={postalCode}
                   onChange={(e) => setPostalCode(e.target.value.replace(/\D/g, ""))}
                   inputMode="numeric"
@@ -227,15 +230,16 @@ export default function AdminCustomerEditPage() {
               </div>
               <div className="space-y-2">
                 <Label>PIC</Label>
-                <Input value={contactPerson} onChange={(e) => setContactPerson(e.target.value)} />
+                <Input className="h-9" value={contactPerson} onChange={(e) => setContactPerson(e.target.value)} />
               </div>
               <div className="space-y-2">
                 <Label>Email</Label>
-                <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+                <Input className="h-9" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
               </div>
               <div className="space-y-2">
                 <Label>Telepon</Label>
                 <Input
+                  className="h-9"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
                   placeholder="081234567890 atau 6281234567890"

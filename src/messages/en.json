@@ -306,8 +306,25 @@
       "internalUsers": "Internal Users",
       "logout": "Logout"
     },
+    "roleTitles": {
+      "super_admin": "Super Admin Dashboard",
+      "operations": "Operations Dashboard",
+      "finance": "Finance Dashboard",
+      "sales": "Sales Dashboard",
+      "company_admin": "Company Dashboard",
+      "ops_pic": "Ops PIC Dashboard",
+      "finance_pic": "Finance PIC Dashboard",
+      "default": "Dashboard"
+    },
     "profile": "Profile",
     "account": "Account",
-    "notifications": "Notifications"
+    "notifications": "Notifications",
+    "customer": {
+      "settings": {
+        "title": "Company Settings",
+        "description": "Manage your company profile, user profile, and account security.",
+        "comingSoon": "Advanced company profile and user settings can be added here."
+      }
+    }
   }
 }

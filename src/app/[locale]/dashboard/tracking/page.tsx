@@ -1,13 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import { MapPin } from "lucide-react";
+import { MapPin, Camera, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { apiFetch } from "@/lib/api-client";
 import { shipmentStatusLabel } from "@/lib/shipment-status";
+
+type TrackingPhoto = {
+  path?: string;
+  url?: string;
+};
 
 type TrackingData = {
   waybill_number: string;
@@ -21,6 +26,7 @@ type TrackingData = {
     notes?: string | null;
     location?: string | null;
     tracked_at?: string;
+    photos?: TrackingPhoto[];
   }>;
 };
 
@@ -29,6 +35,7 @@ export default function CustomerTrackingPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<TrackingData | null>(null);
+  const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
 
   const search = async () => {
     if (!waybill.trim()) return;
@@ -45,6 +52,21 @@ export default function CustomerTrackingPage() {
       setError(e instanceof Error ? e.message : "Pengiriman tidak ditemukan.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fmtDateTime = (d?: string | null) => {
+    if (!d) return "";
+    try {
+      return new Date(d).toLocaleString("id-ID", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    } catch {
+      return d;
     }
   };
 
@@ -117,21 +139,74 @@ export default function CustomerTrackingPage() {
             </div>
             <div>
               <p className="font-medium mb-2">Timeline</p>
-              <ul className="space-y-2 border-l-2 border-muted pl-4">
-                {(data.timeline ?? []).map((t, i) => (
-                  <li key={i} className="text-sm">
-                    <span className="text-muted-foreground">
-                      {t.tracked_at ? new Date(t.tracked_at).toLocaleString("id-ID") : ""}
-                    </span>{" "}
-                    — {shipmentStatusLabel(t.status)}
-                    {t.notes ? <span className="block text-muted-foreground">{t.notes}</span> : null}
-                  </li>
-                ))}
+              <ul className="space-y-3 border-l-2 border-muted pl-4">
+                {(data.timeline ?? []).map((t, i) => {
+                  const photos = Array.isArray(t.photos) ? t.photos : [];
+                  return (
+                    <li key={i} className="text-sm">
+                      <span className="text-muted-foreground">
+                        {t.tracked_at ? fmtDateTime(t.tracked_at) : ""}
+                      </span>{" "}
+                      — {shipmentStatusLabel(t.status)}
+                      {t.location ? <span className="block text-muted-foreground">{t.location}</span> : null}
+                      {t.notes ? <span className="block text-muted-foreground">{t.notes}</span> : null}
+
+                      {/* ── Photos ── */}
+                      {photos.length > 0 && (
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {photos.map((photo, idx) => {
+                            const imgUrl = photo.url || photo.path || "";
+                            if (!imgUrl) return null;
+                            return (
+                              <button
+                                key={idx}
+                                type="button"
+                                className="group relative h-16 w-16 overflow-hidden rounded-lg border border-zinc-200 bg-zinc-50 shadow-sm transition-all hover:border-zinc-400 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+                                onClick={() => setLightboxSrc(imgUrl)}
+                              >
+                                <img
+                                  src={imgUrl}
+                                  alt={`Foto ${idx + 1}`}
+                                  className="h-full w-full object-cover transition-transform group-hover:scale-110"
+                                  loading="lazy"
+                                />
+                                <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition-colors group-hover:bg-black/20">
+                                  <Camera className="h-4 w-4 text-white opacity-0 transition-opacity group-hover:opacity-100" />
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </li>
+                  );
+                })}
               </ul>
             </div>
           </CardContent>
         </Card>
       ) : null}
+
+      {/* Lightbox overlay */}
+      {lightboxSrc && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+          onClick={() => setLightboxSrc(null)}
+        >
+          <button
+            className="absolute top-4 right-4 flex h-10 w-10 items-center justify-center rounded-full bg-white/20 text-white transition-colors hover:bg-white/40"
+            onClick={() => setLightboxSrc(null)}
+          >
+            <X className="h-5 w-5" />
+          </button>
+          <img
+            src={lightboxSrc}
+            alt="Tracking photo"
+            className="max-h-[85vh] max-w-[90vw] rounded-lg object-contain shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
     </div>
   );
 }

@@ -41,6 +41,8 @@ html {
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+  --color-brand: var(--brand-primary);
+  --color-brand-dark: var(--brand-primary-dark);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -74,6 +76,11 @@ html {
   --chart-3: oklch(0.546 0.245 262.881);
   --chart-4: oklch(0.488 0.243 264.376);
   --chart-5: oklch(0.424 0.199 265.638);
+  /* ── Brand colours ─────────────────────────── */
+  --brand-primary: #0b1b69;
+  --brand-primary-dark: #0d2280;
+  --brand-primary-light: #162ea8;
+
   --radius: 0.625rem;
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);

@@ -19,6 +19,8 @@ interface ShipperConsigneeSectionProps {
   validationErrors?: Record<string, string[]>;
 }
 
+import { cn } from "@/lib/utils";
+
 export function ShipperConsigneeSection({
   shipper,
   onShipperChange,
@@ -37,7 +39,10 @@ export function ShipperConsigneeSection({
             value={shipper.name}
             onChange={(e) => onShipperChange({ name: e.target.value })}
             required
-            className={validationErrors?.shipper_name ? "border-red-500" : ""}
+            className={cn(
+              "h-9",
+              validationErrors?.shipper_name ? "border-red-500" : ""
+            )}
           />
           {renderError("shipper_name")}
         </div>
@@ -48,7 +53,10 @@ export function ShipperConsigneeSection({
             onChange={(e) => onShipperChange({ address: e.target.value })}
             rows={2}
             required
-            className={validationErrors?.shipper_address ? "border-red-500" : ""}
+            className={cn(
+              "min-h-[60px]",
+              validationErrors?.shipper_address ? "border-red-500" : ""
+            )}
           />
           {renderError("shipper_address")}
         </div>
@@ -58,7 +66,10 @@ export function ShipperConsigneeSection({
             value={shipper.phone}
             onChange={(e) => onShipperChange({ phone: e.target.value })}
             required
-            className={validationErrors?.shipper_phone ? "border-red-500" : ""}
+            className={cn(
+              "h-9",
+              validationErrors?.shipper_phone ? "border-red-500" : ""
+            )}
           />
           {renderError("shipper_phone")}
         </div>
@@ -72,7 +83,10 @@ export function ShipperConsigneeSection({
             value={consignee.name}
             onChange={(e) => onConsigneeChange({ name: e.target.value })}
             required
-            className={validationErrors?.consignee_name ? "border-red-500" : ""}
+            className={cn(
+              "h-9",
+              validationErrors?.consignee_name ? "border-red-500" : ""
+            )}
           />
           {renderError("consignee_name")}
         </div>
@@ -83,7 +97,10 @@ export function ShipperConsigneeSection({
             onChange={(e) => onConsigneeChange({ address: e.target.value })}
             rows={2}
             required
-            className={validationErrors?.consignee_address ? "border-red-500" : ""}
+            className={cn(
+              "min-h-[60px]",
+              validationErrors?.consignee_address ? "border-red-500" : ""
+            )}
           />
           {renderError("consignee_address")}
         </div>
@@ -93,7 +110,10 @@ export function ShipperConsigneeSection({
             value={consignee.phone}
             onChange={(e) => onConsigneeChange({ phone: e.target.value })}
             required
-            className={validationErrors?.consignee_phone ? "border-red-500" : ""}
+            className={cn(
+              "h-9",
+              validationErrors?.consignee_phone ? "border-red-500" : ""
+            )}
           />
           {renderError("consignee_phone")}
         </div>

@@ -2,6 +2,7 @@
 
 import { useAuthStore } from "@/lib/store";
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { getDashboardUiRole } from "@/lib/auth-role";
 import {
   fetchAdminDashboard,
@@ -122,22 +123,16 @@ export default function DashboardPage() {
     }
   };
 
-  const title =
-    effectiveRole === "super_admin"
-      ? "Dashboard Super Admin"
-      : effectiveRole === "operations"
-        ? "Dashboard Operations"
-        : effectiveRole === "finance"
-          ? "Dashboard Finance"
-          : effectiveRole === "sales"
-            ? "Dashboard Sales"
-            : effectiveRole === "company_admin"
-              ? "Dashboard Company Admin"
-              : effectiveRole === "ops_pic"
-                ? "Dashboard Ops PIC"
-                : effectiveRole === "finance_pic"
-                  ? "Dashboard Finance PIC"
-                  : "Dashboard";
+  const t = useTranslations("Dashboard.roleTitles");
+
+  const title = ((): string => {
+    const key = effectiveRole as Parameters<typeof t>[0];
+    try {
+      return t(key);
+    } catch {
+      return t("default");
+    }
+  })();
 
   return (
     <div className="flex min-w-0 w-full flex-1 flex-col gap-6 md:px-2">

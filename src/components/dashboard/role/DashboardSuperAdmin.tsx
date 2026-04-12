@@ -11,9 +11,10 @@ import {
 } from "@/components/ui/table";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
 import { Bar, BarChart, CartesianGrid, Legend, XAxis, YAxis } from "recharts";
-import { ArrowUpRight, Clock3, Container, Factory, Building2, FileText, CreditCard } from "lucide-react";
+import { ArrowUpRight, Clock3, Container, Factory, Building2, FileText, CreditCard, ArrowRight } from "lucide-react";
 import type { AdminDashboardPayload } from "@/lib/dashboard-api";
 import { shipmentStatusBadgeClass, shipmentStatusLabel } from "@/lib/shipment-status";
+import Link from "next/link";
 
 const chartConfig = {
   fcl: { label: "FCL", color: "#0ea5e9" },
@@ -203,9 +204,10 @@ export function DashboardSuperAdmin({
         </Card>
       </div>
 
-      <Card className="min-w-0 overflow-hidden">
-        <CardHeader>
+      <Card>
+        <CardHeader className="flex flex-row justify-between w-full">
           <CardTitle>Shipment Terbaru</CardTitle>
+          <Link href="/dashboard/shipment" className="flex flex-row gap-1 items-center mt-2">Lihat Semua <ArrowRight className="h-3.5 w-3.5" /></Link>
         </CardHeader>
         <CardContent className="overflow-x-auto">
           <Table>

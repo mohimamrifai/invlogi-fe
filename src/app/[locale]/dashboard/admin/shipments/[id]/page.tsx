@@ -57,6 +57,10 @@ export default function AdminShipmentDetailPage() {
           <Download className="h-4 w-4" />
           Cetak Consignment Note (CN)
         </Button>
+        <Button type="button" variant="outline" size="sm" className="gap-1.5" onClick={() => void s.waybillPdf()}>
+          <Download className="h-4 w-4" />
+          Cetak Waybill
+        </Button>
         <Button type="button" size="sm" onClick={s.openEditShipment}>
           Edit Jadwal
         </Button>

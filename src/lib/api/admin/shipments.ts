@@ -57,3 +57,7 @@ export async function deleteAdminShipmentItem(itemId: number) {
 export async function downloadAdminConsignmentNotePdf(shipmentId: number) {
   return apiFetchBlob(`/admin/shipments/${shipmentId}/consignment-note-pdf`, { method: "GET" });
 }
+
+export async function downloadAdminWaybillPdf(shipmentId: number) {
+  return apiFetchBlob(`/admin/shipments/${shipmentId}/waybill-pdf`, { method: "GET" });
+}

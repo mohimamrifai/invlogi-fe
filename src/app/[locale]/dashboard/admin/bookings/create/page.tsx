@@ -36,6 +36,15 @@ import { useAuthPersistHydrated } from "@/lib/use-auth-hydrated";
 import { DangerousGoodsSection } from "@/components/dashboard/admin/bookings/create/dangerous-goods-section";
 import { ShipperConsigneeSection } from "@/components/dashboard/admin/bookings/create/shipper-consignee-section";
 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { cn } from "@/lib/utils";
+
 type Company = { id: number; name: string };
 type Loc = { id: number; name: string; code?: string };
 type TM = { id: number; name: string; code?: string };
@@ -306,202 +315,230 @@ export default function AdminCreateBookingPage() {
           <CardContent className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2 sm:col-span-2">
               <Label>Customer</Label>
-                <select
-                  className={`flex h-10 w-full rounded-md border bg-background px-3 text-sm ${
-                    validationErrors?.company_id ? "border-red-500 ring-red-500" : "border-input"
-                  }`}
-                  value={companyId}
-                  onChange={(e) => setCompanyId(e.target.value)}
-                  required
+              <Select value={companyId} onValueChange={(v) => v && setCompanyId(v)}>
+                <SelectTrigger
+                  className={cn(
+                    "h-9 w-full rounded-lg",
+                    validationErrors?.company_id ? "border-red-500 ring-red-500" : ""
+                  )}
                 >
-                  <option value="">—</option>
+                  <SelectValue placeholder="Pilih customer…" />
+                </SelectTrigger>
+                <SelectContent>
                   {companies.map((c) => (
-                    <option key={c.id} value={c.id}>
+                    <SelectItem key={c.id} value={String(c.id)}>
                       {c.name}
-                    </option>
+                    </SelectItem>
                   ))}
-                </select>
-                {renderError("company_id")}
-              </div>
-              <div className="space-y-2">
-                <Label>Origin</Label>
-                <select
-                  className={`flex h-10 w-full rounded-md border bg-background px-3 text-sm ${
-                    validationErrors?.origin_location_id ? "border-red-500 ring-red-500" : "border-input"
-                  }`}
-                  value={originId}
-                  onChange={(e) => setOriginId(e.target.value)}
-                  required
+                </SelectContent>
+              </Select>
+              {renderError("company_id")}
+            </div>
+            <div className="space-y-2">
+              <Label>Origin</Label>
+              <Select value={originId} onValueChange={(v) => v && setOriginId(v)}>
+                <SelectTrigger
+                  className={cn(
+                    "h-9 w-full rounded-lg",
+                    validationErrors?.origin_location_id ? "border-red-500 ring-red-500" : ""
+                  )}
                 >
-                  <option value="">—</option>
+                  <SelectValue placeholder="Pilih origin…" />
+                </SelectTrigger>
+                <SelectContent>
                   {locations.map((l) => (
-                    <option key={l.id} value={l.id}>
+                    <SelectItem key={l.id} value={String(l.id)}>
                       {l.name} ({l.code})
-                    </option>
+                    </SelectItem>
                   ))}
-                </select>
-                {renderError("origin_location_id")}
-              </div>
-              <div className="space-y-2">
-                <Label>Destination</Label>
-                <select
-                  className={`flex h-10 w-full rounded-md border bg-background px-3 text-sm ${
-                    validationErrors?.destination_location_id ? "border-red-500 ring-red-500" : "border-input"
-                  }`}
-                  value={destId}
-                  onChange={(e) => setDestId(e.target.value)}
-                  required
+                </SelectContent>
+              </Select>
+              {renderError("origin_location_id")}
+            </div>
+            <div className="space-y-2">
+              <Label>Destination</Label>
+              <Select value={destId} onValueChange={(v) => v && setDestId(v)}>
+                <SelectTrigger
+                  className={cn(
+                    "h-9 w-full rounded-lg",
+                    validationErrors?.destination_location_id ? "border-red-500 ring-red-500" : ""
+                  )}
                 >
-                  <option value="">—</option>
+                  <SelectValue placeholder="Pilih destination…" />
+                </SelectTrigger>
+                <SelectContent>
                   {locations.map((l) => (
-                    <option key={l.id} value={l.id}>
+                    <SelectItem key={l.id} value={String(l.id)}>
                       {l.name} ({l.code})
-                    </option>
+                    </SelectItem>
                   ))}
-                </select>
-                {renderError("destination_location_id")}
-              </div>
-              <div className="space-y-2">
-                <Label>Transport mode</Label>
-                <select
-                  className={`flex h-10 w-full rounded-md border bg-background px-3 text-sm ${
-                    validationErrors?.transport_mode_id ? "border-red-500 ring-red-500" : "border-input"
-                  }`}
-                  value={modeId}
-                  onChange={(e) => setModeId(e.target.value)}
-                  required
+                </SelectContent>
+              </Select>
+              {renderError("destination_location_id")}
+            </div>
+            <div className="space-y-2">
+              <Label>Transport mode</Label>
+              <Select value={modeId} onValueChange={(v) => v && setModeId(v)}>
+                <SelectTrigger
+                  className={cn(
+                    "h-9 w-full rounded-lg",
+                    validationErrors?.transport_mode_id ? "border-red-500 ring-red-500" : ""
+                  )}
                 >
-                  <option value="">—</option>
+                  <SelectValue placeholder="Pilih moda…" />
+                </SelectTrigger>
+                <SelectContent>
                   {modes.map((m) => (
-                    <option key={m.id} value={m.id}>
+                    <SelectItem key={m.id} value={String(m.id)}>
                       {m.name} ({m.code})
-                    </option>
+                    </SelectItem>
                   ))}
-                </select>
-                {renderError("transport_mode_id")}
-              </div>
-              <div className="space-y-2">
-                <Label>Service type</Label>
-                <select
-                  className={`flex h-10 w-full rounded-md border bg-background px-3 text-sm ${
-                    validationErrors?.service_type_id ? "border-red-500 ring-red-500" : "border-input"
-                  }`}
-                  value={serviceTypeId}
-                  onChange={(e) => setServiceTypeId(e.target.value)}
-                  required
+                </SelectContent>
+              </Select>
+              {renderError("transport_mode_id")}
+            </div>
+            <div className="space-y-2">
+              <Label>Service type</Label>
+              <Select value={serviceTypeId} onValueChange={(v) => v && setServiceTypeId(v)}>
+                <SelectTrigger
+                  className={cn(
+                    "h-9 w-full rounded-lg",
+                    validationErrors?.service_type_id ? "border-red-500 ring-red-500" : ""
+                  )}
                 >
-                  <option value="">—</option>
+                  <SelectValue placeholder="Pilih layanan…" />
+                </SelectTrigger>
+                <SelectContent>
                   {serviceTypes.map((s) => (
-                    <option key={s.id} value={s.id}>
+                    <SelectItem key={s.id} value={String(s.id)}>
                       {s.name} ({s.code})
-                    </option>
+                    </SelectItem>
                   ))}
-                </select>
-                {renderError("service_type_id")}
-              </div>
-              <div className="space-y-2">
-                <Label>Container type (opsional)</Label>
-                <select
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-                  value={containerTypeId}
-                  onChange={(e) => setContainerTypeId(e.target.value)}
-                >
-                  <option value="">—</option>
+                </SelectContent>
+              </Select>
+              {renderError("service_type_id")}
+            </div>
+            <div className="space-y-2">
+              <Label>Container type (opsional)</Label>
+              <Select value={containerTypeId} onValueChange={(v) => setContainerTypeId(v || "")}>
+                <SelectTrigger className="h-9 w-full rounded-lg">
+                  <SelectValue placeholder="Pilih tipe kontainer…" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">—</SelectItem>
                   {containerTypes.map((c) => (
-                    <option key={c.id} value={c.id}>
+                    <SelectItem key={c.id} value={String(c.id)}>
                       {c.name} ({c.size})
-                    </option>
+                    </SelectItem>
                   ))}
-                </select>
-                {renderError("container_type_id")}
-              </div>
-              <div className="space-y-2">
-                <Label>Jumlah kontainer</Label>
-                <Input
-                  type="number"
-                  min={1}
-                  value={containerCount}
-                  onChange={(e) => setContainerCount(e.target.value)}
-                  className={validationErrors?.container_count ? "border-red-500" : ""}
-                />
-                {renderError("container_count")}
-              </div>
-              <div className="space-y-2">
-                <Label>Berat estimasi (kg)</Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  value={weight}
-                  onChange={(e) => setWeight(e.target.value)}
-                  className={validationErrors?.estimated_weight ? "border-red-500" : ""}
-                />
-                {renderError("estimated_weight")}
-              </div>
-              <div className="space-y-2">
-                <Label>CBM estimasi</Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  value={cbm}
-                  onChange={(e) => setCbm(e.target.value)}
-                  className={validationErrors?.estimated_cbm ? "border-red-500" : ""}
-                />
-                {renderError("estimated_cbm")}
-              </div>
-              <div className="space-y-2">
-                <Label>Kategori kargo</Label>
-                <select
-                  className={`flex h-10 w-full rounded-md border bg-background px-3 text-sm ${
-                    validationErrors?.cargo_category_id ? "border-red-500 ring-red-500" : "border-input"
-                  }`}
-                  value={cargoCategoryId}
-                  onChange={(e) => setCargoCategoryId(e.target.value)}
-                  required
-                >
-                  <option value="">Pilih kategori…</option>
-                  {cargoCats.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
-                {renderError("cargo_category_id")}
-              </div>
-              <div className="space-y-2">
-                <Label>Tanggal keberangkatan (est.)</Label>
-                <Input
-                  type="date"
-                  value={pickupDate}
-                  onChange={(e) => setPickupDate(e.target.value)}
-                  className={validationErrors?.departure_date ? "border-red-500" : ""}
-                />
-                {renderError("departure_date")}
-              </div>
-              
-              <DangerousGoodsSection
-                isDg={isDg}
-                onIsDgChange={setIsDg}
-                dgClassId={dgClassId}
-                onDgClassIdChange={setDgClassId}
-                unNumber={unNumber}
-                onUnNumberChange={setUnNumber}
-                onMsdsFileChange={setMsdsFile}
-                dgClasses={dgClasses}
-                validationErrors={validationErrors ?? undefined}
-                renderError={renderError}
+                </SelectContent>
+              </Select>
+              {renderError("container_type_id")}
+            </div>
+            <div className="space-y-2">
+              <Label>Jumlah kontainer</Label>
+              <Input
+                type="number"
+                min={1}
+                value={containerCount}
+                onChange={(e) => setContainerCount(e.target.value)}
+                className={cn(
+                  "h-9",
+                  validationErrors?.container_count ? "border-red-500" : ""
+                )}
               />
-  
-              <div className="sm:col-span-2 space-y-2">
-                <Label>Deskripsi kargo</Label>
-                <Textarea
-                  value={cargo}
-                  onChange={(e) => setCargo(e.target.value)}
-                  rows={3}
-                  placeholder="Sebutkan isi paket secara detail..."
-                  className={validationErrors?.cargo_description ? "border-red-500" : ""}
-                />
-                {renderError("cargo_description")}
-              </div>
+              {renderError("container_count")}
+            </div>
+            <div className="space-y-2">
+              <Label>Berat estimasi (kg)</Label>
+              <Input
+                type="number"
+                step="0.01"
+                value={weight}
+                onChange={(e) => setWeight(e.target.value)}
+                className={cn(
+                  "h-9",
+                  validationErrors?.estimated_weight ? "border-red-500" : ""
+                )}
+              />
+              {renderError("estimated_weight")}
+            </div>
+            <div className="space-y-2">
+              <Label>CBM estimasi</Label>
+              <Input
+                type="number"
+                step="0.01"
+                value={cbm}
+                onChange={(e) => setCbm(e.target.value)}
+                className={cn(
+                  "h-9",
+                  validationErrors?.estimated_cbm ? "border-red-500" : ""
+                )}
+              />
+              {renderError("estimated_cbm")}
+            </div>
+            <div className="space-y-2">
+              <Label>Kategori kargo</Label>
+              <Select value={cargoCategoryId} onValueChange={(v) => v && setCargoCategoryId(v)}>
+                <SelectTrigger
+                  className={cn(
+                    "h-9 w-full rounded-lg",
+                    validationErrors?.cargo_category_id ? "border-red-500 ring-red-500" : ""
+                  )}
+                >
+                  <SelectValue placeholder="Pilih kategori…" />
+                </SelectTrigger>
+                <SelectContent>
+                  {cargoCats.map((c) => (
+                    <SelectItem key={c.id} value={String(c.id)}>
+                      {c.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {renderError("cargo_category_id")}
+            </div>
+            <div className="space-y-2">
+              <Label>Tanggal keberangkatan (est.)</Label>
+              <Input
+                type="date"
+                value={pickupDate}
+                onChange={(e) => setPickupDate(e.target.value)}
+                className={cn(
+                  "h-9",
+                  validationErrors?.departure_date ? "border-red-500" : ""
+                )}
+              />
+              {renderError("departure_date")}
+            </div>
+            
+            <DangerousGoodsSection
+              isDg={isDg}
+              onIsDgChange={setIsDg}
+              dgClassId={dgClassId}
+              onDgClassIdChange={setDgClassId}
+              unNumber={unNumber}
+              onUnNumberChange={setUnNumber}
+              onMsdsFileChange={setMsdsFile}
+              dgClasses={dgClasses}
+              validationErrors={validationErrors ?? undefined}
+              renderError={renderError}
+            />
+
+            <div className="sm:col-span-2 space-y-2">
+              <Label>Deskripsi kargo</Label>
+              <Textarea
+                value={cargo}
+                onChange={(e) => setCargo(e.target.value)}
+                rows={3}
+                placeholder="Sebutkan isi paket secara detail..."
+                className={cn(
+                  "min-h-[80px]",
+                  validationErrors?.cargo_description ? "border-red-500" : ""
+                )}
+              />
+              {renderError("cargo_description")}
+            </div>
   
               <ShipperConsigneeSection
                 shipper={shipper}

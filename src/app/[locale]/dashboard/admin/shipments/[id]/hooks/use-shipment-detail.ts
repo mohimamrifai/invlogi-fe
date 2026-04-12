@@ -11,6 +11,7 @@ import {
   updateAdminShipmentItem,
   deleteAdminShipmentItem,
   downloadAdminConsignmentNotePdf,
+  downloadAdminWaybillPdf,
 } from "@/lib/admin-api";
 import { ApiError } from "@/lib/api-client";
 import { firstLaravelError } from "@/lib/laravel-errors";
@@ -333,6 +334,17 @@ export function useShipmentDetail(shipmentId: number) {
     }
   };
 
+  const waybillPdf = async () => {
+    try {
+      const blob = await downloadAdminWaybillPdf(shipmentId);
+      const wb = String(data?.waybill_number ?? shipmentId);
+      downloadBlob(blob, `waybill-${wb}.pdf`);
+      toast.success("PDF waybill berhasil diunduh.");
+    } catch (e) {
+      toast.error(e instanceof ApiError ? e.message : "Gagal unduh waybill PDF.");
+    }
+  };
+
   const rackOptions = useMemo(() => {
     const opts: { id: number; label: string }[] = [];
     for (const c of containers) {
@@ -420,5 +432,6 @@ export function useShipmentDetail(shipmentId: number) {
 
     // PDF
     pdf,
+    waybillPdf,
   };
 }

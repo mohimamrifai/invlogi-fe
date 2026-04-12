@@ -1,8 +1,14 @@
-"use client";
-
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
+import { cn } from "@/lib/utils";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface DangerousGoodsSectionProps {
   isDg: boolean;
@@ -43,21 +49,23 @@ export function DangerousGoodsSection({
         <div className="grid gap-4 sm:grid-cols-2 rounded-lg border border-red-100 bg-red-50/20 p-4">
           <div className="space-y-2">
             <Label>DG Class</Label>
-            <select
-              className={`flex h-10 w-full rounded-md border bg-background px-3 text-sm ${
-                validationErrors?.dg_class_id ? "border-red-500 ring-red-500" : "border-input"
-              }`}
-              value={dgClassId}
-              onChange={(e) => onDgClassIdChange(e.target.value)}
-              required={isDg}
-            >
-              <option value="">Pilih class…</option>
-              {dgClasses.map((d) => (
-                <option key={d.id} value={d.id}>
-                  {d.name} ({d.code})
-                </option>
-              ))}
-            </select>
+            <Select value={dgClassId} onValueChange={(v) => v && onDgClassIdChange(v)}>
+              <SelectTrigger
+                className={cn(
+                  "h-9 w-full rounded-lg",
+                  validationErrors?.dg_class_id ? "border-red-500 ring-red-500" : ""
+                )}
+              >
+                <SelectValue placeholder="Pilih class…" />
+              </SelectTrigger>
+              <SelectContent>
+                {dgClasses.map((d) => (
+                  <SelectItem key={d.id} value={String(d.id)}>
+                    {d.name} ({d.code})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             {renderError("dg_class_id")}
           </div>
           <div className="space-y-2">
@@ -67,7 +75,10 @@ export function DangerousGoodsSection({
               value={unNumber}
               onChange={(e) => onUnNumberChange(e.target.value)}
               required={isDg}
-              className={validationErrors?.un_number ? "border-red-500" : ""}
+              className={cn(
+                "h-9",
+                validationErrors?.un_number ? "border-red-500" : ""
+              )}
             />
             {renderError("un_number")}
           </div>
@@ -78,7 +89,10 @@ export function DangerousGoodsSection({
               accept=".pdf"
               onChange={(e) => onMsdsFileChange(e.target.files?.[0] ?? null)}
               required={isDg}
-              className={validationErrors?.msds_file ? "border-red-500" : ""}
+              className={cn(
+                "h-9 italic text-xs py-1.5",
+                validationErrors?.msds_file ? "border-red-500" : ""
+              )}
             />
             <p className="text-[11px] text-muted-foreground">
               Wajib untuk barang berbahaya (maks 5MB).

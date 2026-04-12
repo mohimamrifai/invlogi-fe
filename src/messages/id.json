@@ -306,8 +306,25 @@
       "internalUsers": "Pengguna Internal",
       "logout": "Keluar"
     },
+    "roleTitles": {
+      "super_admin": "Dashboard Super Admin",
+      "operations": "Dashboard Operations",
+      "finance": "Dashboard Finance",
+      "sales": "Dashboard Sales",
+      "company_admin": "Dashboard Perusahaan",
+      "ops_pic": "Dashboard Ops PIC",
+      "finance_pic": "Dashboard Finance PIC",
+      "default": "Dashboard"
+    },
     "profile": "Profil",
     "account": "Akun",
-    "notifications": "Notifikasi"
+    "notifications": "Notifikasi",
+    "customer": {
+      "settings": {
+        "title": "Pengaturan Perusahaan",
+        "description": "Kelola profil perusahaan, profil pengguna, dan keamanan akun.",
+        "comingSoon": "Pengaturan lanjutan profil perusahaan dan pengguna dapat ditambahkan di sini."
+      }
+    }
   }
 }

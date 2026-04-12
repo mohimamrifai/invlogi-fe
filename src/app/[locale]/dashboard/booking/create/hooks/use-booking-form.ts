@@ -30,7 +30,7 @@ export type CT = {
   capacity_weight?: number;
   capacity_cbm?: number;
 };
-export type AS = { id: number; name: string; category: string };
+export type AS = { id: number; name: string; code?: string | null; category: string };
 export type CC = {
   id: number;
   name: string;
@@ -43,12 +43,12 @@ export type CC = {
 
 export type DC = { id: number; name: string; code: string };
 
-const fclMandatoryNames = [
-  "Free Storage 5 Hari (Origin & Destination)",
-  "LOLO (Lift On-Lift Off)",
-  "Container Rent",
-];
-const lclMandatoryNames = ["Free Storage 1 Hari (Origin & Destination)"];
+/** Stable codes for FCL mandatory add-ons (match by code, not name). */
+const FCL_MANDATORY_CODES = ['FREE_STORAGE_FCL', 'LOLO', 'CONTAINER_RENT'];
+/** Stable codes for LCL mandatory add-ons. */
+const LCL_MANDATORY_CODES = ['FREE_STORAGE_LCL'];
+/** All mandatory codes combined — used to strip them before re-applying. */
+const ALL_MANDATORY_CODES = [...FCL_MANDATORY_CODES, ...LCL_MANDATORY_CODES];
 
 export function useBookingForm() {
   const { user } = useAuthStore();
@@ -165,17 +165,20 @@ export function useBookingForm() {
     return () => { active = false; };
   }, [modeId]);
 
-  // Mandatory Add-ons Logic
+  // Mandatory Add-ons Logic — matched by code (stable) instead of name
   useEffect(() => {
     if (addServices.length > 0 && serviceTypeId) {
-      const names = isFCL ? fclMandatoryNames : isLCL ? lclMandatoryNames : [];
-      const mandatoryIds = addServices.filter((s) => names.includes(s.name)).map((s) => s.id);
-      
+      const codes = isFCL ? FCL_MANDATORY_CODES : isLCL ? LCL_MANDATORY_CODES : [];
+      const mandatoryIds = addServices
+        .filter((s) => s.code != null && codes.includes(s.code))
+        .map((s) => s.id);
+
       setSelectedAddOns((prev) => {
+        // Remove any previously auto-selected mandatory IDs, then re-add current ones.
         const others = prev.filter(
-          (id) =>
-            !fclMandatoryNames.includes(addServices.find((s) => s.id === id)?.name || "") &&
-            !lclMandatoryNames.includes(addServices.find((s) => s.id === id)?.name || "")
+          (id) => !ALL_MANDATORY_CODES.includes(
+            addServices.find((s) => s.id === id)?.code ?? ''
+          )
         );
         return Array.from(new Set([...others, ...mandatoryIds]));
       });

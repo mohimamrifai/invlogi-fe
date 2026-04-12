@@ -29,7 +29,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Download, MoreHorizontal, Truck } from "lucide-react";
 import { SHIPMENT_STATUS_KEYS, shipmentStatusBadgeClass, shipmentStatusLabel } from "@/lib/shipment-status";
-import { downloadCustomerConsignmentNotePdf, fetchCustomerShipments } from "@/lib/customer-api";
+import { downloadCustomerConsignmentNotePdf, downloadCustomerWaybillPdf, fetchCustomerShipments } from "@/lib/customer-api";
 import type { LaravelPaginated } from "@/lib/types-api";
 import { ApiError } from "@/lib/api-client";
 import { rowNumber } from "@/lib/list-query";
@@ -124,6 +124,16 @@ export default function CustomerShipmentsPage() {
     }
   };
 
+  const handleDownloadWaybill = async (id: number, wb: string) => {
+    try {
+      const blob = await downloadCustomerWaybillPdf(id);
+      downloadBlob(blob, `waybill-${wb}.pdf`);
+      toast.success("Waybill berhasil diunduh.");
+    } catch (e) {
+      toast.error(e instanceof ApiError ? e.message : "Gagal mengunduh waybill.");
+    }
+  };
+
   return (
     <div className="flex min-w-0 w-full flex-1 flex-col gap-6 md:px-2">
       <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
@@ -214,6 +224,10 @@ export default function CustomerShipmentsPage() {
                               <DropdownMenuItem onClick={() => void handleDownloadCN(id, waybill)}>
                                 <Download className="mr-2 h-4 w-4" />
                                 Cetak Consignment Note (CN)
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => void handleDownloadWaybill(id, waybill)}>
+                                <Download className="mr-2 h-4 w-4" />
+                                Cetak Waybill
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
