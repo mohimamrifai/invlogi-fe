@@ -17,12 +17,14 @@ export function MasterRowActions({
   onView,
   onEdit,
   onDelete,
+  extraActions,
 }: {
   entityLabel: string;
   canManage: boolean;
   onView?: () => void;
   onEdit?: () => void;
   onDelete?: () => void;
+  extraActions?: React.ReactNode;
 }) {
   return (
     <DropdownMenu>
@@ -39,6 +41,7 @@ export function MasterRowActions({
             Lihat detail
           </DropdownMenuItem>
         ) : null}
+        {extraActions}
         {canManage && (onEdit || onDelete) ? <DropdownMenuSeparator /> : null}
         {canManage && onEdit ? (
           <DropdownMenuItem className="cursor-pointer" onClick={onEdit}>

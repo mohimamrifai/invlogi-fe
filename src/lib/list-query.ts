@@ -5,6 +5,7 @@ export type ListQueryParams = {
   search?: string;
   status?: string;
   companyId?: number;
+  trainId?: number;
   /** Location `type` (port, city, hub, warehouse) */
   type?: string;
   transportModeId?: number;
@@ -24,6 +25,7 @@ export function buildListQuery(params?: ListQueryParams): string {
   const st = params?.status?.trim();
   if (st) q.set("status", st);
   if (params?.companyId != null) q.set("company_id", String(params.companyId));
+  if (params?.trainId != null) q.set("train_id", String(params.trainId));
   const ty = params?.type?.trim();
   if (ty) q.set("type", ty);
   if (params?.transportModeId != null) q.set("transport_mode_id", String(params.transportModeId));

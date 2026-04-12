@@ -24,7 +24,7 @@ function has(roles: string[], role: string): boolean {
 
 export function getAdminCustomerCapabilities(roles: string[]): AdminCustomerCapabilities {
   return {
-    canCreateCustomer: has(roles, "super_admin") || has(roles, "sales"),
+    canCreateCustomer: has(roles, "super_admin") || has(roles, "sales") || has(roles, "operations"),
     canEditCompanyData:
       has(roles, "super_admin") ||
       has(roles, "sales") ||

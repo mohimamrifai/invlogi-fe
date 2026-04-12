@@ -73,6 +73,10 @@ import { ApiError } from "@/lib/api-client";
 import { rowNumber } from "@/lib/list-query";
 import { useDebouncedValue } from "@/lib/use-debounced-value";
 
+import { PaymentStats } from "@/components/dashboard/admin/payments/payment-stats";
+import { PaymentActionsMenu } from "@/components/dashboard/admin/payments/payment-actions-menu";
+import type { PayRow } from "@/components/dashboard/admin/payments/types";
+
 const PER_PAGE = 10;
 const STATS_CAP = 1000;
 
@@ -97,259 +101,6 @@ const actionsHeadClass =
 
 const actionsCellClass =
   "max-md:sticky max-md:right-0 max-md:z-10 max-md:border-l max-md:border-border max-md:bg-card max-md:shadow-[-8px_0_12px_-8px_rgba(0,0,0,0.08)] max-md:group-hover:bg-muted/50 md:static md:z-auto md:border-l-0 md:shadow-none md:group-hover:bg-transparent";
-
-type PayRow = Record<string, unknown>;
-
-function AdminPaymentActionsMenu({
-  payment,
-  paymentRef,
-  canManageAR,
-  onPaymentsChanged,
-}: {
-  payment: PayRow;
-  paymentRef: string;
-  canManageAR: boolean;
-  onPaymentsChanged: () => void;
-}) {
-  const [detailOpen, setDetailOpen] = useState(false);
-  const [detailData, setDetailData] = useState<PayRow | null>(null);
-  const [detailLoading, setDetailLoading] = useState(false);
-  const [detailError, setDetailError] = useState<string | null>(null);
-  const paymentRowRef = useRef(payment);
-  paymentRowRef.current = payment;
-  const detailOpenRef = useRef(detailOpen);
-  detailOpenRef.current = detailOpen;
-
-  const [syncLoading, setSyncLoading] = useState(false);
-  const [verifyOpen, setVerifyOpen] = useState(false);
-  const [verifyNote, setVerifyNote] = useState("");
-  const [verifyLoading, setVerifyLoading] = useState(false);
-
-  const paymentId = Number(payment.id);
-  const orderIdRaw = String(payment.midtrans_order_id ?? "").trim();
-  const canSyncMidtrans = orderIdRaw.length > 0;
-  const payStatus = String(payment.status ?? "").toLowerCase();
-  const canManualVerify = payStatus !== "success";
-
-  useEffect(() => {
-    if (!detailOpen) {
-      setDetailData(null);
-      setDetailError(null);
-      return;
-    }
-    if (!Number.isFinite(paymentId)) {
-      setDetailError("ID pembayaran tidak valid.");
-      setDetailData(null);
-      return;
-    }
-    setDetailLoading(true);
-    setDetailError(null);
-    void (async () => {
-      try {
-        const res = await fetchAdminPayment(paymentId);
-        setDetailData((res as { data: PayRow }).data ?? null);
-      } catch (e) {
-        setDetailError(e instanceof ApiError ? e.message : "Gagal memuat detail.");
-        setDetailData(paymentRowRef.current);
-      } finally {
-        setDetailLoading(false);
-      }
-    })();
-  }, [detailOpen, paymentId]);
-
-  async function refetchDetailIfOpen(opts?: { showLoading?: boolean }) {
-    if (!detailOpenRef.current || !Number.isFinite(paymentId)) return;
-    const showLoading = opts?.showLoading === true;
-    if (showLoading) setDetailLoading(true);
-    try {
-      const res = await fetchAdminPayment(paymentId);
-      setDetailData((res as { data: PayRow }).data ?? null);
-    } catch {
-      /* biarkan tampilan lama */
-    } finally {
-      if (showLoading) setDetailLoading(false);
-    }
-  }
-
-  async function handleSyncMidtrans() {
-    if (!Number.isFinite(paymentId)) return;
-    const toastId = toast.loading("Menyinkronkan status dari Midtrans…");
-    setSyncLoading(true);
-    try {
-      const res = await syncAdminPaymentMidtrans(paymentId);
-      toast.success(res.message, { id: toastId, duration: 4000 });
-      onPaymentsChanged();
-      await refetchDetailIfOpen({ showLoading: true });
-    } catch (e) {
-      toast.error(e instanceof ApiError ? e.message : "Gagal menyinkronkan dari Midtrans.", {
-        id: toastId,
-        duration: 6000,
-      });
-    } finally {
-      setSyncLoading(false);
-    }
-  }
-
-  async function handleVerifyManual() {
-    if (!Number.isFinite(paymentId)) return;
-    const toastId = toast.loading("Memverifikasi pembayaran…");
-    setVerifyLoading(true);
-    try {
-      const res = await verifyAdminPaymentManual(paymentId, {
-        note: verifyNote.trim() || undefined,
-      });
-      toast.success(res.message, { id: toastId, duration: 4000 });
-      setVerifyOpen(false);
-      setVerifyNote("");
-      onPaymentsChanged();
-      await refetchDetailIfOpen({ showLoading: true });
-    } catch (e) {
-      toast.error(e instanceof ApiError ? e.message : "Gagal verifikasi manual.", {
-        id: toastId,
-        duration: 6000,
-      });
-    } finally {
-      setVerifyLoading(false);
-    }
-  }
-
-  return (
-    <>
-    <DropdownMenu>
-      <DropdownMenuTrigger
-        className={cn(buttonVariants({ variant: "ghost", size: "icon-sm" }), "shrink-0")}
-        disabled={syncLoading || verifyLoading}
-        aria-busy={syncLoading || verifyLoading}
-        aria-label={
-          syncLoading
-            ? "Menyinkronkan dari Midtrans, tunggu sebentar"
-            : verifyLoading
-              ? "Memverifikasi pembayaran, tunggu sebentar"
-              : "Menu aksi pembayaran"
-        }
-      >
-        {syncLoading || verifyLoading ? (
-          <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-        ) : (
-          <MoreHorizontal className="h-4 w-4" aria-hidden />
-        )}
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="min-w-52">
-        <DropdownMenuItem className="cursor-pointer" onClick={() => setDetailOpen(true)}>
-          <Eye className="h-4 w-4" />
-          Lihat detail pembayaran
-        </DropdownMenuItem>
-        {canManageAR ? (
-          <>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              className="cursor-pointer"
-              disabled={!canSyncMidtrans || syncLoading || verifyLoading || !Number.isFinite(paymentId)}
-              title={!canSyncMidtrans ? "Pembayaran tanpa Order ID Midtrans tidak bisa disinkronkan." : undefined}
-              onClick={() => void handleSyncMidtrans()}
-            >
-              {syncLoading ? (
-                <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-              ) : (
-                <RefreshCw className="h-4 w-4" aria-hidden />
-              )}
-              {syncLoading ? "Menyinkronkan…" : "Refresh status Midtrans"}
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              className="cursor-pointer"
-              disabled={!canManualVerify || verifyLoading}
-              title={!canManualVerify ? "Pembayaran ini sudah sukses." : undefined}
-              onClick={() => {
-                setVerifyNote("");
-                setVerifyOpen(true);
-              }}
-            >
-              <CreditCard className="h-4 w-4" aria-hidden />
-              Verifikasi manual
-            </DropdownMenuItem>
-          </>
-        ) : null}
-      </DropdownMenuContent>
-    </DropdownMenu>
-    <AlertDialog
-      open={verifyOpen}
-      onOpenChange={(open) => {
-        if (!open && verifyLoading) return;
-        setVerifyOpen(open);
-        if (!open) setVerifyNote("");
-      }}
-    >
-      <AlertDialogContent className="max-w-md sm:max-w-md">
-        <AlertDialogHeader>
-          <AlertDialogTitle>Verifikasi manual pembayaran?</AlertDialogTitle>
-          <AlertDialogDescription>
-            Invoice terkait akan ditandai lunas. Hanya gunakan jika transfer/kas sudah diverifikasi.
-            Tidak tersedia jika invoice sudah lunas dari pembayaran lain.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <div className="grid gap-2">
-          <label htmlFor={`pay-verify-note-${paymentId}`} className="text-sm font-medium">
-            Catatan (opsional)
-          </label>
-          <Textarea
-            id={`pay-verify-note-${paymentId}`}
-            rows={3}
-            placeholder="Contoh: Transfer masuk ke rek BCA 02/04/2026"
-            value={verifyNote}
-            onChange={(e) => setVerifyNote(e.target.value)}
-            disabled={verifyLoading}
-          />
-        </div>
-        <AlertDialogFooter>
-          <AlertDialogCancel disabled={verifyLoading}>Batal</AlertDialogCancel>
-          <AlertDialogAction
-            disabled={verifyLoading}
-            className="gap-2"
-            onClick={(e) => {
-              e.preventDefault();
-              void handleVerifyManual();
-            }}
-          >
-            {verifyLoading ? (
-              <>
-                <Loader2 className="h-4 w-4 shrink-0 animate-spin" aria-hidden />
-                Memproses…
-              </>
-            ) : (
-              "Ya, verifikasi"
-            )}
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
-    <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>Detail pembayaran {paymentRef || "—"}</DialogTitle>
-          <DialogDescription>
-            Ringkasan pembayaran Midtrans dan invoice terkait.
-          </DialogDescription>
-        </DialogHeader>
-        {detailLoading ? (
-          <div className="flex items-center justify-center gap-2 py-12 text-sm text-muted-foreground">
-            <Loader2 className="h-5 w-5 animate-spin" aria-hidden />
-            Memuat detail…
-          </div>
-        ) : (
-          <>
-            {detailError ? (
-              <p className="rounded-md border border-amber-200/80 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-200">
-                {detailError} Menampilkan data dari daftar.
-              </p>
-            ) : null}
-            <PaymentDetailView data={detailData} />
-          </>
-        )}
-      </DialogContent>
-    </Dialog>
-    </>
-  );
-}
 
 export default function AdminPaymentsPage() {
   const authHydrated = useAuthPersistHydrated();
@@ -427,18 +178,6 @@ export default function AdminPaymentsPage() {
     void load();
   }, [load]);
 
-  const countSuccess = statsRows.filter((p) => {
-    const s = String(p.status).toLowerCase();
-    return s === "success" || s === "settlement";
-  }).length;
-  const countPending = statsRows.filter((p) => {
-    const s = String(p.status).toLowerCase();
-    return s === "pending" || s === "capture" || s === "authorize";
-  }).length;
-  const countFailed = statsRows.filter((p) => {
-    const s = String(p.status).toLowerCase();
-    return s === "failure" || s === "deny" || s === "expire" || s === "cancel";
-  }).length;
   const totalStats = statsMeta?.total ?? 0;
 
   return (
@@ -459,64 +198,7 @@ export default function AdminPaymentsPage() {
         <p className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{error}</p>
       ) : null}
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between gap-2">
-              <CardDescription>Berhasil</CardDescription>
-              <span className="rounded-md bg-emerald-100 p-1.5 text-emerald-700">
-                <CheckCircle2 className="h-3.5 w-3.5" aria-hidden />
-              </span>
-            </div>
-            <CardTitle className="flex flex-col gap-0.5 text-2xl font-semibold">
-              <span>{countSuccess}</span>
-              <span className="text-xs font-normal text-emerald-600">Sukses</span>
-            </CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between gap-2">
-              <CardDescription>Menunggu</CardDescription>
-              <span className="rounded-md bg-amber-100 p-1.5 text-amber-700">
-                <Clock className="h-3.5 w-3.5" aria-hidden />
-              </span>
-            </div>
-            <CardTitle className="flex flex-col gap-0.5 text-2xl font-semibold">
-              <span>{countPending}</span>
-              <span className="text-xs font-normal text-muted-foreground">Pending</span>
-            </CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between gap-2">
-              <CardDescription>Gagal / expired</CardDescription>
-              <span className="rounded-md bg-red-100 p-1.5 text-red-700">
-                <AlertCircle className="h-3.5 w-3.5" aria-hidden />
-              </span>
-            </div>
-            <CardTitle className="flex flex-col gap-0.5 text-2xl font-semibold">
-              <span>{countFailed}</span>
-              <span className="text-xs font-normal text-muted-foreground">Bermasalah</span>
-            </CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between gap-2">
-              <CardDescription>Total transaksi</CardDescription>
-              <span className="rounded-md bg-violet-100 p-1.5 text-violet-700">
-                <CreditCard className="h-3.5 w-3.5" aria-hidden />
-              </span>
-            </div>
-            <CardTitle className="flex flex-col gap-0.5 text-2xl font-semibold">
-              <span>{totalStats}</span>
-              <span className="text-xs font-normal text-muted-foreground">semua pembayaran</span>
-            </CardTitle>
-          </CardHeader>
-        </Card>
-      </div>
+      <PaymentStats statsRows={statsRows} totalRecords={totalStats} />
 
       <Card className="min-w-0 overflow-hidden">
         <CardHeader className="space-y-1">
@@ -581,7 +263,7 @@ export default function AdminPaymentsPage() {
                         </TableCell>
                         <TableCell className={cn(actionsCellClass, "p-2 text-right")}>
                           <div className="flex justify-end">
-                            <AdminPaymentActionsMenu
+                            <PaymentActionsMenu
                               payment={payment}
                               paymentRef={key}
                               canManageAR={canManageAR}

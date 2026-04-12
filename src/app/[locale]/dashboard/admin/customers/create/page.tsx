@@ -37,7 +37,7 @@ export default function AdminCustomerCreatePage() {
   const [name, setName] = useState("");
   const [npwp, setNpwp] = useState("");
   const [nib, setNib] = useState("");
-  const [billingCycle, setBillingCycle] = useState("");
+  const [billingCycle, setBillingCycle] = useState("end_of_month");
   const [address, setAddress] = useState("");
   const [city, setCity] = useState("");
   const [province, setProvince] = useState("");
@@ -59,11 +59,7 @@ export default function AdminCustomerCreatePage() {
         setSaving(false);
         return;
       }
-      if (!billingCycle.trim()) {
-        setError("Pilih siklus penagihan.");
-        setSaving(false);
-        return;
-      }
+
       await createAdminCompany({
         name: name.trim(),
         npwp: npwp.trim() || null,
@@ -136,20 +132,15 @@ export default function AdminCustomerCreatePage() {
           <div className="space-y-2">
             <Label>Siklus penagihan</Label>
             <Select
-              value={billingCycle || "__none__"}
-              onValueChange={(v) => {
-                if (v != null) setBillingCycle(v === "__none__" ? "" : v);
-              }}
+              value={billingCycle}
+              onValueChange={(v) => v && setBillingCycle(v)}
             >
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Pilih siklus penagihan">
-                  {billingCycle ? billingCycleLabel(billingCycle) : null}
+                  {billingCycleLabel(billingCycle)}
                 </SelectValue>
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="__none__" disabled>
-                  Pilih siklus penagihan
-                </SelectItem>
                 {BILLING_CYCLE_OPTIONS.map((b) => (
                   <SelectItem key={b.value} value={b.value}>
                     {b.label}

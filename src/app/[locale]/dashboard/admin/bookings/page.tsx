@@ -51,6 +51,7 @@ import {
   Eye,
   FilePenLine,
   MoreHorizontal,
+  Plus,
   XCircle,
 } from "lucide-react";
 import { useRouter } from "@/i18n/routing";
@@ -65,6 +66,12 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+
+import { BookingStats } from "@/components/dashboard/admin/bookings/booking-stats";
+import { BookingActionsMenu } from "@/components/dashboard/admin/bookings/booking-actions-menu";
+import { BookingDetailDialog } from "@/components/dashboard/admin/bookings/booking-detail-dialog";
+import { BookingRejectDialog } from "@/components/dashboard/admin/bookings/booking-reject-dialog";
+import type { BookingDetail } from "@/components/dashboard/admin/bookings/types";
 
 const PER_PAGE = 10;
 const STATS_CAP = 1000;
@@ -95,94 +102,8 @@ type BookingRow = {
   service_type?: { name?: string; code?: string };
 };
 
-function BookingActionsMenu({
-  booking,
-  canProcessOperations,
-  onOpenDetail,
-  onOpenReject,
-  onDone,
-}: {
-  booking: BookingRow;
-  canProcessOperations: boolean;
-  onOpenDetail: (id: number) => void;
-  onOpenReject: (id: number) => void;
-  onDone: () => void;
-}) {
-  const router = useRouter();
-  const st = booking.status.toLowerCase();
-  const showApproveReject =
-    canProcessOperations && (st === "submitted" || st === "confirmed");
-  const showConvert = canProcessOperations && st === "approved";
-  const showOpsDivider = showApproveReject || showConvert;
-
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger
-        className={cn(buttonVariants({ variant: "ghost", size: "icon-sm" }), "shrink-0")}
-      >
-        <MoreHorizontal className="h-4 w-4" />
-        <span className="sr-only">Menu aksi</span>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="min-w-52">
-        <DropdownMenuItem className="cursor-pointer" onClick={() => onOpenDetail(booking.id)}>
-          <Eye className="h-4 w-4" />
-          Lihat detail
-        </DropdownMenuItem>
-        {showOpsDivider ? <DropdownMenuSeparator /> : null}
-        {showApproveReject ? (
-          <>
-                <DropdownMenuItem
-                  className="cursor-pointer"
-                  onClick={async () => {
-                    try {
-                      await approveBooking(booking.id);
-                      onDone();
-                      toast.success("Booking disetujui.");
-                    } catch (e) {
-                      toast.error(e instanceof ApiError ? e.message : "Gagal");
-                    }
-                  }}
-                >
-              <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-              Setujui booking
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              className="cursor-pointer"
-              variant="destructive"
-              onClick={() => onOpenReject(booking.id)}
-            >
-              <XCircle className="h-4 w-4" />
-              Tolak booking
-            </DropdownMenuItem>
-          </>
-        ) : null}
-        {showConvert ? (
-          <DropdownMenuItem
-            className="cursor-pointer"
-            onClick={async () => {
-              try {
-                const res = await convertBookingToShipment(booking.id);
-                const payload = res as { data?: { id?: number } };
-                const sid = payload?.data?.id;
-                if (typeof sid === "number") {
-                  router.push(`/dashboard/admin/shipments/${sid}`);
-                }
-                onDone();
-              } catch (e) {
-                toast.error(e instanceof ApiError ? e.message : "Gagal");
-              }
-            }}
-          >
-            <ArrowRightLeft className="h-4 w-4" />
-            Konversi ke shipment
-          </DropdownMenuItem>
-        ) : null}
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
-}
-
 export default function AdminBookingsPage() {
+  const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const authHydrated = useAuthPersistHydrated();
   const { user } = useAuthStore();
@@ -203,7 +124,7 @@ export default function AdminBookingsPage() {
   const [statusFilter, setStatusFilter] = useState("all");
 
   const [detailOpen, setDetailOpen] = useState(false);
-  const [detailText, setDetailText] = useState("");
+  const [detailData, setDetailData] = useState<BookingDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
 
   const [rejectOpen, setRejectOpen] = useState(false);
@@ -259,12 +180,13 @@ export default function AdminBookingsPage() {
   const openBookingDetail = useCallback(async (id: number) => {
     setDetailOpen(true);
     setDetailLoading(true);
-    setDetailText("");
+    setDetailData(null);
     try {
       const res = await fetchAdminBooking(id);
-      setDetailText(JSON.stringify((res as { data: unknown }).data, null, 2));
+      setDetailData((res as { data: BookingDetail }).data);
     } catch (e) {
-      setDetailText(e instanceof ApiError ? e.message : "Gagal memuat.");
+      toast.error(e instanceof ApiError ? e.message : "Gagal memuat detail.");
+      setDetailOpen(false);
     } finally {
       setDetailLoading(false);
     }
@@ -327,70 +249,30 @@ export default function AdminBookingsPage() {
             </p>
           </div>
         </div>
+        {canProcessOperations && (
+          <div className="flex w-full shrink-0 sm:w-auto sm:justify-end">
+            <Button
+              className="h-9 w-full gap-1.5 px-4 sm:w-auto"
+              type="button"
+              onClick={() => router.push("/dashboard/admin/bookings/create")}
+            >
+              <Plus className="h-4 w-4 shrink-0" />
+              Tambah Booking
+            </Button>
+          </div>
+        )}
       </div>
 
       {loadError ? (
         <p className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{loadError}</p>
       ) : null}
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between gap-2">
-              <CardDescription>Draft</CardDescription>
-              <span className="rounded-md bg-slate-100 p-1.5 text-slate-700">
-                <FilePenLine className="h-3.5 w-3.5" aria-hidden />
-              </span>
-            </div>
-            <CardTitle className="flex flex-col gap-0.5 text-2xl font-semibold">
-              <span>{countDraft}</span>
-              <span className="text-xs font-normal text-muted-foreground">belum dikirim / revisi</span>
-            </CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between gap-2">
-              <CardDescription>Menunggu persetujuan</CardDescription>
-              <span className="rounded-md bg-amber-100 p-1.5 text-amber-700">
-                <ClipboardClock className="h-3.5 w-3.5" aria-hidden />
-              </span>
-            </div>
-            <CardTitle className="flex flex-col gap-0.5 text-2xl font-semibold">
-              <span>{countSubmitted}</span>
-              <span className="text-xs font-normal text-muted-foreground">perlu approve / tolak</span>
-            </CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between gap-2">
-              <CardDescription>Disetujui</CardDescription>
-              <span className="rounded-md bg-emerald-100 p-1.5 text-emerald-700">
-                <CheckCircle2 className="h-3.5 w-3.5" aria-hidden />
-              </span>
-            </div>
-            <CardTitle className="flex flex-col gap-0.5 text-2xl font-semibold">
-              <span>{countApproved}</span>
-              <span className="text-xs font-normal text-emerald-600">siap konversi ke shipment</span>
-            </CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between gap-2">
-              <CardDescription>Total booking</CardDescription>
-              <span className="rounded-md bg-sky-100 p-1.5 text-sky-700">
-                <ClipboardList className="h-3.5 w-3.5" aria-hidden />
-              </span>
-            </div>
-            <CardTitle className="flex flex-col gap-0.5 text-2xl font-semibold">
-              <span>{totalStats}</span>
-              <span className="text-xs font-normal text-muted-foreground">semua booking</span>
-            </CardTitle>
-          </CardHeader>
-        </Card>
-      </div>
+      <BookingStats
+        countDraft={countDraft}
+        countSubmitted={countSubmitted}
+        countApproved={countApproved}
+        totalStats={totalStats}
+      />
 
       <Card className="min-w-0 overflow-hidden">
         <CardHeader className="space-y-1">
@@ -478,56 +360,21 @@ export default function AdminBookingsPage() {
         </CardContent>
       </Card>
 
-      <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Detail booking</DialogTitle>
-            <DialogDescription>Ringkasan data booking dari server.</DialogDescription>
-          </DialogHeader>
-          <div className="mt-2">
-            {detailLoading ? (
-              <p className="text-sm text-muted-foreground">Memuat…</p>
-            ) : (
-              <pre className="max-h-[70vh] overflow-auto rounded-md border bg-muted/40 p-3 text-xs leading-relaxed">
-                {detailText || "—"}
-              </pre>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
+      <BookingDetailDialog
+        open={detailOpen}
+        onOpenChange={setDetailOpen}
+        loading={detailLoading}
+        data={detailData}
+      />
 
-      <Dialog open={rejectOpen} onOpenChange={setRejectOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Tolak booking</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-2">
-            <label className="text-sm font-medium" htmlFor="reject-reason">
-              Alasan penolakan
-            </label>
-            <Textarea
-              id="reject-reason"
-              value={rejectReason}
-              onChange={(e) => setRejectReason(e.target.value)}
-              placeholder="Wajib diisi"
-              rows={4}
-            />
-          </div>
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button type="button" variant="outline" onClick={() => setRejectOpen(false)}>
-              Batal
-            </Button>
-            <Button
-              type="button"
-              variant="destructive"
-              disabled={!rejectReason.trim() || rejectSaving}
-              onClick={() => void submitReject()}
-            >
-              {rejectSaving ? "Menyimpan…" : "Tolak"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <BookingRejectDialog
+        open={rejectOpen}
+        onOpenChange={setRejectOpen}
+        reason={rejectReason}
+        onReasonChange={setRejectReason}
+        loading={rejectSaving}
+        onSubmit={() => void submitReject()}
+      />
     </div>
   );
 }

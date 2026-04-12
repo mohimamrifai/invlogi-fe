@@ -20,13 +20,30 @@ import {
 } from "@/components/ui/table";
 import { PaginationBar } from "@/components/data-table/pagination-bar";
 import { TableToolbar } from "@/components/data-table/table-toolbar";
-import { Truck } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Download, MoreHorizontal, Truck } from "lucide-react";
 import { SHIPMENT_STATUS_KEYS, shipmentStatusBadgeClass, shipmentStatusLabel } from "@/lib/shipment-status";
-import { fetchCustomerShipments } from "@/lib/customer-api";
+import { downloadCustomerConsignmentNotePdf, fetchCustomerShipments } from "@/lib/customer-api";
 import type { LaravelPaginated } from "@/lib/types-api";
 import { ApiError } from "@/lib/api-client";
 import { rowNumber } from "@/lib/list-query";
 import { useDebouncedValue } from "@/lib/use-debounced-value";
+import { toast } from "sonner";
+
+function downloadBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
 
 type Row = Record<string, unknown>;
 
@@ -97,6 +114,16 @@ export default function CustomerShipmentsPage() {
     void load();
   }, [load]);
 
+  const handleDownloadCN = async (id: number, wb: string) => {
+    try {
+      const blob = await downloadCustomerConsignmentNotePdf(id);
+      downloadBlob(blob, `consignment-note-${wb}.pdf`);
+      toast.success("Consignment Note berhasil diunduh.");
+    } catch (e) {
+      toast.error(e instanceof ApiError ? e.message : "Gagal mengunduh CN.");
+    }
+  };
+
   return (
     <div className="flex min-w-0 w-full flex-1 flex-col gap-6 md:px-2">
       <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
@@ -126,7 +153,7 @@ export default function CustomerShipmentsPage() {
         </CardHeader>
         <CardContent className="space-y-4 overflow-x-auto">
           <TableToolbar
-            searchPlaceholder="Cari waybill atau nomor shipment…"
+            searchPlaceholder="Cari CN atau nomor shipment…"
             searchValue={searchInput}
             onSearchChange={setSearchInput}
             filterLabel="Status"
@@ -142,15 +169,17 @@ export default function CustomerShipmentsPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-14">No</TableHead>
-                    <TableHead>Waybill</TableHead>
+                    <TableHead>Consignment Note (CN)</TableHead>
                     <TableHead>Service</TableHead>
                     <TableHead>Origin</TableHead>
                     <TableHead>Destination</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Aksi</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {rows.map((shipment, index) => {
+                    const id = Number(shipment.id);
                     const st = String(shipment.status ?? "");
                     const origin = (shipment.origin_location ?? shipment.originLocation) as
                       | { name?: string }
@@ -173,6 +202,21 @@ export default function CustomerShipmentsPage() {
                           <Badge variant="outline" className={shipmentStatusBadgeClass(st)}>
                             {shipmentStatusLabel(st)}
                           </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger>
+                              <Button variant="ghost" size="icon-sm">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => void handleDownloadCN(id, waybill)}>
+                                <Download className="mr-2 h-4 w-4" />
+                                Cetak Consignment Note (CN)
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </TableCell>
                       </TableRow>
                     );

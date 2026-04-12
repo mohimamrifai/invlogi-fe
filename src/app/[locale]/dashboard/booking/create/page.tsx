@@ -1,334 +1,193 @@
 "use client";
 
-import { toast } from "sonner";
-import { useEffect, useState } from "react";
 import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogMedia,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { ClipboardList } from "lucide-react";
-import {
-  fetchCustomerMasterLocations,
-  fetchCustomerMasterTransportModes,
-  fetchCustomerMasterServiceTypes,
-  fetchCustomerMasterContainerTypes,
-  fetchCustomerMasterAdditionalServices,
-  estimateBookingPrice,
-  createCustomerBooking,
-} from "@/lib/customer-api";
-import { ApiError } from "@/lib/api-client";
-import type { LaravelPaginated } from "@/lib/types-api";
-import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
+import { ClipboardList, CheckCircle } from "lucide-react";
 import { useRouter } from "@/i18n/routing";
+import { useBookingForm } from "./hooks/use-booking-form";
 
-type Loc = { id: number; name: string; code?: string };
-type TM = { id: number; name: string; code?: string };
-type ST = { id: number; name: string; code?: string; transport_mode_id: number };
-type CT = { id: number; name: string; size: string };
-type AS = { id: number; name: string; category: string };
+// Section Components
+import { RouteServiceSection } from "./components/sections/route-service-section";
+import { PartyInfoSection } from "./components/sections/party-info-section";
+import { CargoDetailSection } from "./components/sections/cargo-detail-section";
+import { AddOnServiceSection } from "./components/sections/add-on-service-section";
 
 export default function CreateBookingPage() {
   const router = useRouter();
-  const [locations, setLocations] = useState<Loc[]>([]);
-  const [modes, setModes] = useState<TM[]>([]);
-  const [serviceTypes, setServiceTypes] = useState<ST[]>([]);
-  const [containerTypes, setContainerTypes] = useState<CT[]>([]);
-  const [addServices, setAddServices] = useState<AS[]>([]);
+  const f = useBookingForm();
 
-  const [originId, setOriginId] = useState("");
-  const [destId, setDestId] = useState("");
-  const [modeId, setModeId] = useState("");
-  const [serviceTypeId, setServiceTypeId] = useState("");
-  const [containerTypeId, setContainerTypeId] = useState("");
-  const [containerCount, setContainerCount] = useState("1");
-  const [weight, setWeight] = useState("");
-  const [cbm, setCbm] = useState("");
-  const [pickupDate, setPickupDate] = useState("");
-  const [cargo, setCargo] = useState("");
-  const [selectedAddOns, setSelectedAddOns] = useState<number[]>([]);
-  const [estimate, setEstimate] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
-
-  useEffect(() => {
-    let c = false;
-    (async () => {
-      try {
-        const [locRes, mRes, ctRes, asRes] = await Promise.all([
-          fetchCustomerMasterLocations(),
-          fetchCustomerMasterTransportModes(),
-          fetchCustomerMasterContainerTypes(),
-          fetchCustomerMasterAdditionalServices(),
-        ]);
-        if (c) return;
-        setLocations(((locRes as LaravelPaginated<Loc>).data ?? []) as Loc[]);
-        const rawModes = (mRes as { data: TM[] }).data ?? [];
-        const railFirst = rawModes.filter((x) => x.code === "RAIL");
-        setModes(railFirst.length ? railFirst : rawModes);
-        setContainerTypes(((ctRes as { data: CT[] }).data ?? []) as CT[]);
-        setAddServices(((asRes as { data: AS[] }).data ?? []) as AS[]);
-        const defaultMode = (railFirst[0] ?? rawModes[0])?.id;
-        if (defaultMode) setModeId(String(defaultMode));
-      } catch {
-        setError("Gagal memuat master data.");
-      } finally {
-        if (!c) setLoading(false);
-      }
-    })();
-    return () => {
-      c = true;
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!modeId) return;
-    let c = false;
-    (async () => {
-      try {
-        const r = await fetchCustomerMasterServiceTypes(Number(modeId));
-        if (c) return;
-        const rows = (r as { data: ST[] }).data ?? [];
-        setServiceTypes(rows);
-        const first = rows[0]?.id;
-        if (first) setServiceTypeId(String(first));
-      } catch {
-        setServiceTypes([]);
-      }
-    })();
-    return () => {
-      c = true;
-    };
-  }, [modeId]);
-
-  const buildPayload = () => ({
-    origin_location_id: Number(originId),
-    destination_location_id: Number(destId),
-    transport_mode_id: Number(modeId),
-    service_type_id: Number(serviceTypeId),
-    container_type_id: containerTypeId ? Number(containerTypeId) : null,
-    container_count: Number(containerCount) || 1,
-    estimated_weight: weight ? Number(weight) : null,
-    estimated_cbm: cbm ? Number(cbm) : null,
-    pickup_date: pickupDate || null,
-    cargo_description: cargo || null,
-    additional_services: selectedAddOns.map((id) => ({ id })),
-  });
-
-  const onEstimate = async () => {
-    setError(null);
-    setEstimate(null);
-    try {
-      const p = buildPayload();
-      const r = await estimateBookingPrice({
-        ...p,
-        additional_services: selectedAddOns,
-      });
-      const inner = (r as { data?: { estimated_price?: number } }).data;
-      setEstimate(
-        inner?.estimated_price != null
-          ? new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR" }).format(
-              Number(inner.estimated_price)
-            )
-          : JSON.stringify(r)
-      );
-    } catch (e) {
-      const msg = e instanceof ApiError ? e.message : "Gagal estimasi";
-      setError(msg);
-      toast.error(msg);
-    }
-  };
-
-  const onSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setSubmitting(true);
-    try {
-      await createCustomerBooking(buildPayload() as Record<string, unknown>);
-      toast.success("Booking berhasil diajukan.");
-      router.push("/dashboard");
-    } catch (err) {
-      const msg = err instanceof ApiError ? err.message : "Gagal menyimpan";
-      setError(msg);
-      toast.error(msg);
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  if (loading) {
-    return <p className="p-6 text-sm text-muted-foreground">Memuat form…</p>;
+  if (f.loading) {
+    return <p className="p-10 text-sm text-muted-foreground text-center">Menyiapkan formulir booking…</p>;
   }
 
   return (
-    <div className="flex min-w-0 w-full flex-1 flex-col gap-6 md:px-2">
+    <div className="flex min-w-0 w-full flex-1 flex-col gap-6 md:px-2 pb-24">
       <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
-        <div className="flex min-w-0 items-start gap-3">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-zinc-900/5 text-zinc-900">
-            <ClipboardList className="h-4 w-4" />
+        <div className="flex min-w-0 items-start gap-4">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-zinc-900 text-white shadow-lg">
+            <ClipboardList className="h-5 w-5" />
           </div>
           <div className="min-w-0 flex-1">
-            <h1 className="text-xl font-semibold tracking-tight text-zinc-900 sm:text-2xl">Buat Booking</h1>
-            <p className="mt-1 text-sm text-muted-foreground">Moda default: Rail (sesuai MVP brief).</p>
+            <h1 className="text-xl font-bold tracking-tight text-zinc-900 sm:text-2xl uppercase">Buat Booking Baru</h1>
+            <p className="mt-1 text-sm text-balance text-muted-foreground">Silakan melengkapi detail pengiriman Anda di bawah ini.</p>
           </div>
         </div>
       </div>
 
-      {error ? (
-        <p className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{error}</p>
+      {f.error ? (
+        <div className="p-4 bg-red-50 border border-red-100 rounded-xl text-sm text-red-600 font-medium">
+          {f.error}
+        </div>
       ) : null}
 
-      <form onSubmit={onSubmit}>
-        <Card className="min-w-0 overflow-hidden">
-          <CardHeader>
-            <CardTitle>Detail pengiriman</CardTitle>
-            <CardDescription>Pilih lokasi, layanan, dan kargo.</CardDescription>
-          </CardHeader>
-          <CardContent className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label>Origin</Label>
-              <select
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-                value={originId}
-                onChange={(e) => setOriginId(e.target.value)}
-                required
-              >
-                <option value="">—</option>
-                {locations.map((l) => (
-                  <option key={l.id} value={l.id}>
-                    {l.name} ({l.code})
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="space-y-2">
-              <Label>Destination</Label>
-              <select
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-                value={destId}
-                onChange={(e) => setDestId(e.target.value)}
-                required
-              >
-                <option value="">—</option>
-                {locations.map((l) => (
-                  <option key={l.id} value={l.id}>
-                    {l.name} ({l.code})
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="space-y-2">
-              <Label>Transport mode</Label>
-              <select
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-                value={modeId}
-                onChange={(e) => setModeId(e.target.value)}
-                required
-              >
-                {modes.map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {m.name} ({m.code})
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="space-y-2">
-              <Label>Service type</Label>
-              <select
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-                value={serviceTypeId}
-                onChange={(e) => setServiceTypeId(e.target.value)}
-                required
-              >
-                {serviceTypes.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name} ({s.code})
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="space-y-2">
-              <Label>Container type (opsional)</Label>
-              <select
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-                value={containerTypeId}
-                onChange={(e) => setContainerTypeId(e.target.value)}
-              >
-                <option value="">—</option>
-                {containerTypes.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name} ({c.size})
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="space-y-2">
-              <Label>Jumlah kontainer</Label>
-              <Input
-                type="number"
-                min={1}
-                value={containerCount}
-                onChange={(e) => setContainerCount(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Berat estimasi (kg)</Label>
-              <Input type="number" step="0.01" value={weight} onChange={(e) => setWeight(e.target.value)} />
-            </div>
-            <div className="space-y-2">
-              <Label>CBM estimasi</Label>
-              <Input type="number" step="0.01" value={cbm} onChange={(e) => setCbm(e.target.value)} />
-            </div>
-            <div className="space-y-2">
-              <Label>Pickup date</Label>
-              <Input type="date" value={pickupDate} onChange={(e) => setPickupDate(e.target.value)} />
-            </div>
-            <div className="sm:col-span-2 space-y-2">
-              <Label>Deskripsi kargo</Label>
-              <Textarea value={cargo} onChange={(e) => setCargo(e.target.value)} rows={3} />
-            </div>
-            <div className="sm:col-span-2 space-y-2">
-              <Label>Layanan tambahan</Label>
-              <div className="grid gap-2 sm:grid-cols-2">
-                {addServices.map((a) => (
-                  <label key={a.id} className="flex items-center gap-2 text-sm">
-                    <Checkbox
-                      checked={selectedAddOns.includes(a.id)}
-                      onCheckedChange={(v) => {
-                        const on = v === true;
-                        setSelectedAddOns((prev) =>
-                          on ? (prev.includes(a.id) ? prev : [...prev, a.id]) : prev.filter((x) => x !== a.id)
-                        );
-                      }}
-                    />
-                    {a.name}
-                  </label>
-                ))}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      <form onSubmit={f.onSubmit} className="flex flex-col gap-8">
+        <div className="grid gap-6 lg:grid-cols-2">
+          {/* Section 1: Route & Type */}
+          <RouteServiceSection
+            locations={f.locations}
+            modes={f.modes}
+            serviceTypes={f.serviceTypes}
+            originId={f.originId}
+            setOriginId={f.setOriginId}
+            destId={f.destId}
+            setDestId={f.setDestId}
+            modeId={f.modeId}
+            setModeId={f.setModeId}
+            serviceTypeId={f.serviceTypeId}
+            setServiceTypeId={f.setServiceTypeId}
+          />
 
-        {estimate ? (
-          <p className="mt-4 text-sm font-medium text-emerald-700">Estimasi: {estimate}</p>
-        ) : null}
+          {/* Section 2: Parties */}
+          <PartyInfoSection
+            type="Shipper"
+            name={f.shipperName}
+            setName={f.setShipperName}
+            phone={f.shipperPhone}
+            setPhone={f.setShipperPhone}
+            address={f.shipperAddress}
+            setAddress={f.setShipperAddress}
+            isSameAsAccount={f.isShipperSameAsAccount}
+            setIsSameAsAccount={f.setIsShipperSameAsAccount}
+          />
 
-        <div className="mt-6 flex flex-wrap gap-3">
-          <Button type="button" variant="outline" onClick={() => void onEstimate()}>
-            Estimasi harga
-          </Button>
-          <Button type="submit" disabled={submitting}>
-            {submitting ? "Mengirim…" : "Kirim booking"}
-          </Button>
+          <PartyInfoSection
+            type="Consignee"
+            name={f.consigneeName}
+            setName={f.setConsigneeName}
+            phone={f.consigneePhone}
+            setPhone={f.setConsigneePhone}
+            address={f.consigneeAddress}
+            setAddress={f.setConsigneeAddress}
+          />
+
+          {/* Section 3: Cargo */}
+          <CargoDetailSection
+            isLCL={f.isLCL}
+            isFCL={f.isFCL}
+            containerTypes={f.containerTypes}
+            cargoCategories={f.cargoCategories}
+            dgClasses={f.dgClasses}
+            containerTypeId={f.containerTypeId}
+            setContainerTypeId={f.setContainerTypeId}
+            containerCount={f.containerCount}
+            setContainerCount={f.setContainerCount}
+            weight={f.weight}
+            setWeight={f.setWeight}
+            cbm={f.cbm}
+            setCbm={f.setCbm}
+            itemLength={f.itemLength}
+            setItemLength={f.setItemLength}
+            itemWidth={f.itemWidth}
+            setItemWidth={f.setItemWidth}
+            itemHeight={f.itemHeight}
+            setItemHeight={f.setItemHeight}
+            departureDate={f.departureDate}
+            setDepartureDate={f.setDepartureDate}
+            cargoCategoryId={f.cargoCategoryId}
+            setCargoCategoryId={f.setCargoCategoryId}
+            cargo={f.cargo}
+            setCargo={f.setCargo}
+            selectedCT={f.selectedCT}
+            selectedCC={f.selectedCC}
+            isDG={f.isDG}
+            setIsDG={f.setIsDG}
+            dgClassId={f.dgClassId}
+            setDgClassId={f.setDgClassId}
+            unNumber={f.unNumber}
+            setUnNumber={f.setUnNumber}
+            msdsFile={f.msdsFile}
+            setMsdsFile={f.setMsdsFile}
+            equipmentCondition={f.equipmentCondition}
+            setEquipmentCondition={f.setEquipmentCondition}
+            temperature={f.temperature}
+            setTemperature={f.setTemperature}
+            showTemp={f.showTemp}
+            showProject={f.showProject}
+          />
+
+          {/* Section 4: Add-ons */}
+          <AddOnServiceSection
+            isFCL={f.isFCL}
+            isLCL={f.isLCL}
+            addServices={f.addServices}
+            selectedAddOns={f.selectedAddOns}
+            setSelectedAddOns={f.setSelectedAddOns}
+          />
+        </div>
+
+        <div className="flex flex-col gap-6 p-6 bg-zinc-50 border border-zinc-200 rounded-2xl shadow-inner">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="space-y-1">
+              <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Informasi Biaya</p>
+              {f.estimate ? (
+                <p className="text-xl font-black text-emerald-700">{f.estimate}</p>
+              ) : (
+                <p className="text-sm text-zinc-400 italic">Silakan klik tombol estimasi untuk melihat perkiraan harga.</p>
+              )}
+              {f.estimate && (
+                 <p className="text-[10px] text-zinc-500">* Harga di atas bersifat estimasi dan akan dikonfirmasi kembali oleh operasional.</p>
+              )}
+            </div>
+            
+            <div className="flex flex-wrap gap-3">
+              <Button type="button" variant="outline" className="bg-white border-zinc-300" onClick={() => void f.onEstimate()}>
+                Hitung Estimasi
+              </Button>
+              <Button type="submit" disabled={f.submitting} className="bg-zinc-900 text-white hover:bg-zinc-800 shadow-md">
+                {f.submitting ? "Memproses..." : "Kirim Booking Sekarang"}
+              </Button>
+            </div>
+          </div>
         </div>
       </form>
+
+      <AlertDialog open={f.showSuccess} onOpenChange={f.setShowSuccess}>
+        <AlertDialogContent className="sm:max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogMedia className="bg-emerald-100 text-emerald-600 rounded-full h-12 w-12 mx-auto mb-2">
+              <CheckCircle className="size-6" />
+            </AlertDialogMedia>
+            <AlertDialogTitle className="text-center text-xl font-bold">Booking Berhasil Dikirim!</AlertDialogTitle>
+            <AlertDialogDescription className="text-center">
+              Permintaan pengiriman Anda telah diterima oleh sistem. Tim kami akan segera memverifikasi kargo dan jadwal Anda.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="sm:justify-center">
+            <AlertDialogAction onClick={() => router.push("/dashboard")} className="w-full sm:w-auto px-10">
+              Kembali ke Dashboard
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

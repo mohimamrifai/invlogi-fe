@@ -14,6 +14,7 @@ import {
   Users,
   Truck,
   Tags,
+  ShieldCheck,
   Settings,
 } from "lucide-react";
 
@@ -37,8 +38,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useAuthStore } from "@/lib/store";
 import { getDashboardUiRole } from "@/lib/auth-role";
 import { performLogout } from "@/lib/auth-actions";
+import { useAuthPersistHydrated } from "@/lib/use-auth-hydrated";
 import { useRouter } from "@/i18n/routing";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import {
   DASHBOARD_SIDEBAR_ITEM_DEFS,
   type DashboardMenuKey,
@@ -55,8 +57,10 @@ const MENU_ICONS: Record<DashboardMenuKey, LucideIcon> = {
   invoiceManagement: FileText,
   paymentManagement: CreditCard,
   vendorPricing: Tags,
+  roleManagement: ShieldCheck,
   internalUsers: Users,
   createBooking: PlusCircle,
+  myBookings: FileText,
   myShipments: Package,
   shipmentTracking: Activity,
   invoices: FileText,
@@ -69,11 +73,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname()
   const router = useRouter()
   const { user } = useAuthStore()
-  const [mounted, setMounted] = useState(false)
-
-  useEffect(() => {
-    setMounted(true)
-  }, [])
+  const hydrated = useAuthPersistHydrated()
 
   const allMenuItems = useMemo(
     () =>
@@ -86,14 +86,23 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     [t]
   );
 
-  const uiRole = mounted && user ? getDashboardUiRole(user) : null;
-  const menuRole =
-    uiRole === "internal_other" ? "operations" : uiRole;
-  const navItems = menuRole
-    ? allMenuItems.filter((item) => item.roles.includes(menuRole))
-    : [];
+  const uiRole = hydrated && user ? getDashboardUiRole(user) : null;
+  const menuRole = uiRole === "internal_other" ? "operations" : uiRole;
+  const userPerms = (user?.permissions as string[]) ?? [];
 
-  if (!mounted) return null; // Avoid hydration mismatch
+  const navItems = useMemo(() => {
+    if (!menuRole) return [];
+    return allMenuItems.filter((item) => {
+      // Find matching index in DASHBOARD_SIDEBAR_ITEM_DEFS to get requiredPermission
+      const def = DASHBOARD_SIDEBAR_ITEM_DEFS.find((d) => d.url === item.url);
+      if (def?.requiredPermission != null) {
+        return userPerms.includes(def.requiredPermission);
+      }
+      return item.roles.includes(menuRole);
+    });
+  }, [allMenuItems, menuRole, userPerms]);
+
+  if (!hydrated) return null;
 
   return (
     <Sidebar collapsible="icon" {...props}>
@@ -101,7 +110,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" render={
-              <Link href="/" className="min-w-0 gap-2 overflow-hidden">
+              <Link href="/dashboard" className="min-w-0 gap-2 overflow-hidden">
                 <span className="flex min-w-0 flex-1 flex-col gap-1.5 text-left">
                   <BrandLogo size="sm" className="max-w-[min(100%,11rem)]" />
                 </span>

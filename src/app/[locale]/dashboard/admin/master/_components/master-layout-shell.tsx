@@ -19,6 +19,9 @@ const NAV = [
   { href: "/dashboard/admin/master/service-types", label: "Service types", Icon: Layers },
   { href: "/dashboard/admin/master/container-types", label: "Jenis kontainer", Icon: Box },
   { href: "/dashboard/admin/master/additional-services", label: "Layanan tambahan", Icon: PackagePlus },
+  { href: "/dashboard/admin/master/trains", label: "Kereta", Icon: Truck },
+  { href: "/dashboard/admin/master/train-cars", label: "Gerbong", Icon: Box },
+  { href: "/dashboard/admin/master/cargo-categories", label: "Kategori kargo", Icon: Layers },
 ] as const;
 
 const CREATE_QUERY = "?create=1";

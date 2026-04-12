@@ -48,6 +48,9 @@ function locationTypeLabel(code: string): string {
     city: "Kota",
     hub: "Hub",
     warehouse: "Gudang",
+    station: "Stasiun",
+    airport: "Bandara",
+    terminal: "Terminal",
   };
   return m[code] ?? code;
 }
@@ -198,6 +201,7 @@ export default function MasterLocationsPage() {
                 <TableHead className="w-14">No</TableHead>
                 <TableHead className="w-[100px]">Kode</TableHead>
                 <TableHead>Nama Lokasi</TableHead>
+                <TableHead>Kota</TableHead>
                 <TableHead>Tipe</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className={actionsHeadClass}>
@@ -209,6 +213,7 @@ export default function MasterLocationsPage() {
               {rows.map((loc, index) => {
                 const code = String(loc.code ?? loc.id ?? "");
                 const typeCode = String(loc.type ?? "");
+                const city = String(loc.city ?? "");
                 const active = loc.is_active !== false;
                 return (
                   <TableRow key={String(loc.id ?? code)} className="group">
@@ -217,6 +222,7 @@ export default function MasterLocationsPage() {
                     </TableCell>
                     <TableCell className="font-mono text-xs">{code}</TableCell>
                     <TableCell className="font-medium">{String(loc.name ?? "")}</TableCell>
+                    <TableCell>{city || "—"}</TableCell>
                     <TableCell>{locationTypeLabel(typeCode)}</TableCell>
                     <TableCell>
                       <MasterActiveBadge active={active} />

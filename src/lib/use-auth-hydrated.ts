@@ -9,20 +9,20 @@ import { useAuthStore } from "@/lib/store";
  * sehingga pengecekan role (mis. super_admin) salah.
  */
 export function useAuthPersistHydrated() {
-  const [hydrated, setHydrated] = useState(() =>
-    typeof window !== "undefined" ? useAuthStore.persist.hasHydrated() : false
-  );
+  const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
+    // If it's already hydrated by the time this runs, just set it.
     if (useAuthStore.persist.hasHydrated()) {
       setHydrated(true);
       return;
     }
+    if (hydrated) return;
     const unsub = useAuthStore.persist.onFinishHydration(() => {
       setHydrated(true);
     });
     return unsub;
-  }, []);
+  }, [hydrated]);
 
   return hydrated;
 }

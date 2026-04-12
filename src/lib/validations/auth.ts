@@ -20,7 +20,15 @@ export const createRegisterSchema = (t: (key: string) => string) => {
         message: t("accountTypeRequired"),
       }),
       // Company fields (optional initially, refined later)
+      companyEntityType: z.string().optional(),
       companyName: z.string().optional(),
+      companyCode: z.string().optional(),
+      companyNpwp: z.string().optional(),
+      companyNib: z.string().optional(),
+      companyAddress: z.string().optional(),
+      companyCity: z.string().optional(),
+      companyProvince: z.string().optional(),
+      companyPostalCode: z.string().optional(),
       companyEmail: z.string().email({ message: t("emailInvalid") }).optional().or(z.literal("")),
       companyPhone: z.string().optional(),
       
@@ -45,11 +53,25 @@ export const createRegisterSchema = (t: (key: string) => string) => {
     .superRefine((data, ctx) => {
       // Validate company fields if account type is company
       if (data.accountType === "company") {
+        if (!data.companyEntityType || data.companyEntityType.length < 1) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: t("companyEntityTypeRequired"),
+            path: ["companyEntityType"],
+          });
+        }
         if (!data.companyName || data.companyName.length < 1) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
             message: t("companyNameRequired"),
             path: ["companyName"],
+          });
+        }
+        if (!data.companyCode || data.companyCode.length !== 3) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: t("companyCodeInvalid"),
+            path: ["companyCode"],
           });
         }
         if (!data.companyEmail || !z.string().email().safeParse(data.companyEmail).success) {
@@ -64,6 +86,48 @@ export const createRegisterSchema = (t: (key: string) => string) => {
             code: z.ZodIssueCode.custom,
             message: t("phoneRequired"),
             path: ["companyPhone"],
+          });
+        }
+        if (!data.companyNpwp || data.companyNpwp.length < 1) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: t("npwpRequired"),
+            path: ["companyNpwp"],
+          });
+        }
+        if (!data.companyNib || data.companyNib.length < 1) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: t("nibRequired"),
+            path: ["companyNib"],
+          });
+        }
+        if (!data.companyAddress || data.companyAddress.length < 1) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: t("addressRequired"),
+            path: ["companyAddress"],
+          });
+        }
+        if (!data.companyCity || data.companyCity.length < 1) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: t("cityRequired"),
+            path: ["companyCity"],
+          });
+        }
+        if (!data.companyProvince || data.companyProvince.length < 1) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: t("provinceRequired"),
+            path: ["companyProvince"],
+          });
+        }
+        if (!data.companyPostalCode || data.companyPostalCode.length < 1) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: t("postalCodeRequired"),
+            path: ["companyPostalCode"],
           });
         }
       }

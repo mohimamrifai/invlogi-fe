@@ -1,18 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Settings } from "lucide-react";
 
 export default function CompanySettingsPage() {
   const t = useTranslations("Dashboard.customer.settings");
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  if (!mounted) return null;
 
   return (
     <div className="flex min-w-0 w-full flex-1 flex-col gap-6 md:px-2">

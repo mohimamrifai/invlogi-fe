@@ -23,7 +23,7 @@
     "f1Body": "Buat pesanan dengan memilih asal, tujuan, dan jenis layanan. Lihat perkiraan harga langsung sebelum mengonfirmasi.",
     "f2Title": "Kargo kereta antar pelabuhan",
     "f2Body": "Layanan angkutan kereta untuk rute pelabuhan ke pelabuhan — cepat, andal, dan siap berkembang ke moda lain.",
-    "f3Title": "Lacak dengan nomor waybill",
+    "f3Title": "Lacak dengan nomor Consignment Note (CN)",
     "f3Body": "Cek status, timeline, dan foto bukti pengiriman kapan saja. Bisa diakses publik tanpa perlu login.",
     "f4Title": "Invoice & pembayaran online",
     "f4Body": "Tagihan otomatis per pengiriman. Bayar langsung melalui Virtual Account, QRIS, atau kartu kredit.",
@@ -75,8 +75,8 @@
   },
   "LandingTrackingCta": {
     "title": "Mau cek kiriman? Langsung lacak di sini",
-    "lead": "Masukkan nomor waybill dan lihat status pengiriman lengkap dengan foto bukti — tanpa perlu login atau buat akun.",
-    "placeholder": "Masukkan nomor waybill…",
+    "lead": "Masukkan nomor Consignment Note (CN) dan lihat status pengiriman lengkap dengan foto bukti — tanpa perlu login atau buat akun.",
+    "placeholder": "Masukkan nomor Consignment Note (CN)…",
     "cta": "Lacak Sekarang"
   },
   "LandingWhy": {
@@ -148,11 +148,11 @@
   },
   "Tracking": {
     "title": "Lacak Pengiriman Anda",
-    "subtitle": "Masukkan nomor waybill untuk melihat status pengiriman secara real-time — tanpa perlu login.",
-    "placeholder": "Masukkan nomor waybill…",
+    "subtitle": "Masukkan nomor Consignment Note (CN) untuk melihat status pengiriman secara real-time — tanpa perlu login.",
+    "placeholder": "Masukkan nomor Consignment Note (CN)…",
     "cta": "Lacak",
-    "notFound": "Pengiriman tidak ditemukan. Periksa kembali nomor waybill Anda.",
-    "waybillLabel": "Nomor Waybill",
+    "notFound": "Pengiriman tidak ditemukan. Periksa kembali nomor Consignment Note (CN) Anda.",
+    "waybillLabel": "Nomor Consignment Note (CN)",
     "origin": "Asal",
     "destination": "Tujuan",
     "estDeparture": "Est. Berangkat",
@@ -212,13 +212,42 @@
     "passwordRequired": "Password wajib diisi",
     "passwordMin": "Password minimal 8 karakter"
   },
+  "Auth": {
+    "forgotPassword": {
+      "title": "Lupa Password?",
+      "description": "Masukkan email Anda dan kami akan mengirimkan tautan untuk mengatur ulang password Anda.",
+      "emailLabel": "Alamat Email",
+      "sendCta": "Kirim Tautan Reset",
+      "backToLogin": "Kembali ke Login",
+      "successTitle": "Cek Email Anda",
+      "successDescription": "Kami telah mengirimkan instruksi pemulihan kata sandi.",
+      "successNote": "Periksa folder spam jika tidak ditemukan."
+    },
+    "resetPassword": {
+      "title": "Atur Ulang Password",
+      "description": "Masukkan password baru untuk akun Anda.",
+      "passwordLabel": "Password Baru",
+      "confirmLabel": "Konfirmasi Password Baru",
+      "saveCta": "Simpan Password Baru",
+      "invalidLinkTitle": "Tautan Tidak Valid",
+      "invalidLinkDescription": "Tautan kadaluarsa atau tidak valid."
+    }
+  },
   "Register": {
     "title": "Daftar Akun",
     "subtitle": "Pilih jenis akun sesuai kebutuhan pengiriman Anda",
     "personal": "Perorangan",
     "company": "Perusahaan",
     "companyInfo": "Informasi Perusahaan",
+    "companyEntityType": "Jenis Badan Usaha",
     "companyName": "Nama Perusahaan",
+    "companyCode": "Kode",
+    "npwp": "NPWP",
+    "nib": "NIB",
+    "address": "Alamat",
+    "city": "Kota",
+    "province": "Provinsi",
+    "postalCode": "Kode Pos",
     "companyEmail": "Email Perusahaan",
     "companyPhone": "Nomor Telepon Perusahaan",
     "picData": "Data Penanggung Jawab (PIC)",
@@ -234,7 +263,15 @@
     "haveAccount": "Sudah punya akun?",
     "login": "Masuk",
     "accountTypeRequired": "Jenis akun wajib dipilih",
+    "companyEntityTypeRequired": "Jenis badan usaha wajib dipilih",
     "companyNameRequired": "Nama perusahaan wajib diisi",
+    "companyCodeInvalid": "Kode perusahaan tidak valid",
+    "npwpRequired": "NPWP wajib diisi",
+    "nibRequired": "NIB wajib diisi",
+    "addressRequired": "Alamat wajib diisi",
+    "cityRequired": "Kota wajib diisi",
+    "provinceRequired": "Provinsi wajib diisi",
+    "postalCodeRequired": "Kode pos wajib diisi",
     "phoneRequired": "Nomor telepon wajib diisi",
     "fullNameRequired": "Nama lengkap wajib diisi",
     "emailRequired": "Email wajib diisi",
@@ -243,12 +280,16 @@
     "passwordMin": "Password minimal 8 karakter",
     "confirmPasswordRequired": "Konfirmasi password wajib diisi",
     "passwordMismatch": "Password tidak cocok",
-    "termsRequired": "Anda harus menyetujui syarat dan ketentuan"
+    "termsRequired": "Anda harus menyetujui syarat dan ketentuan",
+    "selectEntityType": "Pilih jenis",
+    "otherEntityType": "Lainnya",
+    "registerSubmittedToast": "Terima kasih! Registrasi berhasil dikirim. Data Anda akan direview terlebih dahulu dan tim kami akan menghubungi Anda."
   },
   "Dashboard": {
     "menu": {
       "dashboard": "Dashboard",
       "createBooking": "Buat Booking",
+      "myBookings": "Booking Saya",
       "myShipments": "Pengiriman Saya",
       "shipmentTracking": "Lacak Pengiriman",
       "invoices": "Tagihan",
@@ -261,7 +302,8 @@
       "paymentManagement": "Manajemen Pembayaran",
       "masterOperational": "Master Operasional",
       "vendorPricing": "Vendor & Harga",
-      "internalUsers": "Pengguna internal",
+      "roleManagement": "Manajemen Hak Akses",
+      "internalUsers": "Pengguna Internal",
       "logout": "Keluar"
     },
     "profile": "Profil",

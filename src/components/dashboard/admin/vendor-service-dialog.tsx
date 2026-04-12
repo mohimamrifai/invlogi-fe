@@ -157,9 +157,7 @@ export function VendorServiceDialog({
             <Label>Moda transport</Label>
             <Select
               value={transportModeId}
-              onValueChange={(v) => {
-                if (v != null) setTransportModeId(v);
-              }}
+              onValueChange={(v) => v && setTransportModeId(v)}
               disabled={listsLoading}
             >
               <SelectTrigger className="w-full">
@@ -178,9 +176,7 @@ export function VendorServiceDialog({
             <Label>Jenis layanan</Label>
             <Select
               value={serviceTypeId}
-              onValueChange={(v) => {
-                if (v != null) setServiceTypeId(v);
-              }}
+              onValueChange={(v) => v && setServiceTypeId(v)}
               disabled={listsLoading}
             >
               <SelectTrigger className="w-full">
@@ -199,9 +195,7 @@ export function VendorServiceDialog({
             <Label>Origin</Label>
             <Select
               value={originId}
-              onValueChange={(v) => {
-                if (v != null) setOriginId(v);
-              }}
+              onValueChange={(v) => v && setOriginId(v)}
               disabled={listsLoading}
             >
               <SelectTrigger className="w-full">
@@ -220,9 +214,7 @@ export function VendorServiceDialog({
             <Label>Destination</Label>
             <Select
               value={destinationId}
-              onValueChange={(v) => {
-                if (v != null) setDestinationId(v);
-              }}
+              onValueChange={(v) => v && setDestinationId(v)}
               disabled={listsLoading}
             >
               <SelectTrigger className="w-full">

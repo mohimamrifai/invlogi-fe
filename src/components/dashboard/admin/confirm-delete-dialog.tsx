@@ -17,6 +17,7 @@ type Props = {
   title: string;
   description: string;
   confirmLabel?: string;
+  loadingLabel?: string;
   loading?: boolean;
   onConfirm: () => void | Promise<void>;
 };
@@ -27,6 +28,7 @@ export function ConfirmDeleteDialog({
   title,
   description,
   confirmLabel = "Hapus",
+  loadingLabel = "Menghapus…",
   loading = false,
   onConfirm,
 }: Props) {
@@ -47,7 +49,7 @@ export function ConfirmDeleteDialog({
               void onConfirm();
             }}
           >
-            {loading ? "Menghapus…" : confirmLabel}
+            {loading ? loadingLabel : confirmLabel}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

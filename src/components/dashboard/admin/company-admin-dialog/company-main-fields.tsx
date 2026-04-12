@@ -99,21 +99,16 @@ export function CompanyMainFields({
       <div className="space-y-2 md:col-span-1">
         <Label>Siklus penagihan</Label>
         <Select
-          value={billingCycle || "__none__"}
-          onValueChange={(v) => {
-            if (v != null) onBillingCycleChange(v === "__none__" ? "" : v);
-          }}
+          value={billingCycle}
+          onValueChange={(v) => v && onBillingCycleChange(v)}
           disabled={readOnly}
         >
           <SelectTrigger className="w-full">
             <SelectValue placeholder="Pilih siklus penagihan">
-              {billingCycle ? billingCycleLabel(billingCycle) : null}
+              {billingCycleLabel(billingCycle)}
             </SelectValue>
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="__none__" disabled>
-              Pilih siklus penagihan
-            </SelectItem>
             {BILLING_CYCLE_OPTIONS.map((b) => (
               <SelectItem key={b.value} value={b.value}>
                 {b.label}

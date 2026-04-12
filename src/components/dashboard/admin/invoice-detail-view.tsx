@@ -170,8 +170,13 @@ export function InvoiceDetailView({ data }: { data: Inv | null }) {
           <div className="space-y-2">
             <p className="text-xs font-medium text-muted-foreground">Pembayaran</p>
             <ul className="space-y-2">
-              {payRows.map((p) => {
-                const pid = p.id != null ? String(p.id) : String(p.midtrans_order_id ?? Math.random());
+              {payRows.map((p, idx) => {
+                const pid =
+                  p.id != null
+                    ? String(p.id)
+                    : p.midtrans_order_id != null
+                      ? String(p.midtrans_order_id)
+                      : `pay-${idx}`;
                 const paidAt = p.paid_at ? fmtDate(p.paid_at) : "—";
                 return (
                   <li

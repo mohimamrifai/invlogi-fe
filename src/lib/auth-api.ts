@@ -33,7 +33,9 @@ export async function logoutRequest() {
 }
 
 export async function registerCompanyRequest(payload: {
+  company_entity_type: string;
   company_name: string;
+  company_code?: string;
   npwp?: string;
   nib?: string;
   company_address?: string;
@@ -48,6 +50,22 @@ export async function registerCompanyRequest(payload: {
   phone?: string;
 }) {
   return apiFetch<{ message: string; data: unknown }>("/register", {
+    method: "POST",
+    body: JSON.stringify(payload),
+    token: null,
+  });
+}
+
+export async function forgotPasswordRequest(email: string) {
+  return apiFetch<{ message: string }>("/forgot-password", {
+    method: "POST",
+    body: JSON.stringify({ email }),
+    token: null,
+  });
+}
+
+export async function resetPasswordRequest(payload: Record<string, string>) {
+  return apiFetch<{ message: string }>("/reset-password", {
     method: "POST",
     body: JSON.stringify(payload),
     token: null,

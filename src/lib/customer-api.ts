@@ -12,6 +12,14 @@ export async function fetchCustomerShipments(input?: number | ListQueryParams) {
   );
 }
 
+export async function fetchCustomerShipment(id: number) {
+  return apiFetch<{ data: Record<string, unknown> }>(`/customer/shipments/${id}`, { method: "GET" });
+}
+
+export async function downloadCustomerConsignmentNotePdf(id: number) {
+  return apiFetchBlob(`/customer/shipments/${id}/consignment-note-pdf`, { method: "GET" });
+}
+
 export async function fetchCustomerInvoices(input?: number | ListQueryParams) {
   const params = normalizeListParams(input);
   return apiFetch<LaravelPaginated<Record<string, unknown>>>(
@@ -60,6 +68,14 @@ export async function fetchCustomerMasterAdditionalServices() {
   return apiFetch<{ data: unknown[] }>(`/customer/master/additional-services`, { method: "GET" });
 }
 
+export async function fetchCustomerMasterCargoCategories() {
+  return apiFetch<{ data: unknown[] }>(`/customer/master/cargo-categories`, { method: "GET" });
+}
+
+export async function fetchCustomerMasterDgClasses() {
+  return apiFetch<{ data: unknown[] }>(`/customer/master/dg-classes`, { method: "GET" });
+}
+
 export async function estimateBookingPrice(payload: Record<string, unknown>) {
   return apiFetch<{ data: unknown }>(`/customer/bookings/estimate-price`, {
     method: "POST",
@@ -71,6 +87,12 @@ export async function createCustomerBooking(payload: Record<string, unknown>) {
   return apiFetch(`/customer/bookings`, {
     method: "POST",
     body: JSON.stringify(payload),
+  });
+}
+
+export async function cancelCustomerBooking(bookingId: number) {
+  return apiFetch(`/customer/bookings/${bookingId}/cancel`, {
+    method: "POST",
   });
 }
 

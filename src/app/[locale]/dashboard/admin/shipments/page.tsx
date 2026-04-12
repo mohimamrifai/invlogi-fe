@@ -1,49 +1,23 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Badge } from "@/components/ui/badge";
-import { buttonVariants } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
-  CardDescription,
 } from "@/components/ui/card";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  Table,
-  TableBody,
-  TableCaption,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { PaginationBar } from "@/components/data-table/pagination-bar";
 import { TableToolbar } from "@/components/data-table/table-toolbar";
-import { SHIPMENT_STATUS_KEYS, shipmentStatusBadgeClass, shipmentStatusLabel } from "@/lib/shipment-status";
-import { cn } from "@/lib/utils";
+import { SHIPMENT_STATUS_KEYS, shipmentStatusLabel } from "@/lib/shipment-status";
 import { useAuthPersistHydrated } from "@/lib/use-auth-hydrated";
-import {
-  Activity,
-  CheckCircle2,
-  Eye,
-  MoreHorizontal,
-  PackageSearch,
-  Sparkles,
-} from "lucide-react";
-import { useRouter } from "@/i18n/routing";
+import { PackageSearch } from "lucide-react";
 import { fetchAdminShipments } from "@/lib/admin-api";
 import type { LaravelPaginated } from "@/lib/types-api";
 import { ApiError } from "@/lib/api-client";
-import { rowNumber } from "@/lib/list-query";
 import { useDebouncedValue } from "@/lib/use-debounced-value";
+import { ShipmentStatsCards } from "./components/shipment-stats-cards";
+import { ShipmentTable } from "./components/shipment-table";
 
 const PER_PAGE = 10;
 const STATS_CAP = 1000;
@@ -56,36 +30,7 @@ const SHIPMENT_STATUS_FILTERS = [
   })),
 ];
 
-const actionsHeadClass =
-  "w-12 max-md:sticky max-md:right-0 max-md:z-20 max-md:border-l max-md:border-border max-md:bg-card max-md:shadow-[-8px_0_12px_-8px_rgba(0,0,0,0.08)] md:static md:z-auto md:border-l-0 md:bg-transparent md:shadow-none text-right";
-
-const actionsCellClass =
-  "max-md:sticky max-md:right-0 max-md:z-10 max-md:border-l max-md:border-border max-md:bg-card max-md:shadow-[-8px_0_12px_-8px_rgba(0,0,0,0.08)] max-md:group-hover:bg-muted/50 md:static md:z-auto md:border-l-0 md:shadow-none md:group-hover:bg-transparent";
-
 type ShipRow = Record<string, unknown>;
-
-function ShipmentActionsMenu({ shipmentId, waybill }: { shipmentId: number; waybill: string }) {
-  const router = useRouter();
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger
-        className={cn(buttonVariants({ variant: "ghost", size: "icon-sm" }), "shrink-0")}
-      >
-        <MoreHorizontal className="h-4 w-4" />
-        <span className="sr-only">Menu aksi waybill {waybill}</span>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="min-w-52">
-        <DropdownMenuItem
-          className="cursor-pointer"
-          onClick={() => router.push(`/dashboard/admin/shipments/${shipmentId}`)}
-        >
-          <Eye className="h-4 w-4" />
-          Lihat detail shipment
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
-}
 
 function isInTransitStatus(st: string): boolean {
   const k = st.toLowerCase();
@@ -168,12 +113,12 @@ export default function AdminShipmentsPage() {
     <div className="flex min-w-0 w-full flex-1 flex-col gap-6 md:px-2">
       <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
         <div className="flex min-w-0 items-start gap-3">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-zinc-900/5 text-zinc-900">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-zinc-900 text-white">
             <PackageSearch className="h-4 w-4" />
           </div>
           <div className="min-w-0 flex-1">
-            <h1 className="text-xl font-semibold tracking-tight text-zinc-900 sm:text-2xl">Shipment Management</h1>
-            <p className="mt-1 text-sm text-muted-foreground">Shipment, status perjalanan, kontainer & rack.</p>
+            <h1 className="text-xl font-bold tracking-tight text-zinc-900 sm:text-2xl uppercase">Shipment Management</h1>
+            <p className="mt-1 text-sm text-muted-foreground">Monitoring perjalanan, kontainer & rack secara real-time.</p>
           </div>
         </div>
       </div>
@@ -182,151 +127,48 @@ export default function AdminShipmentsPage() {
         <p className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{error}</p>
       ) : null}
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between gap-2">
-              <CardDescription>Baru dibuat</CardDescription>
-              <span className="rounded-md bg-amber-100 p-1.5 text-amber-700">
-                <Sparkles className="h-3.5 w-3.5" aria-hidden />
-              </span>
-            </div>
-            <CardTitle className="flex flex-col gap-0.5 text-2xl font-semibold">
-              <span>{countCreated}</span>
-              <span className="text-xs font-normal text-muted-foreground">status created</span>
-            </CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between gap-2">
-              <CardDescription>Dalam perjalanan</CardDescription>
-              <span className="rounded-md bg-sky-100 p-1.5 text-sky-700">
-                <Activity className="h-3.5 w-3.5" aria-hidden />
-              </span>
-            </div>
-            <CardTitle className="flex flex-col gap-0.5 text-2xl font-semibold">
-              <span>{countInTransit}</span>
-              <span className="text-xs font-normal text-muted-foreground">departed / arrived / unloading</span>
-            </CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between gap-2">
-              <CardDescription>Selesai</CardDescription>
-              <span className="rounded-md bg-emerald-100 p-1.5 text-emerald-700">
-                <CheckCircle2 className="h-3.5 w-3.5" aria-hidden />
-              </span>
-            </div>
-            <CardTitle className="flex flex-col gap-0.5 text-2xl font-semibold">
-              <span>{countCompleted}</span>
-              <span className="text-xs font-normal text-emerald-600">completed</span>
-            </CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between gap-2">
-              <CardDescription>Total shipment</CardDescription>
-              <span className="rounded-md bg-violet-100 p-1.5 text-violet-700">
-                <PackageSearch className="h-3.5 w-3.5" aria-hidden />
-              </span>
-            </div>
-            <CardTitle className="flex flex-col gap-0.5 text-2xl font-semibold">
-              <span>{totalStats}</span>
-              <span className="text-xs font-normal text-muted-foreground">semua shipment</span>
-            </CardTitle>
-          </CardHeader>
-        </Card>
-      </div>
+      <ShipmentStatsCards
+        countCreated={countCreated}
+        countInTransit={countInTransit}
+        countCompleted={countCompleted}
+        totalStats={totalStats}
+      />
 
-      <Card className="min-w-0 overflow-hidden">
-        <CardHeader className="space-y-1">
-          <CardTitle>Daftar Shipment</CardTitle>
+      <Card className="min-w-0 overflow-hidden border-zinc-200/60 shadow-sm">
+        <CardHeader className="space-y-1 bg-zinc-50/50 border-b border-zinc-100">
+          <CardTitle className="text-lg font-bold">Daftar Shipment</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <TableToolbar
-            searchPlaceholder="Cari waybill atau nomor shipment…"
-            searchValue={searchInput}
-            onSearchChange={setSearchInput}
-            filterLabel="Status"
-            filterValue={statusFilter}
-            onFilterChange={setStatusFilter}
-            filterOptions={SHIPMENT_STATUS_FILTERS}
+        <CardContent className="p-0">
+          <div className="p-4 border-b border-zinc-50">
+            <TableToolbar
+              searchPlaceholder="Cari Nomor Shipment atau CN…"
+              searchValue={searchInput}
+              onSearchChange={setSearchInput}
+              filterLabel="Filter Status"
+              filterValue={statusFilter}
+              onFilterChange={setStatusFilter}
+              filterOptions={SHIPMENT_STATUS_FILTERS}
+            />
+          </div>
+          
+          <ShipmentTable
+            rows={rows}
+            meta={meta}
+            perPage={PER_PAGE}
+            loading={loading}
           />
-          {loading ? (
-            <p className="text-sm text-muted-foreground">Memuat…</p>
-          ) : (
-            <>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-14">No</TableHead>
-                    <TableHead className="w-[120px]">Waybill</TableHead>
-                    <TableHead>Customer</TableHead>
-                    <TableHead>Service</TableHead>
-                    <TableHead>Rute</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className={actionsHeadClass}>
-                      <span className="max-md:sr-only">Aksi</span>
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {rows.map((shipment, index) => {
-                    const st = String(shipment.status ?? "");
-                    const company = (shipment.company ?? shipment.Company) as { name?: string } | undefined;
-                    const origin = (shipment.origin_location ?? shipment.originLocation) as { name?: string } | undefined;
-                    const dest = (shipment.destination_location ?? shipment.destinationLocation) as
-                      | { name?: string }
-                      | undefined;
-                    const svc = (shipment.service_type ?? shipment.serviceType) as { name?: string } | undefined;
-                    const wb = String(shipment.waybill_number ?? shipment.shipment_number ?? "");
-                    const route = [origin?.name, dest?.name].filter(Boolean).join(" → ") || "—";
-                    return (
-                      <TableRow key={wb || String(shipment.id)} className="group">
-                        <TableCell className="tabular-nums text-muted-foreground">
-                          {rowNumber(meta?.current_page ?? page, PER_PAGE, index)}
-                        </TableCell>
-                        <TableCell className="font-mono text-xs">{wb}</TableCell>
-                        <TableCell className="font-medium">{company?.name ?? "—"}</TableCell>
-                        <TableCell>{svc?.name ?? "—"}</TableCell>
-                        <TableCell>{route}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className={shipmentStatusBadgeClass(st)}>
-                            {shipmentStatusLabel(st)}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className={cn(actionsCellClass, "p-2 text-right")}>
-                          <div className="flex justify-end">
-                            <ShipmentActionsMenu
-                              shipmentId={Number(shipment.id)}
-                              waybill={wb}
-                            />
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-                {rows.length === 0 ? (
-                  <TableCaption className="text-xs">Belum ada shipment.</TableCaption>
-                ) : (
-                  <TableCaption className="text-xs">Baris pada halaman ini.</TableCaption>
-                )}
-              </Table>
-              {meta ? (
-                <PaginationBar
-                  currentPage={meta.current_page}
-                  lastPage={meta.last_page}
-                  total={meta.total}
-                  from={meta.from}
-                  to={meta.to}
-                  onPageChange={setPage}
-                />
-              ) : null}
-            </>
+          
+          {meta && meta.last_page > 1 && (
+            <div className="p-4 border-t border-zinc-50">
+              <PaginationBar
+                currentPage={meta.current_page}
+                lastPage={meta.last_page}
+                total={meta.total}
+                from={meta.from}
+                to={meta.to}
+                onPageChange={setPage}
+              />
+            </div>
           )}
         </CardContent>
       </Card>

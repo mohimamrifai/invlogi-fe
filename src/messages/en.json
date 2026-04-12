@@ -23,7 +23,7 @@
     "f1Body": "Create orders by choosing origin, destination, and service type. See the estimated price instantly before confirming.",
     "f2Title": "Rail cargo between ports",
     "f2Body": "Railway cargo service for port-to-port routes — fast, reliable, and ready to expand to other transport modes.",
-    "f3Title": "Track with a waybill number",
+    "f3Title": "Track with a Consignment Note (CN) number",
     "f3Body": "Check status, timeline, and photo evidence anytime. Publicly accessible — no login required.",
     "f4Title": "Invoices & online payments",
     "f4Body": "Automatic invoicing per shipment. Pay directly via Virtual Account, QRIS, or credit card.",
@@ -75,8 +75,8 @@
   },
   "LandingTrackingCta": {
     "title": "Track your shipment now",
-    "lead": "Just enter a waybill number — no login required. Get real-time status, timeline, and photo evidence.",
-    "placeholder": "Enter waybill number…",
+    "lead": "Just enter a Consignment Note (CN) number — no login required. Get real-time status, timeline, and photo evidence.",
+    "placeholder": "Enter Consignment Note (CN) number…",
     "cta": "Track"
   },
   "LandingWhy": {
@@ -148,11 +148,11 @@
   },
   "Tracking": {
     "title": "Track Your Shipment",
-    "subtitle": "Enter your waybill number to see real-time shipment status — no login required.",
-    "placeholder": "Enter waybill number…",
+    "subtitle": "Enter your Consignment Note (CN) number to see real-time shipment status — no login required.",
+    "placeholder": "Enter Consignment Note (CN) number…",
     "cta": "Track",
-    "notFound": "Shipment not found. Please check your waybill number.",
-    "waybillLabel": "Waybill Number",
+    "notFound": "Shipment not found. Please check your Consignment Note (CN) number.",
+    "waybillLabel": "Consignment Note (CN) Number",
     "origin": "Origin",
     "destination": "Destination",
     "estDeparture": "Est. Departure",
@@ -212,13 +212,42 @@
     "passwordRequired": "Password is required",
     "passwordMin": "Password must be at least 8 characters"
   },
+  "Auth": {
+    "forgotPassword": {
+      "title": "Forgot Password?",
+      "description": "Enter your email and we'll send you a link to reset your password.",
+      "emailLabel": "Email Address",
+      "sendCta": "Send Reset Link",
+      "backToLogin": "Back to Login",
+      "successTitle": "Check Your Email",
+      "successDescription": "We've sent recovery instructions to your email.",
+      "successNote": "Check your spam folder if you can't find it."
+    },
+    "resetPassword": {
+      "title": "Reset Password",
+      "description": "Enter a new password for your account.",
+      "passwordLabel": "New Password",
+      "confirmLabel": "Confirm New Password",
+      "saveCta": "Save New Password",
+      "invalidLinkTitle": "Invalid Link",
+      "invalidLinkDescription": "The link is expired or invalid."
+    }
+  },
   "Register": {
     "title": "Register Account",
     "subtitle": "Choose account type according to your shipping needs",
     "personal": "Personal",
     "company": "Company",
     "companyInfo": "Company Information",
+    "companyEntityType": "Business Entity Type",
     "companyName": "Company Name",
+    "companyCode": "Code",
+    "npwp": "Tax ID (NPWP)",
+    "nib": "Business ID (NIB)",
+    "address": "Address",
+    "city": "City",
+    "province": "Province",
+    "postalCode": "Postal Code",
     "companyEmail": "Company Email",
     "companyPhone": "Company Phone Number",
     "picData": "Person In Charge (PIC) Data",
@@ -234,7 +263,15 @@
     "haveAccount": "Already have an account?",
     "login": "Login",
     "accountTypeRequired": "Account type is required",
+    "companyEntityTypeRequired": "Business entity type is required",
     "companyNameRequired": "Company name is required",
+    "companyCodeInvalid": "Invalid company code",
+    "npwpRequired": "NPWP is required",
+    "nibRequired": "NIB is required",
+    "addressRequired": "Address is required",
+    "cityRequired": "City is required",
+    "provinceRequired": "Province is required",
+    "postalCodeRequired": "Postal code is required",
     "phoneRequired": "Phone number is required",
     "fullNameRequired": "Full name is required",
     "emailRequired": "Email is required",
@@ -243,12 +280,16 @@
     "passwordMin": "Password must be at least 8 characters",
     "confirmPasswordRequired": "Confirm password is required",
     "passwordMismatch": "Passwords do not match",
-    "termsRequired": "You must agree to the terms and conditions"
+    "termsRequired": "You must agree to the terms and conditions",
+    "selectEntityType": "Select type",
+    "otherEntityType": "Other",
+    "registerSubmittedToast": "Thank you! Your registration has been submitted. We will review your data first and our team will contact you."
   },
   "Dashboard": {
     "menu": {
       "dashboard": "Dashboard",
       "createBooking": "Create Booking",
+      "myBookings": "My Bookings",
       "myShipments": "My Shipments",
       "shipmentTracking": "Shipment Tracking",
       "invoices": "Invoices",
@@ -261,7 +302,8 @@
       "paymentManagement": "Payment Management",
       "masterOperational": "Master Operational",
       "vendorPricing": "Vendor & Pricing",
-      "internalUsers": "Internal users",
+      "roleManagement": "Role & Permissions",
+      "internalUsers": "Internal Users",
       "logout": "Logout"
     },
     "profile": "Profile",

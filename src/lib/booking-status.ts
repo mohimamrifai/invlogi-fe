@@ -31,3 +31,4 @@ export function bookingStatusBadgeClass(status: string): string {
       return "border-border bg-muted text-muted-foreground";
   }
 }
+export const BOOKING_STATUS_KEYS = ["draft", "submitted", "confirmed", "approved", "rejected", "cancelled"];

@@ -9,6 +9,7 @@ export const DASHBOARD_SIDEBAR_ITEM_DEFS = [
   {
     menuKey: "dashboard",
     url: "/dashboard",
+    requiredPermission: null,
     roles: [
       "super_admin",
       "operations",
@@ -22,76 +23,103 @@ export const DASHBOARD_SIDEBAR_ITEM_DEFS = [
   {
     menuKey: "customerManagement",
     url: "/dashboard/admin/customers",
+    requiredPermission: "view_companies",
     roles: ["super_admin", "sales", "operations", "finance"] as const,
   },
   {
     menuKey: "bookingManagement",
     url: "/dashboard/admin/bookings",
+    requiredPermission: "view_bookings",
     roles: ["super_admin", "operations"] as const,
   },
   {
     menuKey: "shipmentManagement",
     url: "/dashboard/admin/shipments",
+    requiredPermission: "view_shipments",
     roles: ["super_admin", "operations"] as const,
   },
   {
     menuKey: "masterOperational",
     url: "/dashboard/admin/master",
+    requiredPermission: "manage_master_data",
     roles: ["super_admin", "operations"] as const,
   },
   {
     menuKey: "invoiceManagement",
     url: "/dashboard/admin/invoices",
+    requiredPermission: "view_invoices",
     roles: ["super_admin", "finance"] as const,
   },
   {
     menuKey: "paymentManagement",
     url: "/dashboard/admin/payments",
+    requiredPermission: "view_payments",
     roles: ["super_admin", "finance"] as const,
   },
   {
     menuKey: "vendorPricing",
     url: "/dashboard/admin/vendor",
+    requiredPermission: "manage_vendors",
     roles: ["super_admin", "sales"] as const,
+  },
+  {
+    menuKey: "roleManagement",
+    url: "/dashboard/admin/roles",
+    requiredPermission: "manage_users", // or super_admin only
+    roles: ["super_admin"] as const,
   },
   {
     menuKey: "internalUsers",
     url: "/dashboard/admin/users",
+    requiredPermission: "view_users",
     roles: ["super_admin"] as const,
   },
   {
     menuKey: "createBooking",
     url: "/dashboard/booking/create",
+    requiredPermission: "create_bookings",
+    roles: ["company_admin", "ops_pic"] as const,
+  },
+  {
+    menuKey: "myBookings",
+    url: "/dashboard/booking",
+    requiredPermission: "view_bookings",
     roles: ["company_admin", "ops_pic"] as const,
   },
   {
     menuKey: "myShipments",
     url: "/dashboard/shipments",
+    requiredPermission: "view_shipments",
     roles: ["company_admin", "ops_pic"] as const,
   },
   {
     menuKey: "shipmentTracking",
     url: "/dashboard/tracking",
+    requiredPermission: null,
     roles: ["company_admin", "ops_pic"] as const,
   },
   {
     menuKey: "invoices",
     url: "/dashboard/invoices",
+    requiredPermission: "view_invoices",
     roles: ["company_admin", "finance_pic"] as const,
   },
   {
     menuKey: "payments",
     url: "/dashboard/payments",
+    requiredPermission: "view_payments",
     roles: ["company_admin", "finance_pic"] as const,
   },
   {
     menuKey: "companySettings",
     url: "/dashboard/settings",
+    requiredPermission: null,
     roles: ["company_admin"] as const,
   },
 ] as const;
 
-export type DashboardMenuKey = (typeof DASHBOARD_SIDEBAR_ITEM_DEFS)[number]["menuKey"];
+export type SidebarItemDef = (typeof DASHBOARD_SIDEBAR_ITEM_DEFS)[number];
+export type DashboardMenuKey = SidebarItemDef["menuKey"];
 
 export const ADMIN_DASHBOARD_PREFIX = "/dashboard/admin";
 

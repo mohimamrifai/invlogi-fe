@@ -32,6 +32,9 @@ const TYPES = [
   { value: "city", label: "Kota" },
   { value: "hub", label: "Hub" },
   { value: "warehouse", label: "Gudang" },
+  { value: "station", label: "Stasiun" },
+  { value: "airport", label: "Bandara" },
+  { value: "terminal", label: "Terminal" },
 ];
 
 export type LocationDialogMode = "create" | "edit" | "view";
