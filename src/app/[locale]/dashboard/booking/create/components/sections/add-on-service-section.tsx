@@ -57,25 +57,27 @@ export function AddOnServiceSection({
 
             return (
               <Popover key={cat.key}>
-                <PopoverTrigger>
-                  <Button
-                    variant="outline"
-                    className="w-full justify-between h-auto py-3 px-4 text-left font-normal border-zinc-200 hover:bg-zinc-50"
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-zinc-100 text-zinc-600">
-                        <cat.icon className="h-4 w-4" />
+                <PopoverTrigger
+                  render={
+                    <Button
+                      variant="outline"
+                      className="w-full justify-between h-auto py-3 px-4 text-left font-normal border-zinc-200 hover:bg-zinc-50"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-zinc-100 text-zinc-600">
+                          <cat.icon className="h-4 w-4" />
+                        </div>
+                        <div className="flex flex-col min-w-0">
+                          <span className="text-xs font-bold text-zinc-900 leading-tight">{cat.label}</span>
+                          <span className="text-xs text-zinc-500 leading-tight">
+                            {activeCount > 0 ? `${activeCount} dipilih` : "Pilih layanan"}
+                          </span>
+                        </div>
                       </div>
-                      <div className="flex flex-col min-w-0">
-                        <span className="text-xs font-bold text-zinc-900 leading-tight">{cat.label}</span>
-                        <span className="text-xs text-zinc-500 leading-tight">
-                          {activeCount > 0 ? `${activeCount} dipilih` : "Pilih layanan"}
-                        </span>
-                      </div>
-                    </div>
-                    <ChevronDown className="h-4 w-4 shrink-0 opacity-50 ml-2" />
-                  </Button>
-                </PopoverTrigger>
+                      <ChevronDown className="h-4 w-4 shrink-0 opacity-50 ml-2" />
+                    </Button>
+                  }
+                />
                 <PopoverContent className="w-72 p-2 shadow-2xl border-zinc-200" align="start">
                   <div className="flex flex-col gap-1">
                     {svcs.map((a) => {

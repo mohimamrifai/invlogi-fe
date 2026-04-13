@@ -12,6 +12,7 @@ import {
   fetchCustomerMasterDgClasses,
   estimateBookingPrice,
   createCustomerBooking,
+  createCustomerBookingMultipart,
 } from "@/lib/customer-api";
 import { ApiError } from "@/lib/api-client";
 import type { LaravelPaginated } from "@/lib/types-api";
@@ -103,6 +104,7 @@ export function useBookingForm() {
   // UI State
   const [estimate, setEstimate] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [validationErrors, setValidationErrors] = useState<Record<string, string[]> | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -187,12 +189,20 @@ export function useBookingForm() {
 
   // Shipper same as account
   useEffect(() => {
-    if (isShipperSameAsAccount && userCompany) {
-      setShipperName(userCompany.name ?? "");
-      setShipperAddress(userCompany.address ?? "");
-      setShipperPhone(userCompany.phone ?? "");
+    if (isShipperSameAsAccount) {
+      if (userCompany) {
+        setShipperName(userCompany.name ?? "");
+        setShipperAddress(userCompany.address ?? "");
+        setShipperPhone(userCompany.phone ?? "");
+      } else {
+        toast.error("Data profil perusahaan tidak ditemukan. Silakan lengkapi di pengaturan.");
+        setIsShipperSameAsAccount(false);
+      }
+    } else {
+      // Clear fields if unchecking (optional: you might want to keep the data if the user wants to edit it)
+      // For now, let's keep the user's focus on auto-fill behavior
     }
-  }, [isShipperSameAsAccount, userCompany]);
+  }, [isShipperSameAsAccount, userCompany, setIsShipperSameAsAccount]);
 
   // CBM/Weight auto-calc
   useEffect(() => {
@@ -222,29 +232,28 @@ export function useBookingForm() {
   }, [equipmentCondition]);
 
   const buildPayload = () => ({
-    origin_location_id: Number(originId),
-    destination_location_id: Number(destId),
-    transport_mode_id: Number(modeId),
-    service_type_id: Number(serviceTypeId),
-    cargo_category_id: Number(cargoCategoryId),
+    origin_location_id: originId ? Number(originId) : null,
+    destination_location_id: destId ? Number(destId) : null,
+    transport_mode_id: modeId ? Number(modeId) : null,
+    service_type_id: serviceTypeId ? Number(serviceTypeId) : null,
+    cargo_category_id: cargoCategoryId ? Number(cargoCategoryId) : null,
     container_type_id: !isLCL && containerTypeId ? Number(containerTypeId) : null,
     container_count: !isLCL ? (Number(containerCount) || 1) : null,
     estimated_weight: weight ? Number(weight) : null,
     estimated_cbm: cbm ? Number(cbm) : null,
     departure_date: departureDate || null,
     cargo_description: cargo || null,
-    is_dangerous_goods: isDG,
+    is_dangerous_goods: isDG ? 1 : 0,
     dg_class_id: isDG && dgClassId ? Number(dgClassId) : null,
-    un_number: isDG ? unNumber : null,
-    msds_file: null, // Handled separately in multipart
-    equipment_condition: showProject ? equipmentCondition : null,
-    temperature: showTemp ? Number(temperature) : null,
-    shipper_name: shipperName,
-    shipper_address: shipperAddress,
-    shipper_phone: shipperPhone,
-    consignee_name: consigneeName,
-    consignee_address: consigneeAddress,
-    consignee_phone: consigneePhone,
+    un_number: isDG && unNumber ? unNumber : null,
+    equipment_condition: showProject && equipmentCondition ? equipmentCondition : null,
+    temperature: showTemp && temperature ? Number(temperature) : null,
+    shipper_name: shipperName || null,
+    shipper_address: shipperAddress || null,
+    shipper_phone: shipperPhone || null,
+    consignee_name: consigneeName || null,
+    consignee_address: consigneeAddress || null,
+    consignee_phone: consigneePhone || null,
     additional_services: selectedAddOns.map((id) => ({ id })),
   });
 
@@ -272,57 +281,54 @@ export function useBookingForm() {
     }
   };
 
+  const renderFieldError = (field: string): string | null => {
+    return validationErrors?.[field]?.[0] ?? null;
+  };
+
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-
-    // Client-side Validation Pass
-    if (isDG) {
-      if (!dgClassId) {
-        toast.error("DG Class wajib diisi jika kargo berbahaya.");
-        return;
-      }
-      if (!unNumber) {
-        toast.error("UN Number wajib diisi jika kargo berbahaya.");
-        return;
-      }
-      if (!msdsFile) {
-        toast.error("Dokumen MSDS wajib diunggah jika kargo berbahaya.");
-        return;
-      }
-    }
-
-    if (showTemp && !temperature) {
-      toast.error("Suhu (temperature) wajib diisi untuk kategori kargo ini.");
-      return;
-    }
-
-    if (selectedCC?.code === "MIX" && !cargo) {
-      toast.error("Deskripsi barang wajib diisi untuk kategori Mixed Cargo.");
-      return;
-    }
+    setValidationErrors(null);
 
     setSubmitting(true);
     try {
-      const p = buildPayload();
-      const fd = new FormData();
-      Object.entries(p).forEach(([k, v]) => {
-        if (v != null) {
+      const payload = buildPayload();
+
+      if (msdsFile) {
+        // Use multipart/form-data only when there's a file to upload
+        const fd = new FormData();
+        Object.entries(payload).forEach(([k, v]) => {
+          if (v === null || v === undefined) return;
           if (k === "additional_services") {
             fd.append(k, JSON.stringify(v));
           } else {
             fd.append(k, String(v));
           }
-        }
-      });
-      if (msdsFile) fd.append("msds_file", msdsFile);
+        });
+        fd.append("msds_file", msdsFile);
+        await createCustomerBookingMultipart(fd);
+      } else {
+        // Send as JSON directly — this is the correct way
+        await createCustomerBooking(payload as unknown as Record<string, unknown>);
+      }
 
-      await createCustomerBooking(fd as unknown as Record<string, unknown>);
       setShowSuccess(true);
     } catch (err) {
-      const msg = err instanceof ApiError ? err.message : "Gagal menyimpan";
-      setError(msg);
-      toast.error(msg);
+      if (err instanceof ApiError && err.status === 422) {
+        const body = err.body as { errors?: Record<string, string[]> };
+        if (body?.errors) {
+          setValidationErrors(body.errors);
+          setError("Terdapat kesalahan pada form. Silakan periksa kolom yang ditandai merah.");
+          // Scroll to top to show error banner
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        } else {
+          setError(err.message);
+        }
+      } else {
+        const msg = err instanceof ApiError ? err.message : "Gagal menyimpan";
+        setError(msg);
+      }
+      toast.error("Booking gagal dikirim. Periksa kembali isian form Anda.");
     } finally {
       setSubmitting(false);
     }
@@ -358,7 +364,7 @@ export function useBookingForm() {
     msdsFile, setMsdsFile,
     equipmentCondition, setEquipmentCondition,
     temperature, setTemperature,
-    estimate, error, loading, submitting, showSuccess, setShowSuccess,
+    estimate, error, validationErrors, renderFieldError, loading, submitting, showSuccess, setShowSuccess,
     isFCL, isLCL, selectedCT, selectedCC, showTemp, showProject,
     onEstimate, onSubmit
   };

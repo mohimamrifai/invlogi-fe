@@ -23,7 +23,7 @@ export function DashboardAuthGate({ children }: { children: React.ReactNode }) {
       router.replace("/login");
       return;
     }
-    if (!user) {
+    if (!user || user.company === undefined || user.company === null) {
       profileRequest()
         .then((res) => setUser(res.data))
         .catch(() => {

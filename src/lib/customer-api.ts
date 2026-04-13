@@ -94,6 +94,14 @@ export async function createCustomerBooking(payload: Record<string, unknown>) {
   });
 }
 
+export async function createCustomerBookingMultipart(formData: FormData) {
+  // Do NOT set Content-Type — browser sets it automatically with the correct boundary for multipart/form-data
+  return apiFetch(`/customer/bookings`, {
+    method: "POST",
+    body: formData,
+  });
+}
+
 export async function cancelCustomerBooking(bookingId: number) {
   return apiFetch(`/customer/bookings/${bookingId}/cancel`, {
     method: "POST",

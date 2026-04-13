@@ -44,8 +44,20 @@ export default function CreateBookingPage() {
       </div>
 
       {f.error ? (
-        <div className="p-4 bg-red-50 border border-red-100 rounded-xl text-sm text-red-600 font-medium">
-          {f.error}
+        <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600 space-y-2">
+          <div className="flex items-start gap-2 font-semibold">
+            <span className="mt-0.5 shrink-0">⚠️</span>
+            <span>{f.error}</span>
+          </div>
+          {f.validationErrors && Object.keys(f.validationErrors).length > 0 && (
+            <ul className="ml-6 space-y-0.5 list-disc text-[12px] font-normal text-red-500">
+              {Object.entries(f.validationErrors).map(([field, msgs]) =>
+                msgs.map((msg, i) => (
+                  <li key={`${field}-${i}`}>{msg}</li>
+                ))
+              )}
+            </ul>
+          )}
         </div>
       ) : null}
 
@@ -64,6 +76,7 @@ export default function CreateBookingPage() {
             setModeId={f.setModeId}
             serviceTypeId={f.serviceTypeId}
             setServiceTypeId={f.setServiceTypeId}
+            renderFieldError={f.renderFieldError}
           />
 
           {/* Section 2: Parties */}
@@ -77,6 +90,7 @@ export default function CreateBookingPage() {
             setAddress={f.setShipperAddress}
             isSameAsAccount={f.isShipperSameAsAccount}
             setIsSameAsAccount={f.setIsShipperSameAsAccount}
+            renderFieldError={f.renderFieldError}
           />
 
           <PartyInfoSection
@@ -87,6 +101,7 @@ export default function CreateBookingPage() {
             setPhone={f.setConsigneePhone}
             address={f.consigneeAddress}
             setAddress={f.setConsigneeAddress}
+            renderFieldError={f.renderFieldError}
           />
 
           {/* Section 3: Cargo */}
@@ -132,6 +147,7 @@ export default function CreateBookingPage() {
             setTemperature={f.setTemperature}
             showTemp={f.showTemp}
             showProject={f.showProject}
+            renderFieldError={f.renderFieldError}
           />
 
           {/* Section 4: Add-ons */}

@@ -134,18 +134,25 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <SidebarGroup>
           <SidebarGroupLabel className="text-sm font-medium px-4 mb-2">Menu</SidebarGroupLabel>
           <SidebarMenu className="gap-2 px-2">
-            {navItems.map((item) => {
+            {(() => {
               let normalizedPathname = pathname
               if (normalizedPathname.startsWith("/en/") || normalizedPathname.startsWith("/id/")) {
                 normalizedPathname = normalizedPathname.replace(/^\/[a-zA-Z-]+(?=\/)/, "")
               }
+              if (normalizedPathname.length > 1 && normalizedPathname.endsWith("/")) {
+                normalizedPathname = normalizedPathname.slice(0, -1)
+              }
 
-              const isDashboardItem = item.url === "/dashboard"
-              const isActive = isDashboardItem
-                ? normalizedPathname === item.url
-                : normalizedPathname === item.url || normalizedPathname.startsWith(`${item.url}/`)
+              const bestMatch = [...navItems]
+                .filter(item => {
+                  if (item.url === "/dashboard") return normalizedPathname === "/dashboard"
+                  return normalizedPathname === item.url || normalizedPathname.startsWith(`${item.url}/`)
+                })
+                .sort((a, b) => b.url.length - a.url.length)[0]
 
-              return (
+              return navItems.map((item) => {
+                const isActive = bestMatch ? item.url === bestMatch.url : false
+                return (
                 <SidebarMenuItem key={item.url}>
                   <SidebarMenuButton
                     tooltip={item.title}
@@ -166,7 +173,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   />
                 </SidebarMenuItem>
               )
-            })}
+              })
+            })()}
           </SidebarMenu>
         </SidebarGroup>
       </SidebarContent>

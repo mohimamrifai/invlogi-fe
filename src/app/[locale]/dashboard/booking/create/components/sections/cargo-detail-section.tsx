@@ -6,6 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { CT, CC, DC } from "../../hooks/use-booking-form";
 import { Checkbox } from "@/components/ui/checkbox";
+import { cn } from "@/lib/utils";
+
+const selectCls = "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50";
 
 interface CargoDetailSectionProps {
   isLCL: boolean;
@@ -49,6 +52,7 @@ interface CargoDetailSectionProps {
   setTemperature: (v: string) => void;
   showTemp?: boolean;
   showProject?: boolean;
+  renderFieldError: (field: string) => string | null;
 }
 
 export function CargoDetailSection({
@@ -93,20 +97,21 @@ export function CargoDetailSection({
   setTemperature,
   showTemp,
   showProject,
+  renderFieldError,
 }: CargoDetailSectionProps) {
   return (
     <Card className="lg:col-span-2">
       <CardHeader>
-        <CardTitle>Detil Kargo & Spesifikasi</CardTitle>
+        <CardTitle>Detil Kargo &amp; Spesifikasi</CardTitle>
         <CardDescription>Masukkan rincian dimensi, berat, dan kategori kargo Anda.</CardDescription>
       </CardHeader>
       <CardContent className="grid gap-6 sm:grid-cols-2">
         {!isLCL ? (
           <div className="sm:col-span-2 grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
+            <div className="space-y-1">
               <Label>Tipe Kontainer {isFCL && <span className="text-red-500">*</span>}</Label>
               <select
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                className={cn(selectCls, renderFieldError("container_type_id") && "border-red-500 ring-2 ring-red-500/20")}
                 value={containerTypeId}
                 onChange={(e) => setContainerTypeId(e.target.value)}
                 required={isFCL}
@@ -118,6 +123,9 @@ export function CargoDetailSection({
                   </option>
                 ))}
               </select>
+              {renderFieldError("container_type_id") && (
+                <p className="text-[11px] font-medium text-red-500">{renderFieldError("container_type_id")}</p>
+              )}
               {selectedCT && (
                 <div className="text-[10px] text-zinc-500 flex gap-4 px-1 font-mono uppercase bg-zinc-50 py-1 rounded">
                   <span>P: {selectedCT.length || 0} cm</span>
@@ -126,19 +134,23 @@ export function CargoDetailSection({
                 </div>
               )}
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1">
               <Label>Jumlah Kontainer</Label>
               <Input
                 type="number"
                 min={1}
                 value={containerCount}
                 onChange={(e) => setContainerCount(e.target.value)}
+                className={cn(renderFieldError("container_count") && "border-red-500")}
               />
+              {renderFieldError("container_count") && (
+                <p className="text-[11px] font-medium text-red-500">{renderFieldError("container_count")}</p>
+              )}
             </div>
           </div>
         ) : (
           <div className="sm:col-span-2 grid gap-4 sm:grid-cols-3 bg-zinc-50/50 p-4 rounded-lg border border-dashed">
-            <div className="space-y-2">
+            <div className="space-y-1">
               <Label>Panjang (cm)</Label>
               <Input
                 type="number"
@@ -148,7 +160,7 @@ export function CargoDetailSection({
                 className="bg-white"
               />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1">
               <Label>Lebar (cm)</Label>
               <Input
                 type="number"
@@ -158,7 +170,7 @@ export function CargoDetailSection({
                 className="bg-white"
               />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1">
               <Label>Tinggi (cm)</Label>
               <Input
                 type="number"
@@ -172,7 +184,7 @@ export function CargoDetailSection({
           </div>
         )}
 
-        <div className="space-y-2">
+        <div className="space-y-1">
           <Label>Total Berat (kg)</Label>
           <Input
             type="number"
@@ -180,10 +192,16 @@ export function CargoDetailSection({
             value={weight}
             onChange={(e) => setWeight(e.target.value)}
             disabled={!isLCL && !!selectedCT}
-            className={!isLCL && selectedCT ? "bg-zinc-100 italic" : "bg-white"}
+            className={cn(
+              !isLCL && selectedCT ? "bg-zinc-100 italic" : "bg-white",
+              renderFieldError("estimated_weight") && "border-red-500"
+            )}
           />
+          {renderFieldError("estimated_weight") && (
+            <p className="text-[11px] font-medium text-red-500">{renderFieldError("estimated_weight")}</p>
+          )}
         </div>
-        <div className="space-y-2">
+        <div className="space-y-1">
           <Label>Total CBM</Label>
           <Input
             type="number"
@@ -191,18 +209,32 @@ export function CargoDetailSection({
             value={cbm}
             onChange={(e) => setCbm(e.target.value)}
             disabled={!!selectedCT || isLCL}
-            className={selectedCT || isLCL ? "bg-zinc-100 italic" : "bg-white"}
+            className={cn(
+              selectedCT || isLCL ? "bg-zinc-100 italic" : "bg-white",
+              renderFieldError("estimated_cbm") && "border-red-500"
+            )}
           />
+          {renderFieldError("estimated_cbm") && (
+            <p className="text-[11px] font-medium text-red-500">{renderFieldError("estimated_cbm")}</p>
+          )}
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-1">
           <Label>Estimasi Tgl Berangkat</Label>
-          <Input type="date" value={departureDate} onChange={(e) => setDepartureDate(e.target.value)} />
+          <Input
+            type="date"
+            value={departureDate}
+            onChange={(e) => setDepartureDate(e.target.value)}
+            className={cn(renderFieldError("departure_date") && "border-red-500")}
+          />
+          {renderFieldError("departure_date") && (
+            <p className="text-[11px] font-medium text-red-500">{renderFieldError("departure_date")}</p>
+          )}
         </div>
-        <div className="space-y-2">
-          <Label>Kategori Kargo</Label>
+        <div className="space-y-1">
+          <Label>Kategori Kargo <span className="text-red-500">*</span></Label>
           <select
-            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            className={cn(selectCls, renderFieldError("cargo_category_id") && "border-red-500 ring-2 ring-red-500/20")}
             value={cargoCategoryId}
             onChange={(e) => setCargoCategoryId(e.target.value)}
             required
@@ -214,28 +246,35 @@ export function CargoDetailSection({
               </option>
             ))}
           </select>
+          {renderFieldError("cargo_category_id") && (
+            <p className="text-[11px] font-medium text-red-500">{renderFieldError("cargo_category_id")}</p>
+          )}
         </div>
 
         {/* Conditional: Temperature */}
         {showTemp && (
-          <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
+          <div className="space-y-1 animate-in fade-in slide-in-from-top-2 duration-300">
             <Label>Suhu (Celsius) <span className="text-red-500">*</span></Label>
             <Input
               type="number"
               value={temperature}
               onChange={(e) => setTemperature(e.target.value)}
               placeholder="0.0"
+              className={cn(renderFieldError("temperature") && "border-red-500")}
               required
             />
+            {renderFieldError("temperature") && (
+              <p className="text-[11px] font-medium text-red-500">{renderFieldError("temperature")}</p>
+            )}
           </div>
         )}
 
         {/* Conditional: Project Cargo Equipment Condition */}
         {showProject && (
-          <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
+          <div className="space-y-1 animate-in fade-in slide-in-from-top-2 duration-300">
             <Label>Kondisi Mesin / Unit <span className="text-red-500">*</span></Label>
             <select
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              className={cn(selectCls, renderFieldError("equipment_condition") && "border-red-500 ring-2 ring-red-500/20")}
               value={equipmentCondition}
               onChange={(e) => setEquipmentCondition(e.target.value)}
               required
@@ -244,6 +283,9 @@ export function CargoDetailSection({
               <option value="CLEAN">CLEAN (Bersih/Baru)</option>
               <option value="RESIDUAL">RESIDUAL (Bekas/Terdapat sisa BBM)</option>
             </select>
+            {renderFieldError("equipment_condition") && (
+              <p className="text-[11px] font-medium text-red-500">{renderFieldError("equipment_condition")}</p>
+            )}
             {equipmentCondition === "RESIDUAL" && (
               <p className="text-[10px] text-amber-600 font-medium">
                 * Unit Residual akan otomatis ditandai sebagai Dangerous Goods (DG).
@@ -267,10 +309,13 @@ export function CargoDetailSection({
           
           {isDG && (
             <div className="grid gap-4 sm:grid-cols-3 mt-4 animate-in fade-in slide-in-from-top-2 duration-300 bg-amber-50/30 p-4 rounded-xl border border-amber-100">
-              <div className="space-y-2">
+              <div className="space-y-1">
                 <Label>DG Class <span className="text-red-500">*</span></Label>
                 <select
-                  className="flex h-10 w-full rounded-md border border-input bg-white px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  className={cn(
+                    "flex h-10 w-full rounded-md border border-input bg-white px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+                    renderFieldError("dg_class_id") && "border-red-500 ring-2 ring-red-500/20"
+                  )}
                   value={dgClassId}
                   onChange={(e) => setDgClassId(e.target.value)}
                   required
@@ -280,33 +325,42 @@ export function CargoDetailSection({
                     <option key={d.id} value={d.id}>{d.name}</option>
                   ))}
                 </select>
+                {renderFieldError("dg_class_id") && (
+                  <p className="text-[11px] font-medium text-red-500">{renderFieldError("dg_class_id")}</p>
+                )}
               </div>
-              <div className="space-y-2">
+              <div className="space-y-1">
                 <Label>UN Number <span className="text-red-500">*</span></Label>
                 <Input
                   value={unNumber}
                   onChange={(e) => setUnNumber(e.target.value)}
                   placeholder="e.g. UN1263"
-                  className="bg-white"
+                  className={cn("bg-white", renderFieldError("un_number") && "border-red-500")}
                   required
                 />
+                {renderFieldError("un_number") && (
+                  <p className="text-[11px] font-medium text-red-500">{renderFieldError("un_number")}</p>
+                )}
               </div>
-              <div className="space-y-2">
+              <div className="space-y-1">
                 <Label>Dokumen MSDS <span className="text-red-500">*</span></Label>
                 <Input
                   type="file"
                   onChange={(e) => setMsdsFile(e.target.files?.[0] || null)}
-                  className="text-xs bg-white h-auto py-1.5"
+                  className={cn("text-xs bg-white h-auto py-1.5", renderFieldError("msds_file") && "border-red-500")}
                   accept=".pdf"
                   required={!msdsFile}
                 />
                 {msdsFile && <p className="text-[10px] text-zinc-500 truncate">{msdsFile.name}</p>}
+                {renderFieldError("msds_file") && (
+                  <p className="text-[11px] font-medium text-red-500">{renderFieldError("msds_file")}</p>
+                )}
               </div>
             </div>
           )}
         </div>
 
-        <div className="sm:col-span-2 space-y-2">
+        <div className="sm:col-span-2 space-y-1">
           <Label className="flex justify-between items-center">
             <span>Deskripsi Barang</span>
             <span className={selectedCC?.code === "MIX" ? "text-[10px] text-red-500 font-bold" : "text-[10px] text-zinc-400"}>
@@ -318,8 +372,12 @@ export function CargoDetailSection({
             onChange={(e) => setCargo(e.target.value)}
             rows={3}
             placeholder={selectedCC?.code === "MIX" ? "Detail isi kargo campuran wajib diisi..." : "Sebutkan jenis barang, kemasan, atau catatan spesifik lainnya..."}
+            className={cn(renderFieldError("cargo_description") && "border-red-500 ring-2 ring-red-500/20")}
             required={selectedCC?.code === "MIX"}
           />
+          {renderFieldError("cargo_description") && (
+            <p className="text-[11px] font-medium text-red-500">{renderFieldError("cargo_description")}</p>
+          )}
         </div>
       </CardContent>
     </Card>
