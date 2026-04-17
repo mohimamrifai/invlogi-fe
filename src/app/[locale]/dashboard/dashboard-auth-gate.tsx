@@ -23,14 +23,15 @@ export function DashboardAuthGate({ children }: { children: React.ReactNode }) {
       router.replace("/login");
       return;
     }
-    if (!user || user.company === undefined || user.company === null) {
-      profileRequest()
-        .then((res) => setUser(res.data))
-        .catch(() => {
-          clearSession();
-          router.replace("/login");
-        });
-    }
+    // Fetch profile only when user data is not available yet.
+    // Avoid re-fetch loop for valid users whose company can be null (e.g. internal users).
+    if (user) return;
+    profileRequest()
+      .then((res) => setUser(res.data))
+      .catch(() => {
+        clearSession();
+        router.replace("/login");
+      });
   }, [hydrated, user, setUser, clearSession, router]);
 
   if (!hydrated || !getStoredToken() || !user) {

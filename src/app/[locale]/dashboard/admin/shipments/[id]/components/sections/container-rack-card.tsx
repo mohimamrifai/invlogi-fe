@@ -4,7 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface ContainerRackCardProps {
-  containers: any[];
+  containers: Array<{
+    id?: number | string;
+    container_type?: { name?: string; size?: string };
+    container_number?: string;
+    seal_number?: string;
+    racks?: Array<{ id: number | string; name?: string }>;
+  }>;
   onAddRack: (containerId: number) => void;
 }
 
@@ -20,8 +26,8 @@ export function ContainerRackCard({ containers, onAddRack }: ContainerRackCardPr
         ) : (
           containers.map((c) => {
             const cid = Number(c.id);
-            const ct = c.container_type as { name?: string; size?: string } | undefined;
-            const racks = c.racks as any[] | undefined;
+            const ct = c.container_type;
+            const racks = c.racks;
             return (
               <div key={cid} className="rounded-lg border p-4 bg-zinc-50/50 space-y-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">

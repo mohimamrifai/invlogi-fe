@@ -88,7 +88,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
   const uiRole = hydrated && user ? getDashboardUiRole(user) : null;
   const menuRole = uiRole === "internal_other" ? "operations" : uiRole;
-  const userPerms = (user?.permissions as string[]) ?? [];
+  const userPerms = useMemo(() => (user?.permissions as string[]) ?? [], [user?.permissions]);
 
   const navItems = useMemo(() => {
     if (!menuRole) return [];

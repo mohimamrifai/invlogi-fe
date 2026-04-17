@@ -23,7 +23,7 @@ import { ApiError } from "@/lib/api-client";
 import { rowNumber } from "@/lib/list-query";
 import { useDebouncedValue } from "@/lib/use-debounced-value";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
-import { Link, useRouter } from "@/i18n/routing";
+import { Link } from "@/i18n/routing";
 import { MasterRowActions } from "../_components/master-row-actions";
 import { MasterTableShell } from "../_components/master-table-shell";
 import { MasterActiveBadge } from "../_components/master-active-badge";
@@ -260,4 +260,3 @@ export default function MasterTrainsPage() {
     </>
   );
 }
-

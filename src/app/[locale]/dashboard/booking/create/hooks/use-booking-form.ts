@@ -43,6 +43,12 @@ export type CC = {
 };
 
 export type DC = { id: number; name: string; code: string };
+type EstimateBreakdown = {
+  base_freight: number;
+  discount_amount: number;
+  additional_services_total: number;
+  total: number;
+};
 
 /** Stable codes for FCL mandatory add-ons (match by code, not name). */
 const FCL_MANDATORY_CODES = ['FREE_STORAGE_FCL', 'LOLO', 'CONTAINER_RENT'];
@@ -103,6 +109,7 @@ export function useBookingForm() {
 
   // UI State
   const [estimate, setEstimate] = useState<string | null>(null);
+  const [estimateBreakdown, setEstimateBreakdown] = useState<EstimateBreakdown | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<Record<string, string[]> | null>(null);
   const [loading, setLoading] = useState(true);
@@ -260,13 +267,14 @@ export function useBookingForm() {
   const onEstimate = async () => {
     setError(null);
     setEstimate(null);
+    setEstimateBreakdown(null);
     try {
       const p = buildPayload();
       const r = await estimateBookingPrice({
         ...p,
         additional_services: selectedAddOns,
       });
-      const inner = (r as { data?: { estimated_price?: number } }).data;
+      const inner = (r as { data?: { estimated_price?: number; breakdown?: EstimateBreakdown } }).data;
       setEstimate(
         inner?.estimated_price != null
           ? new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR" }).format(
@@ -274,6 +282,9 @@ export function useBookingForm() {
           )
           : "Estimasi tidak tersedia"
       );
+      if (inner?.breakdown) {
+        setEstimateBreakdown(inner.breakdown);
+      }
     } catch (e) {
       const msg = e instanceof ApiError ? e.message : "Gagal estimasi";
       setError(msg);
@@ -364,7 +375,7 @@ export function useBookingForm() {
     msdsFile, setMsdsFile,
     equipmentCondition, setEquipmentCondition,
     temperature, setTemperature,
-    estimate, error, validationErrors, renderFieldError, loading, submitting, showSuccess, setShowSuccess,
+    estimate, estimateBreakdown, error, validationErrors, renderFieldError, loading, submitting, showSuccess, setShowSuccess,
     isFCL, isLCL, selectedCT, selectedCC, showTemp, showProject,
     onEstimate, onSubmit
   };

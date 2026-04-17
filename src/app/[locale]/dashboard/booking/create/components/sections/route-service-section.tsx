@@ -4,6 +4,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { Loc, TM, ST } from "../../hooks/use-booking-form";
 import { cn } from "@/lib/utils";
+import {
+  Combobox,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+} from "@/components/ui/combobox";
 
 interface RouteServiceSectionProps {
   locations: Loc[];
@@ -20,7 +28,7 @@ interface RouteServiceSectionProps {
   renderFieldError: (field: string) => string | null;
 }
 
-const selectCls = "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50";
+type ComboOption = { value: string; label: string };
 
 export function RouteServiceSection({
   locations,
@@ -36,6 +44,23 @@ export function RouteServiceSection({
   setServiceTypeId,
   renderFieldError,
 }: RouteServiceSectionProps) {
+  const locationOptions: ComboOption[] = locations.map((l) => ({
+    value: String(l.id),
+    label: `${l.name}${l.code ? ` (${l.code})` : ""}`,
+  }));
+  const modeOptions: ComboOption[] = modes.map((m) => ({
+    value: String(m.id),
+    label: `${m.name}${m.code ? ` (${m.code})` : ""}`,
+  }));
+  const serviceOptions: ComboOption[] = serviceTypes.map((s) => ({
+    value: String(s.id),
+    label: `${s.name}${s.code ? ` (${s.code})` : ""}`,
+  }));
+  const selectedOrigin = locations.find((l) => String(l.id) === originId);
+  const selectedDestination = locations.find((l) => String(l.id) === destId);
+  const selectedMode = modes.find((m) => String(m.id) === modeId);
+  const selectedServiceType = serviceTypes.find((s) => String(s.id) === serviceTypeId);
+
   return (
     <Card className="lg:col-span-2">
       <CardHeader>
@@ -45,74 +70,116 @@ export function RouteServiceSection({
       <CardContent className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-1">
           <Label>Kota Asal (Origin) <span className="text-red-500">*</span></Label>
-          <select
-            className={cn(selectCls, renderFieldError("origin_location_id") && "border-red-500 ring-2 ring-red-500/20")}
-            value={originId}
-            onChange={(e) => setOriginId(e.target.value)}
-            required
+          <Combobox
+            items={locationOptions}
+            value={locationOptions.find((x) => x.value === originId) ?? null}
+            onValueChange={(next) => setOriginId(next?.value ?? "")}
           >
-            <option value="">Pilih lokasi asal</option>
-            {locations.map((l) => (
-              <option key={l.id} value={l.id}>
-                {l.name} {l.code ? `(${l.code})` : ""}
-              </option>
-            ))}
-          </select>
+            <ComboboxInput
+              className={cn("w-full", renderFieldError("origin_location_id") && "[&_input]:border-red-500")}
+              placeholder="Pilih lokasi asal"
+            />
+            <ComboboxContent>
+              <ComboboxEmpty>Data tidak ditemukan.</ComboboxEmpty>
+              <ComboboxList>
+                {(item: ComboOption) => (
+                  <ComboboxItem key={item.value} value={item}>
+                    {item.label}
+                  </ComboboxItem>
+                )}
+              </ComboboxList>
+            </ComboboxContent>
+          </Combobox>
+          {selectedOrigin ? (
+            <p className="text-[11px] text-zinc-500">Dipilih: {selectedOrigin.name}</p>
+          ) : null}
           {renderFieldError("origin_location_id") && (
             <p className="text-[11px] font-medium text-red-500">{renderFieldError("origin_location_id")}</p>
           )}
         </div>
         <div className="space-y-1">
           <Label>Kota Tujuan (Destination) <span className="text-red-500">*</span></Label>
-          <select
-            className={cn(selectCls, renderFieldError("destination_location_id") && "border-red-500 ring-2 ring-red-500/20")}
-            value={destId}
-            onChange={(e) => setDestId(e.target.value)}
-            required
+          <Combobox
+            items={locationOptions}
+            value={locationOptions.find((x) => x.value === destId) ?? null}
+            onValueChange={(next) => setDestId(next?.value ?? "")}
           >
-            <option value="">Pilih lokasi tujuan</option>
-            {locations.map((l) => (
-              <option key={l.id} value={l.id}>
-                {l.name} {l.code ? `(${l.code})` : ""}
-              </option>
-            ))}
-          </select>
+            <ComboboxInput
+              className={cn("w-full", renderFieldError("destination_location_id") && "[&_input]:border-red-500")}
+              placeholder="Pilih lokasi tujuan"
+            />
+            <ComboboxContent>
+              <ComboboxEmpty>Data tidak ditemukan.</ComboboxEmpty>
+              <ComboboxList>
+                {(item: ComboOption) => (
+                  <ComboboxItem key={item.value} value={item}>
+                    {item.label}
+                  </ComboboxItem>
+                )}
+              </ComboboxList>
+            </ComboboxContent>
+          </Combobox>
+          {selectedDestination ? (
+            <p className="text-[11px] text-zinc-500">Dipilih: {selectedDestination.name}</p>
+          ) : null}
           {renderFieldError("destination_location_id") && (
             <p className="text-[11px] font-medium text-red-500">{renderFieldError("destination_location_id")}</p>
           )}
         </div>
         <div className="space-y-1">
           <Label>Moda Transportasi <span className="text-red-500">*</span></Label>
-          <select
-            className={cn(selectCls, renderFieldError("transport_mode_id") && "border-red-500 ring-2 ring-red-500/20")}
-            value={modeId}
-            onChange={(e) => setModeId(e.target.value)}
-            required
+          <Combobox
+            items={modeOptions}
+            value={modeOptions.find((x) => x.value === modeId) ?? null}
+            onValueChange={(next) => setModeId(next?.value ?? "")}
           >
-            {modes.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.name} {m.code ? `(${m.code})` : ""}
-              </option>
-            ))}
-          </select>
+            <ComboboxInput
+              className={cn("w-full", renderFieldError("transport_mode_id") && "[&_input]:border-red-500")}
+              placeholder="Pilih moda transportasi"
+            />
+            <ComboboxContent>
+              <ComboboxEmpty>Data tidak ditemukan.</ComboboxEmpty>
+              <ComboboxList>
+                {(item: ComboOption) => (
+                  <ComboboxItem key={item.value} value={item}>
+                    {item.label}
+                  </ComboboxItem>
+                )}
+              </ComboboxList>
+            </ComboboxContent>
+          </Combobox>
+          {selectedMode ? (
+            <p className="text-[11px] text-zinc-500">Dipilih: {selectedMode.name}</p>
+          ) : null}
           {renderFieldError("transport_mode_id") && (
             <p className="text-[11px] font-medium text-red-500">{renderFieldError("transport_mode_id")}</p>
           )}
         </div>
         <div className="space-y-1">
           <Label>Tipe Layanan <span className="text-red-500">*</span></Label>
-          <select
-            className={cn(selectCls, renderFieldError("service_type_id") && "border-red-500 ring-2 ring-red-500/20")}
-            value={serviceTypeId}
-            onChange={(e) => setServiceTypeId(e.target.value)}
-            required
+          <Combobox
+            items={serviceOptions}
+            value={serviceOptions.find((x) => x.value === serviceTypeId) ?? null}
+            onValueChange={(next) => setServiceTypeId(next?.value ?? "")}
           >
-            {serviceTypes.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name} {s.code ? `(${s.code})` : ""}
-              </option>
-            ))}
-          </select>
+            <ComboboxInput
+              className={cn("w-full", renderFieldError("service_type_id") && "[&_input]:border-red-500")}
+              placeholder="Pilih tipe layanan"
+            />
+            <ComboboxContent>
+              <ComboboxEmpty>Data tidak ditemukan.</ComboboxEmpty>
+              <ComboboxList>
+                {(item: ComboOption) => (
+                  <ComboboxItem key={item.value} value={item}>
+                    {item.label}
+                  </ComboboxItem>
+                )}
+              </ComboboxList>
+            </ComboboxContent>
+          </Combobox>
+          {selectedServiceType ? (
+            <p className="text-[11px] text-zinc-500">Dipilih: {selectedServiceType.name}</p>
+          ) : null}
           {renderFieldError("service_type_id") && (
             <p className="text-[11px] font-medium text-red-500">{renderFieldError("service_type_id")}</p>
           )}

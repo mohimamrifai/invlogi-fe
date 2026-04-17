@@ -24,8 +24,21 @@ import { useRouter } from "@/i18n/routing";
 import { rowNumber } from "@/lib/list-query";
 
 interface ShipmentTableProps {
-  rows: any[];
-  meta: any;
+  rows: Array<{
+    id?: number | string;
+    status?: string;
+    waybill_number?: string;
+    shipment_number?: string;
+    company?: { name?: string };
+    Company?: { name?: string };
+    origin_location?: { name?: string };
+    originLocation?: { name?: string };
+    destination_location?: { name?: string };
+    destinationLocation?: { name?: string };
+    service_type?: { name?: string };
+    serviceType?: { name?: string };
+  }>;
+  meta: { current_page?: number } | null;
   perPage: number;
   loading: boolean;
 }

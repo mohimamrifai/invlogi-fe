@@ -19,10 +19,16 @@ import {
 } from "@/components/ui/select";
 import { DIALOG_CREATE_HEADER_CLASS } from "@/lib/dialog-create-header";
 
+type ContainerTypeRow = {
+  id?: number | string;
+  name?: string;
+  size?: string;
+};
+
 interface ContainerAddDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  containerTypes: any[];
+  containerTypes: ContainerTypeRow[];
   contTypeId: string;
   setContTypeId: (v: string) => void;
   contNum: string;

@@ -18,6 +18,24 @@ import { ContainerAddDialog } from "./components/dialogs/container-add-dialog";
 import { RackAddDialog } from "./components/dialogs/rack-add-dialog";
 import { ItemAdminDialog } from "./components/dialogs/item-admin-dialog";
 
+type ShipmentDetailData = {
+  company?: { name?: string };
+  origin_location?: { name?: string };
+  destination_location?: { name?: string };
+  estimated_departure?: string;
+  estimated_arrival?: string;
+  notes?: string;
+};
+
+type TrackingRow = {
+  id: number | string;
+  status: string;
+  tracked_at?: string;
+  notes?: string;
+  location?: string;
+  photos?: Array<{ id?: number | string; path?: string; url?: string }>;
+};
+
 export default function AdminShipmentDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -47,6 +65,7 @@ export default function AdminShipmentDetailPage() {
 
   const wb = String(s.data.waybill_number ?? s.data.shipment_number ?? "Shipment");
   const st = String(s.data.status ?? "");
+  const detail = s.data as ShipmentDetailData;
 
   return (
     <div className="flex min-w-0 flex-col gap-6 pb-20">
@@ -79,15 +98,15 @@ export default function AdminShipmentDetailPage() {
 
       <div className="grid gap-6 lg:grid-cols-2">
         <ShipmentSummaryCard
-          companyName={String((s.data.company as any)?.name ?? "—")}
-          origin={String((s.data.origin_location as any)?.name ?? "—")}
-          destination={String((s.data.destination_location as any)?.name ?? "—")}
+          companyName={String(detail.company?.name ?? "—")}
+          origin={String(detail.origin_location?.name ?? "—")}
+          destination={String(detail.destination_location?.name ?? "—")}
           departure={s.data.estimated_departure ? String(s.data.estimated_departure).slice(0, 10) : "—"}
           arrival={s.data.estimated_arrival ? String(s.data.estimated_arrival).slice(0, 10) : "—"}
-          notes={s.data.notes ? String(s.data.notes) : undefined}
+          notes={detail.notes ? String(detail.notes) : undefined}
         />
 
-        <TrackingTimelineCard trackings={s.trackings as any[]} />
+        <TrackingTimelineCard trackings={s.trackings as TrackingRow[]} />
 
         <ContainerRackCard containers={s.containers} onAddRack={s.openRack} />
 

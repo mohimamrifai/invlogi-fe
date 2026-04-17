@@ -35,24 +35,35 @@ import { useAuthPersistHydrated } from "@/lib/use-auth-hydrated";
 
 import { DangerousGoodsSection } from "@/components/dashboard/admin/bookings/create/dangerous-goods-section";
 import { ShipperConsigneeSection } from "@/components/dashboard/admin/bookings/create/shipper-consignee-section";
-
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import {
+  Combobox,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+} from "@/components/ui/combobox";
 
 type Company = { id: number; name: string };
 type Loc = { id: number; name: string; code?: string };
 type TM = { id: number; name: string; code?: string };
 type ST = { id: number; name: string; code?: string; transport_mode_id: number };
 type CT = { id: number; name: string; size: string };
-type AS = { id: number; name: string; category: string };
+type AS = { id: number; name: string; category: string; code?: string | null };
 type DC = { id: number; name: string; code: string };
 type CC = { id: number; name: string; code: string };
+type EstimateBreakdown = {
+  base_freight: number;
+  discount_amount: number;
+  additional_services_total: number;
+  total: number;
+};
+type ComboOption = { value: string; label: string };
+
+const FCL_MANDATORY_CODES = ["FREE_STORAGE_FCL", "LOLO", "CONTAINER_RENT"];
+const LCL_MANDATORY_CODES = ["FREE_STORAGE_LCL"];
+const ALL_MANDATORY_CODES = [...FCL_MANDATORY_CODES, ...LCL_MANDATORY_CODES];
 
 const PER_PAGE = 1000;
 
@@ -99,6 +110,7 @@ export default function AdminCreateBookingPage() {
 
   const [selectedAddOns, setSelectedAddOns] = useState<number[]>([]);
   const [estimate, setEstimate] = useState<string | null>(null);
+  const [estimateBreakdown, setEstimateBreakdown] = useState<EstimateBreakdown | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<Record<string, string[]> | null>(null);
   const [loading, setLoading] = useState(true);
@@ -171,6 +183,52 @@ export default function AdminCreateBookingPage() {
     };
   }, [authHydrated, modeId]);
 
+  const selectedST = serviceTypes.find((s) => String(s.id) === serviceTypeId);
+  const isFCL = selectedST?.code === "FCL";
+  const isLCL = selectedST?.code === "LCL";
+  const selectedCompany = companies.find((c) => String(c.id) === companyId);
+  const selectedOrigin = locations.find((l) => String(l.id) === originId);
+  const selectedDestination = locations.find((l) => String(l.id) === destId);
+  const selectedMode = modes.find((m) => String(m.id) === modeId);
+  const selectedContainerType = containerTypes.find((c) => String(c.id) === containerTypeId);
+  const selectedCargoCategory = cargoCats.find((c) => String(c.id) === cargoCategoryId);
+  const companyOptions: ComboOption[] = companies.map((c) => ({ value: String(c.id), label: c.name }));
+  const locationOptions: ComboOption[] = locations.map((l) => ({
+    value: String(l.id),
+    label: `${l.name}${l.code ? ` (${l.code})` : ""}`,
+  }));
+  const modeOptions: ComboOption[] = modes.map((m) => ({
+    value: String(m.id),
+    label: `${m.name}${m.code ? ` (${m.code})` : ""}`,
+  }));
+  const serviceOptions: ComboOption[] = serviceTypes.map((s) => ({
+    value: String(s.id),
+    label: `${s.name}${s.code ? ` (${s.code})` : ""}`,
+  }));
+  const containerOptions: ComboOption[] = [
+    { value: "__none__", label: "—" },
+    ...containerTypes.map((c) => ({ value: String(c.id), label: `${c.name} (${c.size})` })),
+  ];
+  const cargoCategoryOptions: ComboOption[] = cargoCats.map((c) => ({ value: String(c.id), label: c.name }));
+
+  useEffect(() => {
+    if (addServices.length > 0 && serviceTypeId) {
+      const codes = isFCL ? FCL_MANDATORY_CODES : isLCL ? LCL_MANDATORY_CODES : [];
+      const mandatoryIds = addServices
+        .filter((s) => s.code != null && codes.includes(s.code))
+        .map((s) => s.id);
+      setSelectedAddOns((prev) => {
+        const others = prev.filter(
+          (id) =>
+            !ALL_MANDATORY_CODES.includes(
+              addServices.find((s) => s.id === id)?.code ?? ""
+            )
+        );
+        return Array.from(new Set([...others, ...mandatoryIds]));
+      });
+    }
+  }, [serviceTypeId, addServices, isFCL, isLCL]);
+
   const buildPayload = () => {
     const fd = new FormData();
     fd.append("company_id", companyId);
@@ -206,6 +264,7 @@ export default function AdminCreateBookingPage() {
   const onEstimate = async () => {
     setError(null);
     setEstimate(null);
+    setEstimateBreakdown(null);
     try {
       const r = await estimateAdminBookingPrice({
         company_id: Number(companyId),
@@ -219,7 +278,7 @@ export default function AdminCreateBookingPage() {
         estimated_cbm: cbm ? Number(cbm) : null,
         additional_services: selectedAddOns,
       });
-      const inner = (r as { data?: { estimated_price?: number } }).data;
+      const inner = (r as { data?: { estimated_price?: number; breakdown?: EstimateBreakdown } }).data;
       setEstimate(
         inner?.estimated_price != null
           ? new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR" }).format(
@@ -227,6 +286,9 @@ export default function AdminCreateBookingPage() {
             )
           : "Estimasi tidak tersedia"
       );
+      if (inner?.breakdown) {
+        setEstimateBreakdown(inner.breakdown);
+      }
     } catch (e) {
       const msg = e instanceof ApiError ? e.message : "Gagal estimasi";
       setError(msg);
@@ -315,124 +377,153 @@ export default function AdminCreateBookingPage() {
           <CardContent className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2 sm:col-span-2">
               <Label>Customer</Label>
-              <Select value={companyId} onValueChange={(v) => v && setCompanyId(v)}>
-                <SelectTrigger
-                  className={cn(
-                    "h-9 w-full rounded-lg",
-                    validationErrors?.company_id ? "border-red-500 ring-red-500" : ""
-                  )}
-                >
-                  <SelectValue placeholder="Pilih customer…" />
-                </SelectTrigger>
-                <SelectContent>
-                  {companies.map((c) => (
-                    <SelectItem key={c.id} value={String(c.id)}>
-                      {c.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Combobox
+                items={companyOptions}
+                value={companyOptions.find((x) => x.value === companyId) ?? null}
+                onValueChange={(next) => setCompanyId(next?.value ?? "")}
+              >
+                <ComboboxInput
+                  className={cn("w-full", validationErrors?.company_id && "[&_input]:border-red-500")}
+                  placeholder="Pilih customer..."
+                />
+                <ComboboxContent>
+                  <ComboboxEmpty>Data tidak ditemukan.</ComboboxEmpty>
+                  <ComboboxList>
+                    {(item: ComboOption) => (
+                      <ComboboxItem key={item.value} value={item}>
+                        {item.label}
+                      </ComboboxItem>
+                    )}
+                  </ComboboxList>
+                </ComboboxContent>
+              </Combobox>
+              {selectedCompany ? <p className="text-[11px] text-zinc-500">Dipilih: {selectedCompany.name}</p> : null}
               {renderError("company_id")}
             </div>
             <div className="space-y-2">
               <Label>Origin</Label>
-              <Select value={originId} onValueChange={(v) => v && setOriginId(v)}>
-                <SelectTrigger
-                  className={cn(
-                    "h-9 w-full rounded-lg",
-                    validationErrors?.origin_location_id ? "border-red-500 ring-red-500" : ""
-                  )}
-                >
-                  <SelectValue placeholder="Pilih origin…" />
-                </SelectTrigger>
-                <SelectContent>
-                  {locations.map((l) => (
-                    <SelectItem key={l.id} value={String(l.id)}>
-                      {l.name} ({l.code})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Combobox
+                items={locationOptions}
+                value={locationOptions.find((x) => x.value === originId) ?? null}
+                onValueChange={(next) => setOriginId(next?.value ?? "")}
+              >
+                <ComboboxInput
+                  className={cn("w-full", validationErrors?.origin_location_id && "[&_input]:border-red-500")}
+                  placeholder="Pilih origin..."
+                />
+                <ComboboxContent>
+                  <ComboboxEmpty>Data tidak ditemukan.</ComboboxEmpty>
+                  <ComboboxList>
+                    {(item: ComboOption) => (
+                      <ComboboxItem key={item.value} value={item}>
+                        {item.label}
+                      </ComboboxItem>
+                    )}
+                  </ComboboxList>
+                </ComboboxContent>
+              </Combobox>
+              {selectedOrigin ? <p className="text-[11px] text-zinc-500">Dipilih: {selectedOrigin.name}</p> : null}
               {renderError("origin_location_id")}
             </div>
             <div className="space-y-2">
               <Label>Destination</Label>
-              <Select value={destId} onValueChange={(v) => v && setDestId(v)}>
-                <SelectTrigger
-                  className={cn(
-                    "h-9 w-full rounded-lg",
-                    validationErrors?.destination_location_id ? "border-red-500 ring-red-500" : ""
-                  )}
-                >
-                  <SelectValue placeholder="Pilih destination…" />
-                </SelectTrigger>
-                <SelectContent>
-                  {locations.map((l) => (
-                    <SelectItem key={l.id} value={String(l.id)}>
-                      {l.name} ({l.code})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Combobox
+                items={locationOptions}
+                value={locationOptions.find((x) => x.value === destId) ?? null}
+                onValueChange={(next) => setDestId(next?.value ?? "")}
+              >
+                <ComboboxInput
+                  className={cn("w-full", validationErrors?.destination_location_id && "[&_input]:border-red-500")}
+                  placeholder="Pilih destination..."
+                />
+                <ComboboxContent>
+                  <ComboboxEmpty>Data tidak ditemukan.</ComboboxEmpty>
+                  <ComboboxList>
+                    {(item: ComboOption) => (
+                      <ComboboxItem key={item.value} value={item}>
+                        {item.label}
+                      </ComboboxItem>
+                    )}
+                  </ComboboxList>
+                </ComboboxContent>
+              </Combobox>
+              {selectedDestination ? <p className="text-[11px] text-zinc-500">Dipilih: {selectedDestination.name}</p> : null}
               {renderError("destination_location_id")}
             </div>
             <div className="space-y-2">
               <Label>Transport mode</Label>
-              <Select value={modeId} onValueChange={(v) => v && setModeId(v)}>
-                <SelectTrigger
-                  className={cn(
-                    "h-9 w-full rounded-lg",
-                    validationErrors?.transport_mode_id ? "border-red-500 ring-red-500" : ""
-                  )}
-                >
-                  <SelectValue placeholder="Pilih moda…" />
-                </SelectTrigger>
-                <SelectContent>
-                  {modes.map((m) => (
-                    <SelectItem key={m.id} value={String(m.id)}>
-                      {m.name} ({m.code})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Combobox
+                items={modeOptions}
+                value={modeOptions.find((x) => x.value === modeId) ?? null}
+                onValueChange={(next) => setModeId(next?.value ?? "")}
+              >
+                <ComboboxInput
+                  className={cn("w-full", validationErrors?.transport_mode_id && "[&_input]:border-red-500")}
+                  placeholder="Pilih moda..."
+                />
+                <ComboboxContent>
+                  <ComboboxEmpty>Data tidak ditemukan.</ComboboxEmpty>
+                  <ComboboxList>
+                    {(item: ComboOption) => (
+                      <ComboboxItem key={item.value} value={item}>
+                        {item.label}
+                      </ComboboxItem>
+                    )}
+                  </ComboboxList>
+                </ComboboxContent>
+              </Combobox>
+              {selectedMode ? <p className="text-[11px] text-zinc-500">Dipilih: {selectedMode.name}</p> : null}
               {renderError("transport_mode_id")}
             </div>
             <div className="space-y-2">
               <Label>Service type</Label>
-              <Select value={serviceTypeId} onValueChange={(v) => v && setServiceTypeId(v)}>
-                <SelectTrigger
-                  className={cn(
-                    "h-9 w-full rounded-lg",
-                    validationErrors?.service_type_id ? "border-red-500 ring-red-500" : ""
-                  )}
-                >
-                  <SelectValue placeholder="Pilih layanan…" />
-                </SelectTrigger>
-                <SelectContent>
-                  {serviceTypes.map((s) => (
-                    <SelectItem key={s.id} value={String(s.id)}>
-                      {s.name} ({s.code})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Combobox
+                items={serviceOptions}
+                value={serviceOptions.find((x) => x.value === serviceTypeId) ?? null}
+                onValueChange={(next) => setServiceTypeId(next?.value ?? "")}
+              >
+                <ComboboxInput
+                  className={cn("w-full", validationErrors?.service_type_id && "[&_input]:border-red-500")}
+                  placeholder="Pilih layanan..."
+                />
+                <ComboboxContent>
+                  <ComboboxEmpty>Data tidak ditemukan.</ComboboxEmpty>
+                  <ComboboxList>
+                    {(item: ComboOption) => (
+                      <ComboboxItem key={item.value} value={item}>
+                        {item.label}
+                      </ComboboxItem>
+                    )}
+                  </ComboboxList>
+                </ComboboxContent>
+              </Combobox>
+              {selectedST ? <p className="text-[11px] text-zinc-500">Dipilih: {selectedST.name}</p> : null}
               {renderError("service_type_id")}
             </div>
             <div className="space-y-2">
               <Label>Container type (opsional)</Label>
-              <Select value={containerTypeId} onValueChange={(v) => setContainerTypeId(v || "")}>
-                <SelectTrigger className="h-9 w-full rounded-lg">
-                  <SelectValue placeholder="Pilih tipe kontainer…" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__none__">—</SelectItem>
-                  {containerTypes.map((c) => (
-                    <SelectItem key={c.id} value={String(c.id)}>
-                      {c.name} ({c.size})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Combobox
+                items={containerOptions}
+                value={containerOptions.find((x) =>
+                  x.value === (containerTypeId || "__none__")
+                ) ?? null}
+                onValueChange={(next) =>
+                  setContainerTypeId(next?.value && next.value !== "__none__" ? next.value : "")
+                }
+              >
+                <ComboboxInput className="w-full" placeholder="Pilih tipe kontainer..." />
+                <ComboboxContent>
+                  <ComboboxEmpty>Data tidak ditemukan.</ComboboxEmpty>
+                  <ComboboxList>
+                    {(item: ComboOption) => (
+                      <ComboboxItem key={item.value} value={item}>
+                        {item.label}
+                      </ComboboxItem>
+                    )}
+                  </ComboboxList>
+                </ComboboxContent>
+              </Combobox>
+              {selectedContainerType ? <p className="text-[11px] text-zinc-500">Dipilih: {selectedContainerType.name}</p> : null}
               {renderError("container_type_id")}
             </div>
             <div className="space-y-2">
@@ -479,23 +570,27 @@ export default function AdminCreateBookingPage() {
             </div>
             <div className="space-y-2">
               <Label>Kategori kargo</Label>
-              <Select value={cargoCategoryId} onValueChange={(v) => v && setCargoCategoryId(v)}>
-                <SelectTrigger
-                  className={cn(
-                    "h-9 w-full rounded-lg",
-                    validationErrors?.cargo_category_id ? "border-red-500 ring-red-500" : ""
-                  )}
-                >
-                  <SelectValue placeholder="Pilih kategori…" />
-                </SelectTrigger>
-                <SelectContent>
-                  {cargoCats.map((c) => (
-                    <SelectItem key={c.id} value={String(c.id)}>
-                      {c.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Combobox
+                items={cargoCategoryOptions}
+                value={cargoCategoryOptions.find((x) => x.value === cargoCategoryId) ?? null}
+                onValueChange={(next) => setCargoCategoryId(next?.value ?? "")}
+              >
+                <ComboboxInput
+                  className={cn("w-full", validationErrors?.cargo_category_id && "[&_input]:border-red-500")}
+                  placeholder="Pilih kategori..."
+                />
+                <ComboboxContent>
+                  <ComboboxEmpty>Data tidak ditemukan.</ComboboxEmpty>
+                  <ComboboxList>
+                    {(item: ComboOption) => (
+                      <ComboboxItem key={item.value} value={item}>
+                        {item.label}
+                      </ComboboxItem>
+                    )}
+                  </ComboboxList>
+                </ComboboxContent>
+              </Combobox>
+              {selectedCargoCategory ? <p className="text-[11px] text-zinc-500">Dipilih: {selectedCargoCategory.name}</p> : null}
               {renderError("cargo_category_id")}
             </div>
             <div className="space-y-2">
@@ -556,7 +651,15 @@ export default function AdminCreateBookingPage() {
                   <label key={a.id} className="flex items-center gap-2 text-sm">
                     <Checkbox
                       checked={selectedAddOns.includes(a.id)}
+                      disabled={
+                        (isFCL && FCL_MANDATORY_CODES.includes(a.code ?? "")) ||
+                        (isLCL && LCL_MANDATORY_CODES.includes(a.code ?? ""))
+                      }
                       onCheckedChange={(v) => {
+                        const isMandatory =
+                          (isFCL && FCL_MANDATORY_CODES.includes(a.code ?? "")) ||
+                          (isLCL && LCL_MANDATORY_CODES.includes(a.code ?? ""));
+                        if (isMandatory) return;
                         const on = v === true;
                         setSelectedAddOns((prev) =>
                           on ? (prev.includes(a.id) ? prev : [...prev, a.id]) : prev.filter((x) => x !== a.id)
@@ -572,7 +675,35 @@ export default function AdminCreateBookingPage() {
         </Card>
 
         {estimate ? (
-          <p className="mt-4 text-sm font-medium text-emerald-700">Estimasi: {estimate}</p>
+          <div className="mt-4 rounded-xl border border-zinc-200 bg-zinc-50 p-4">
+            <p className="text-xs font-bold uppercase tracking-widest text-zinc-500">Informasi Biaya</p>
+            <p className="mt-1 text-lg font-black text-emerald-700">{estimate}</p>
+            <p className="text-[10px] text-zinc-500">
+              * Harga di atas bersifat estimasi dan akan dikonfirmasi kembali oleh operasional.
+            </p>
+            {estimateBreakdown ? (
+              <div className="mt-4 space-y-2 border-t border-zinc-200 pt-3 text-sm">
+                <div className="flex justify-between text-zinc-600">
+                  <span>Base Freight</span>
+                  <span>{new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR" }).format(estimateBreakdown.base_freight)}</span>
+                </div>
+                {estimateBreakdown.discount_amount > 0 ? (
+                  <div className="flex justify-between text-emerald-700">
+                    <span>Diskon</span>
+                    <span>-{new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR" }).format(estimateBreakdown.discount_amount)}</span>
+                  </div>
+                ) : null}
+                <div className="flex justify-between text-zinc-600">
+                  <span>Layanan Tambahan</span>
+                  <span>{new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR" }).format(estimateBreakdown.additional_services_total)}</span>
+                </div>
+                <div className="flex justify-between border-t border-zinc-200 pt-2 font-semibold text-zinc-900">
+                  <span>Total</span>
+                  <span>{new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR" }).format(estimateBreakdown.total)}</span>
+                </div>
+              </div>
+            ) : null}
+          </div>
         ) : null}
 
         <div className="mt-6 flex flex-wrap gap-3">
@@ -587,4 +718,3 @@ export default function AdminCreateBookingPage() {
     </div>
   );
 }
-

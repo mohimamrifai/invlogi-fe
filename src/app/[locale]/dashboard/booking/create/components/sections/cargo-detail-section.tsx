@@ -7,8 +7,17 @@ import { Textarea } from "@/components/ui/textarea";
 import { CT, CC, DC } from "../../hooks/use-booking-form";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
+import {
+  Combobox,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+} from "@/components/ui/combobox";
 
 const selectCls = "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50";
+type ComboOption = { value: string; label: string };
 
 interface CargoDetailSectionProps {
   isLCL: boolean;
@@ -99,6 +108,22 @@ export function CargoDetailSection({
   showProject,
   renderFieldError,
 }: CargoDetailSectionProps) {
+  const containerOptions: ComboOption[] = containerTypes.map((c) => ({
+    value: String(c.id),
+    label: `${c.name} (${c.size})`,
+  }));
+  const cargoCategoryOptions: ComboOption[] = cargoCategories.map((c) => ({
+    value: String(c.id),
+    label: c.name,
+  }));
+  const dgClassOptions: ComboOption[] = dgClasses.map((d) => ({
+    value: String(d.id),
+    label: d.name,
+  }));
+
+  const selectedCargoCategory = cargoCategories.find((c) => String(c.id) === cargoCategoryId);
+  const selectedDgClass = dgClasses.find((d) => String(d.id) === dgClassId);
+
   return (
     <Card className="lg:col-span-2">
       <CardHeader>
@@ -110,19 +135,29 @@ export function CargoDetailSection({
           <div className="sm:col-span-2 grid gap-4 sm:grid-cols-2">
             <div className="space-y-1">
               <Label>Tipe Kontainer {isFCL && <span className="text-red-500">*</span>}</Label>
-              <select
-                className={cn(selectCls, renderFieldError("container_type_id") && "border-red-500 ring-2 ring-red-500/20")}
-                value={containerTypeId}
-                onChange={(e) => setContainerTypeId(e.target.value)}
-                required={isFCL}
+              <Combobox
+                items={containerOptions}
+                value={containerOptions.find((x) => x.value === containerTypeId) ?? null}
+                onValueChange={(next) => setContainerTypeId(next?.value ?? "")}
               >
-                <option value="">Pilih tipe kontainer</option>
-                {containerTypes.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name} ({c.size})
-                  </option>
-                ))}
-              </select>
+                <ComboboxInput
+                  className={cn("w-full", renderFieldError("container_type_id") && "[&_input]:border-red-500")}
+                  placeholder="Pilih tipe kontainer"
+                />
+                <ComboboxContent>
+                  <ComboboxEmpty>Data tidak ditemukan.</ComboboxEmpty>
+                  <ComboboxList>
+                    {(item: ComboOption) => (
+                      <ComboboxItem key={item.value} value={item}>
+                        {item.label}
+                      </ComboboxItem>
+                    )}
+                  </ComboboxList>
+                </ComboboxContent>
+              </Combobox>
+              {selectedCT ? (
+                <p className="text-[11px] text-zinc-500">Dipilih: {selectedCT.name}</p>
+              ) : null}
               {renderFieldError("container_type_id") && (
                 <p className="text-[11px] font-medium text-red-500">{renderFieldError("container_type_id")}</p>
               )}
@@ -233,19 +268,29 @@ export function CargoDetailSection({
         </div>
         <div className="space-y-1">
           <Label>Kategori Kargo <span className="text-red-500">*</span></Label>
-          <select
-            className={cn(selectCls, renderFieldError("cargo_category_id") && "border-red-500 ring-2 ring-red-500/20")}
-            value={cargoCategoryId}
-            onChange={(e) => setCargoCategoryId(e.target.value)}
-            required
+          <Combobox
+            items={cargoCategoryOptions}
+            value={cargoCategoryOptions.find((x) => x.value === cargoCategoryId) ?? null}
+            onValueChange={(next) => setCargoCategoryId(next?.value ?? "")}
           >
-            <option value="">— pilih kategori kargo —</option>
-            {cargoCategories.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
+            <ComboboxInput
+              className={cn("w-full", renderFieldError("cargo_category_id") && "[&_input]:border-red-500")}
+              placeholder="Pilih kategori kargo"
+            />
+            <ComboboxContent>
+              <ComboboxEmpty>Data tidak ditemukan.</ComboboxEmpty>
+              <ComboboxList>
+                {(item: ComboOption) => (
+                  <ComboboxItem key={item.value} value={item}>
+                    {item.label}
+                  </ComboboxItem>
+                )}
+              </ComboboxList>
+            </ComboboxContent>
+          </Combobox>
+          {selectedCargoCategory ? (
+            <p className="text-[11px] text-zinc-500">Dipilih: {selectedCargoCategory.name}</p>
+          ) : null}
           {renderFieldError("cargo_category_id") && (
             <p className="text-[11px] font-medium text-red-500">{renderFieldError("cargo_category_id")}</p>
           )}
@@ -311,20 +356,29 @@ export function CargoDetailSection({
             <div className="grid gap-4 sm:grid-cols-3 mt-4 animate-in fade-in slide-in-from-top-2 duration-300 bg-amber-50/30 p-4 rounded-xl border border-amber-100">
               <div className="space-y-1">
                 <Label>DG Class <span className="text-red-500">*</span></Label>
-                <select
-                  className={cn(
-                    "flex h-10 w-full rounded-md border border-input bg-white px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
-                    renderFieldError("dg_class_id") && "border-red-500 ring-2 ring-red-500/20"
-                  )}
-                  value={dgClassId}
-                  onChange={(e) => setDgClassId(e.target.value)}
-                  required
+                <Combobox
+                  items={dgClassOptions}
+                  value={dgClassOptions.find((x) => x.value === dgClassId) ?? null}
+                  onValueChange={(next) => setDgClassId(next?.value ?? "")}
                 >
-                  <option value="">— pilih class —</option>
-                  {dgClasses.map((d) => (
-                    <option key={d.id} value={d.id}>{d.name}</option>
-                  ))}
-                </select>
+                  <ComboboxInput
+                    className={cn("w-full", renderFieldError("dg_class_id") && "[&_input]:border-red-500")}
+                    placeholder="Pilih DG class"
+                  />
+                  <ComboboxContent>
+                    <ComboboxEmpty>Data tidak ditemukan.</ComboboxEmpty>
+                    <ComboboxList>
+                      {(item: ComboOption) => (
+                        <ComboboxItem key={item.value} value={item}>
+                          {item.label}
+                        </ComboboxItem>
+                      )}
+                    </ComboboxList>
+                  </ComboboxContent>
+                </Combobox>
+                {selectedDgClass ? (
+                  <p className="text-[11px] text-zinc-500">Dipilih: {selectedDgClass.name}</p>
+                ) : null}
                 {renderFieldError("dg_class_id") && (
                   <p className="text-[11px] font-medium text-red-500">{renderFieldError("dg_class_id")}</p>
                 )}

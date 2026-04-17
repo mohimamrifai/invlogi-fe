@@ -19,15 +19,35 @@ import {
 import { ApiError } from "@/lib/api-client";
 import type { LaravelPaginated } from "@/lib/types-api";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Combobox,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+} from "@/components/ui/combobox";
 
 type Loc = { id: number; name: string; code?: string };
 type TM = { id: number; name: string; code?: string };
 type ST = { id: number; name: string; code?: string; transport_mode_id: number };
-type CT = { id: number; name: string; size: string };
-type AS = { id: number; name: string; category: string };
+type CT = {
+  id: number;
+  name: string;
+  size: string;
+  length?: number;
+  width?: number;
+  height?: number;
+  capacity_weight?: number;
+  capacity_cbm?: number;
+};
+type AS = { id: number; name: string; category: string; code?: string | null };
 
-const selectClass =
-  "flex h-11 w-full appearance-none rounded-xl border border-zinc-200 bg-white px-4 text-sm text-zinc-900 shadow-sm transition-colors focus:border-[#0b1b69] focus:ring-2 focus:ring-[#0b1b69]/20 focus:outline-none";
+const FCL_MANDATORY_CODES = ["FREE_STORAGE_FCL", "LOLO", "CONTAINER_RENT"];
+const LCL_MANDATORY_CODES = ["FREE_STORAGE_LCL"];
+const ALL_MANDATORY_CODES = [...FCL_MANDATORY_CODES, ...LCL_MANDATORY_CODES];
+
+type ComboOption = { value: string; label: string };
 
 export default function PublicEstimatePage() {
   const t = useTranslations("Estimate");
@@ -103,6 +123,56 @@ export default function PublicEstimatePage() {
     })();
     return () => { c = true; };
   }, [modeId]);
+
+  const selectedST = serviceTypes.find((s) => String(s.id) === serviceTypeId);
+  const isFCL = selectedST?.code === "FCL";
+  const isLCL = selectedST?.code === "LCL";
+  const selectedCT = containerTypes.find((c) => String(c.id) === containerTypeId);
+  const selectedOrigin = locations.find((l) => String(l.id) === originId);
+  const selectedDest = locations.find((l) => String(l.id) === destId);
+  const selectedMode = modes.find((m) => String(m.id) === modeId);
+  const locationOptions: ComboOption[] = locations.map((l) => ({
+    value: String(l.id),
+    label: `${l.name}${l.code ? ` (${l.code})` : ""}`,
+  }));
+  const modeOptions: ComboOption[] = modes.map((m) => ({
+    value: String(m.id),
+    label: `${m.name}${m.code ? ` (${m.code})` : ""}`,
+  }));
+  const serviceOptions: ComboOption[] = serviceTypes.map((s) => ({
+    value: String(s.id),
+    label: `${s.name}${s.code ? ` (${s.code})` : ""}`,
+  }));
+  const containerOptions: ComboOption[] = containerTypes.map((c) => ({
+    value: String(c.id),
+    label: `${c.name} (${c.size})`,
+  }));
+
+  useEffect(() => {
+    if (addServices.length > 0 && serviceTypeId) {
+      const codes = isFCL ? FCL_MANDATORY_CODES : isLCL ? LCL_MANDATORY_CODES : [];
+      const mandatoryIds = addServices
+        .filter((s) => s.code != null && codes.includes(s.code))
+        .map((s) => s.id);
+      setSelectedAddOns((prev) => {
+        const others = prev.filter(
+          (id) =>
+            !ALL_MANDATORY_CODES.includes(
+              addServices.find((s) => s.id === id)?.code ?? ""
+            )
+        );
+        return Array.from(new Set([...others, ...mandatoryIds]));
+      });
+    }
+  }, [serviceTypeId, addServices, isFCL, isLCL]);
+
+  useEffect(() => {
+    if (!isLCL && selectedCT) {
+      const qty = Number(containerCount) || 1;
+      setWeight(String((selectedCT.capacity_weight || 0) * qty));
+      setCbm(String((selectedCT.capacity_cbm || 0) * qty));
+    }
+  }, [containerTypeId, containerCount, selectedCT, isLCL]);
 
   const fmtIdr = (n: number) =>
     new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR" }).format(n);
@@ -195,54 +265,126 @@ export default function PublicEstimatePage() {
               <Label className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
                 {t("origin")}
               </Label>
-              <select className={selectClass} value={originId} onChange={(e) => setOriginId(e.target.value)} required>
-                <option value="">—</option>
-                {locations.map((l) => (
-                  <option key={l.id} value={l.id}>{l.name} ({l.code})</option>
-                ))}
-              </select>
+              <Combobox
+                items={locationOptions}
+                value={locationOptions.find((x) => x.value === originId) ?? null}
+                onValueChange={(next) => setOriginId(next?.value ?? "")}
+              >
+                <ComboboxInput className="w-full" placeholder="Pilih origin" />
+                <ComboboxContent>
+                  <ComboboxEmpty>Data tidak ditemukan.</ComboboxEmpty>
+                  <ComboboxList>
+                    {(item: ComboOption) => (
+                      <ComboboxItem key={item.value} value={item}>
+                        {item.label}
+                      </ComboboxItem>
+                    )}
+                  </ComboboxList>
+                </ComboboxContent>
+              </Combobox>
+              {selectedOrigin ? (
+                <p className="text-[11px] text-zinc-500">Dipilih: {selectedOrigin.name}</p>
+              ) : null}
             </div>
             <div className="space-y-2">
               <Label className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
                 {t("destination")}
               </Label>
-              <select className={selectClass} value={destId} onChange={(e) => setDestId(e.target.value)} required>
-                <option value="">—</option>
-                {locations.map((l) => (
-                  <option key={l.id} value={l.id}>{l.name} ({l.code})</option>
-                ))}
-              </select>
+              <Combobox
+                items={locationOptions}
+                value={locationOptions.find((x) => x.value === destId) ?? null}
+                onValueChange={(next) => setDestId(next?.value ?? "")}
+              >
+                <ComboboxInput className="w-full" placeholder="Pilih destination" />
+                <ComboboxContent>
+                  <ComboboxEmpty>Data tidak ditemukan.</ComboboxEmpty>
+                  <ComboboxList>
+                    {(item: ComboOption) => (
+                      <ComboboxItem key={item.value} value={item}>
+                        {item.label}
+                      </ComboboxItem>
+                    )}
+                  </ComboboxList>
+                </ComboboxContent>
+              </Combobox>
+              {selectedDest ? (
+                <p className="text-[11px] text-zinc-500">Dipilih: {selectedDest.name}</p>
+              ) : null}
             </div>
             <div className="space-y-2">
               <Label className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
                 {t("transportMode")}
               </Label>
-              <select className={selectClass} value={modeId} onChange={(e) => setModeId(e.target.value)} required>
-                {modes.map((m) => (
-                  <option key={m.id} value={m.id}>{m.name} ({m.code})</option>
-                ))}
-              </select>
+              <Combobox
+                items={modeOptions}
+                value={modeOptions.find((x) => x.value === modeId) ?? null}
+                onValueChange={(next) => setModeId(next?.value ?? "")}
+              >
+                <ComboboxInput className="w-full" placeholder="Pilih transport mode" />
+                <ComboboxContent>
+                  <ComboboxEmpty>Data tidak ditemukan.</ComboboxEmpty>
+                  <ComboboxList>
+                    {(item: ComboOption) => (
+                      <ComboboxItem key={item.value} value={item}>
+                        {item.label}
+                      </ComboboxItem>
+                    )}
+                  </ComboboxList>
+                </ComboboxContent>
+              </Combobox>
+              {selectedMode ? (
+                <p className="text-[11px] text-zinc-500">Dipilih: {selectedMode.name}</p>
+              ) : null}
             </div>
             <div className="space-y-2">
               <Label className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
                 {t("serviceType")}
               </Label>
-              <select className={selectClass} value={serviceTypeId} onChange={(e) => setServiceTypeId(e.target.value)} required>
-                {serviceTypes.map((s) => (
-                  <option key={s.id} value={s.id}>{s.name} ({s.code})</option>
-                ))}
-              </select>
+              <Combobox
+                items={serviceOptions}
+                value={serviceOptions.find((x) => x.value === serviceTypeId) ?? null}
+                onValueChange={(next) => setServiceTypeId(next?.value ?? "")}
+              >
+                <ComboboxInput className="w-full" placeholder="Pilih service type" />
+                <ComboboxContent>
+                  <ComboboxEmpty>Data tidak ditemukan.</ComboboxEmpty>
+                  <ComboboxList>
+                    {(item: ComboOption) => (
+                      <ComboboxItem key={item.value} value={item}>
+                        {item.label}
+                      </ComboboxItem>
+                    )}
+                  </ComboboxList>
+                </ComboboxContent>
+              </Combobox>
+              {selectedST ? (
+                <p className="text-[11px] text-zinc-500">Dipilih: {selectedST.name}</p>
+              ) : null}
             </div>
             <div className="space-y-2">
               <Label className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
                 {t("containerType")}
               </Label>
-              <select className={selectClass} value={containerTypeId} onChange={(e) => setContainerTypeId(e.target.value)}>
-                <option value="">—</option>
-                {containerTypes.map((c) => (
-                  <option key={c.id} value={c.id}>{c.name} ({c.size})</option>
-                ))}
-              </select>
+              <Combobox
+                items={containerOptions}
+                value={containerOptions.find((x) => x.value === containerTypeId) ?? null}
+                onValueChange={(next) => setContainerTypeId(next?.value ?? "")}
+              >
+                <ComboboxInput className="w-full" placeholder="Pilih container type" />
+                <ComboboxContent>
+                  <ComboboxEmpty>Data tidak ditemukan.</ComboboxEmpty>
+                  <ComboboxList>
+                    {(item: ComboOption) => (
+                      <ComboboxItem key={item.value} value={item}>
+                        {item.label}
+                      </ComboboxItem>
+                    )}
+                  </ComboboxList>
+                </ComboboxContent>
+              </Combobox>
+              {selectedCT ? (
+                <p className="text-[11px] text-zinc-500">Dipilih: {selectedCT.name}</p>
+              ) : null}
             </div>
             <div className="space-y-2">
               <Label className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
@@ -250,7 +392,10 @@ export default function PublicEstimatePage() {
               </Label>
               <Input
                 className="h-11 rounded-xl border-zinc-200 shadow-sm focus:border-[#0b1b69] focus:ring-2 focus:ring-[#0b1b69]/20"
-                type="number" min={1} value={containerCount} onChange={(e) => setContainerCount(e.target.value)}
+                type="number"
+                min={1}
+                value={containerCount}
+                onChange={(e) => setContainerCount(e.target.value)}
               />
             </div>
             <div className="space-y-2">
@@ -258,8 +403,15 @@ export default function PublicEstimatePage() {
                 {t("weight")}
               </Label>
               <Input
-                className="h-11 rounded-xl border-zinc-200 shadow-sm focus:border-[#0b1b69] focus:ring-2 focus:ring-[#0b1b69]/20"
-                type="number" step="0.01" value={weight} onChange={(e) => setWeight(e.target.value)}
+                className={cn(
+                  "h-11 rounded-xl border-zinc-200 shadow-sm focus:border-[#0b1b69] focus:ring-2 focus:ring-[#0b1b69]/20",
+                  !isLCL && selectedCT ? "bg-zinc-100 italic" : "bg-white"
+                )}
+                type="number"
+                step="0.01"
+                value={weight}
+                onChange={(e) => setWeight(e.target.value)}
+                disabled={!isLCL && !!selectedCT}
               />
             </div>
             <div className="space-y-2">
@@ -267,8 +419,15 @@ export default function PublicEstimatePage() {
                 {t("cbm")}
               </Label>
               <Input
-                className="h-11 rounded-xl border-zinc-200 shadow-sm focus:border-[#0b1b69] focus:ring-2 focus:ring-[#0b1b69]/20"
-                type="number" step="0.01" value={cbm} onChange={(e) => setCbm(e.target.value)}
+                className={cn(
+                  "h-11 rounded-xl border-zinc-200 shadow-sm focus:border-[#0b1b69] focus:ring-2 focus:ring-[#0b1b69]/20",
+                  selectedCT || isLCL ? "bg-zinc-100 italic" : "bg-white"
+                )}
+                type="number"
+                step="0.01"
+                value={cbm}
+                onChange={(e) => setCbm(e.target.value)}
+                disabled={!!selectedCT || isLCL}
               />
             </div>
             {addServices.length > 0 && (
@@ -328,43 +487,41 @@ export default function PublicEstimatePage() {
         </div>
 
         {estimate ? (
-          <div className="mt-8 overflow-hidden rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-white shadow-lg">
-            <div className="border-b border-emerald-100 px-6 py-5 md:px-8">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100">
-                  <Package className="h-5 w-5 text-emerald-700" />
-                </div>
-                <div>
-                  <h3 className="text-base font-semibold text-emerald-900">{t("resultTitle")}</h3>
-                  <p className="text-xs text-emerald-700/70">{t("resultNote")}</p>
-                </div>
+          <div className="mt-8 rounded-2xl border border-zinc-200 bg-zinc-50 p-6 shadow-inner md:p-8">
+            <div className="flex items-start gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-100">
+                <Package className="h-5 w-5 text-emerald-700" />
+              </div>
+              <div className="min-w-0 flex-1 space-y-1">
+                <p className="text-xs font-bold uppercase tracking-widest text-zinc-500">Informasi Biaya</p>
+                <p className="text-2xl font-black text-emerald-700">{estimate}</p>
+                <p className="text-[10px] text-zinc-500">
+                  * Harga di atas bersifat estimasi dan akan dikonfirmasi kembali oleh operasional.
+                </p>
               </div>
             </div>
-            <div className="px-6 py-6 md:px-8">
-              <p className="text-3xl font-bold tracking-tight text-emerald-900">{estimate}</p>
-              {breakdown ? (
-                <div className="mt-4 space-y-2 text-sm">
-                  <div className="flex justify-between text-emerald-800/70">
-                    <span>{t("breakdownBase")}</span>
-                    <span>{fmtIdr(breakdown.base_freight)}</span>
-                  </div>
-                  {breakdown.discount_amount > 0 && (
-                    <div className="flex justify-between text-emerald-700">
-                      <span>{t("breakdownDiscount")}</span>
-                      <span>−{fmtIdr(breakdown.discount_amount)}</span>
-                    </div>
-                  )}
-                  <div className="flex justify-between text-emerald-800/70">
-                    <span>{t("breakdownAddOns")}</span>
-                    <span>{fmtIdr(breakdown.additional_services_total)}</span>
-                  </div>
-                  <div className="flex justify-between border-t border-emerald-200 pt-2 font-semibold text-emerald-900">
-                    <span>{t("breakdownTotal")}</span>
-                    <span>{fmtIdr(breakdown.total)}</span>
-                  </div>
+            {breakdown ? (
+              <div className="mt-5 space-y-2 border-t border-zinc-200 pt-4 text-sm">
+                <div className="flex justify-between text-zinc-600">
+                  <span>{t("breakdownBase")}</span>
+                  <span>{fmtIdr(breakdown.base_freight)}</span>
                 </div>
-              ) : null}
-            </div>
+                {breakdown.discount_amount > 0 && (
+                  <div className="flex justify-between text-emerald-700">
+                    <span>{t("breakdownDiscount")}</span>
+                    <span>-{fmtIdr(breakdown.discount_amount)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between text-zinc-600">
+                  <span>{t("breakdownAddOns")}</span>
+                  <span>{fmtIdr(breakdown.additional_services_total)}</span>
+                </div>
+                <div className="flex justify-between border-t border-zinc-200 pt-2 font-semibold text-zinc-900">
+                  <span>{t("breakdownTotal")}</span>
+                  <span>{fmtIdr(breakdown.total)}</span>
+                </div>
+              </div>
+            ) : null}
           </div>
         ) : null}
 

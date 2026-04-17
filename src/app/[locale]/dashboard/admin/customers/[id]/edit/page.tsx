@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,8 +28,6 @@ import { toast } from "sonner";
 import { BranchManagement } from "@/components/dashboard/admin/customers/branch-management";
 import { DiscountManagement } from "@/components/dashboard/admin/customers/discount-management";
 import { StatusManagerSection } from "@/components/dashboard/admin/customers/status-manager-section";
-
-import { cn } from "@/lib/utils";
 
 export default function AdminCustomerEditPage() {
   const params = useParams();
@@ -60,7 +58,7 @@ export default function AdminCustomerEditPage() {
   const [phone, setPhone] = useState("");
   const [detail, setDetail] = useState<Record<string, unknown> | null>(null);
 
-  const refreshData = async () => {
+  const refreshData = useCallback(async () => {
     if (!Number.isFinite(id) || id < 1) return;
     try {
       const res = await fetchAdminCompany(id);
@@ -80,12 +78,12 @@ export default function AdminCustomerEditPage() {
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Gagal memuat data customer.");
     }
-  };
+  }, [id]);
 
   useEffect(() => {
     setLoading(true);
     void refreshData().finally(() => setLoading(false));
-  }, [id]);
+  }, [refreshData]);
 
   const save = async () => {
     if (!canEdit || !Number.isFinite(id) || id < 1) return;

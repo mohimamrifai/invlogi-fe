@@ -2,21 +2,12 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
-import { buttonVariants } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
-  CardDescription,
 } from "@/components/ui/card";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import {
   Table,
   TableBody,
@@ -33,8 +24,6 @@ import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/lib/store";
 import { useAuthPersistHydrated } from "@/lib/use-auth-hydrated";
 import {
-  approveBooking,
-  convertBookingToShipment,
   fetchAdminBooking,
   fetchAdminBookings,
   rejectBooking,
@@ -44,26 +33,10 @@ import { rowNumber } from "@/lib/list-query";
 import type { LaravelPaginated } from "@/lib/types-api";
 import { useDebouncedValue } from "@/lib/use-debounced-value";
 import {
-  ArrowRightLeft,
-  CheckCircle2,
-  ClipboardClock,
   ClipboardList,
-  Eye,
-  FilePenLine,
-  MoreHorizontal,
   Plus,
-  XCircle,
 } from "lucide-react";
 import { useRouter } from "@/i18n/routing";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 

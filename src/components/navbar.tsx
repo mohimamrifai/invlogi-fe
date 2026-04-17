@@ -19,8 +19,6 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 
-type NavItem = { href: string; anchor?: boolean };
-
 export function Navbar() {
   const t = useTranslations("Navbar");
   const locale = useLocale();

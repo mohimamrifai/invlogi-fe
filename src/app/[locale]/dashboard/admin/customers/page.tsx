@@ -179,8 +179,10 @@ export default function AdminCustomersPage() {
   const customersBasePath = `/${locale}/dashboard/admin/customers`;
   const authHydrated = useAuthPersistHydrated();
   const { user } = useAuthStore();
-  const roles = user?.roles ?? [];
-  const caps = useMemo(() => getAdminCustomerCapabilities(roles), [roles]);
+  const caps = useMemo(
+    () => getAdminCustomerCapabilities((user?.roles as string[] | undefined) ?? []),
+    [user?.roles]
+  );
   const canCreateCustomer = authHydrated && caps.canCreateCustomer;
 
   const [rows, setRows] = useState<CompanyRow[]>([]);

@@ -24,6 +24,8 @@ import { AddOnServiceSection } from "./components/sections/add-on-service-sectio
 export default function CreateBookingPage() {
   const router = useRouter();
   const f = useBookingForm();
+  const fmtIdr = (n: number) =>
+    new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR" }).format(n);
 
   if (f.loading) {
     return <p className="p-10 text-sm text-muted-foreground text-center">Menyiapkan formulir booking…</p>;
@@ -183,6 +185,28 @@ export default function CreateBookingPage() {
               </Button>
             </div>
           </div>
+          {f.estimateBreakdown ? (
+            <div className="space-y-2 border-t border-zinc-200 pt-4 text-sm">
+              <div className="flex justify-between text-zinc-600">
+                <span>Base Freight</span>
+                <span>{fmtIdr(f.estimateBreakdown.base_freight)}</span>
+              </div>
+              {f.estimateBreakdown.discount_amount > 0 ? (
+                <div className="flex justify-between text-emerald-700">
+                  <span>Diskon</span>
+                  <span>-{fmtIdr(f.estimateBreakdown.discount_amount)}</span>
+                </div>
+              ) : null}
+              <div className="flex justify-between text-zinc-600">
+                <span>Layanan Tambahan</span>
+                <span>{fmtIdr(f.estimateBreakdown.additional_services_total)}</span>
+              </div>
+              <div className="flex justify-between border-t border-zinc-200 pt-2 font-semibold text-zinc-900">
+                <span>Total</span>
+                <span>{fmtIdr(f.estimateBreakdown.total)}</span>
+              </div>
+            </div>
+          ) : null}
         </div>
       </form>
 

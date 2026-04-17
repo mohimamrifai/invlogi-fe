@@ -17,7 +17,7 @@ import { Eye, EyeOff } from "lucide-react";
 import { Link, useRouter } from "@/i18n/routing";
 import { useState, useEffect, useMemo } from "react";
 import { useTranslations } from "next-intl";
-import { useForm, Controller } from "react-hook-form";
+import { useForm, Controller, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { createRegisterSchema, type RegisterSchema } from "@/lib/validations/auth";
 import { registerCompanyRequest } from "@/lib/auth-api";
@@ -70,9 +70,9 @@ export default function RegisterPage() {
     mode: "onChange" // Validate on change for better UX on complex forms
   });
 
-  const { register, control, handleSubmit, watch, trigger, setValue, formState: { errors, isSubmitting } } = form;
-  const accountType = watch("accountType");
-  const companyName = watch("companyName");
+  const { register, control, handleSubmit, trigger, setValue, formState: { errors, isSubmitting } } = form;
+  const accountType = useWatch({ control, name: "accountType" });
+  const companyName = useWatch({ control, name: "companyName" });
   const isPersonal = accountType === "personal";
 
   // Re-validate when account type changes to clear/set errors for hidden fields

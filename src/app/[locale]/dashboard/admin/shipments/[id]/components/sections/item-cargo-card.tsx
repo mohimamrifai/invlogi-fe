@@ -23,9 +23,19 @@ function placementTypeLabel(v: unknown): string {
 }
 
 interface ItemCargoCardProps {
-  items: any[];
-  onEdit: (item: any) => void;
-  onDelete: (item: any) => void;
+  items: Array<{
+    id?: number | string;
+    name?: string;
+    quantity?: number | string;
+    gross_weight?: number | string;
+    length?: number | string | null;
+    width?: number | string | null;
+    height?: number | string | null;
+    cbm?: number | string | null;
+    placement_type?: string;
+  }>;
+  onEdit: (item: ItemCargoCardProps["items"][number]) => void;
+  onDelete: (item: ItemCargoCardProps["items"][number]) => void;
 }
 
 export function ItemCargoCard({ items, onEdit, onDelete }: ItemCargoCardProps) {

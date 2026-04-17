@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { apiFetch } from "@/lib/api-client";
@@ -62,11 +63,14 @@ function PhotoLightbox({
       >
         <X className="h-5 w-5" />
       </button>
-      <img
+      <Image
         src={src}
         alt={alt}
+        width={1400}
+        height={900}
         className="max-h-[85vh] max-w-[90vw] rounded-lg object-contain shadow-2xl"
         onClick={(e) => e.stopPropagation()}
+        unoptimized
       />
     </div>
   );
@@ -269,11 +273,14 @@ export default function PublicTrackingPage() {
                                       className="group relative h-20 w-20 overflow-hidden rounded-xl border border-zinc-200 bg-zinc-50 shadow-sm transition-all hover:border-zinc-400 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[#0b1b69]/30"
                                       onClick={() => setLightboxSrc(imgUrl)}
                                     >
-                                      <img
+                                      <Image
                                         src={imgUrl}
                                         alt={`Foto ${idx + 1}`}
+                                        width={80}
+                                        height={80}
                                         className="h-full w-full object-cover transition-transform group-hover:scale-110"
                                         loading="lazy"
+                                        unoptimized
                                       />
                                       <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition-colors group-hover:bg-black/20">
                                         <Camera className="h-4 w-4 text-white opacity-0 transition-opacity group-hover:opacity-100" />

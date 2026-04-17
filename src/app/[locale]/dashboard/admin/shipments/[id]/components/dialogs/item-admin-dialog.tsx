@@ -56,7 +56,11 @@ interface ItemAdminDialogProps {
     setItemHeight: (v: string) => void;
     setItemCbm: (v: string) => void;
   };
-  containers: any[];
+  containers: Array<{
+    id?: number | string;
+    container_number?: string;
+    container_type?: { name?: string };
+  }>;
   rackOptions: { id: number; label: string }[];
   saving: boolean;
   onSave: () => void;
@@ -135,7 +139,10 @@ export function ItemAdminDialog({
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
               <Label>Letak Barang</Label>
-              <Select value={values.itemPlacement} onValueChange={(v) => setters.setItemPlacement(v as any)}>
+              <Select
+                value={values.itemPlacement}
+                onValueChange={(v) => setters.setItemPlacement(v === "rack" ? "rack" : "floor")}
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>

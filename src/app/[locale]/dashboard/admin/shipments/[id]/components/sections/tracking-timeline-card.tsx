@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Camera, X } from "lucide-react";
+import Image from "next/image";
 
 interface TrackingPhoto {
   id?: number | string;
@@ -43,11 +44,14 @@ function PhotoLightbox({
       >
         <X className="h-5 w-5" />
       </button>
-      <img
+      <Image
         src={src}
         alt={alt}
+        width={1400}
+        height={900}
         className="max-h-[85vh] max-w-[90vw] rounded-lg object-contain shadow-2xl"
         onClick={(e) => e.stopPropagation()}
+        unoptimized
       />
     </div>
   );
@@ -107,11 +111,14 @@ export function TrackingTimelineCard({ trackings }: TrackingTimelineCardProps) {
                               className="group relative h-16 w-16 overflow-hidden rounded-lg border border-zinc-200 bg-zinc-50 shadow-sm transition-all hover:border-zinc-400 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500/40"
                               onClick={() => setLightboxSrc(imgUrl)}
                             >
-                              <img
+                              <Image
                                 src={imgUrl}
                                 alt={`Tracking foto ${idx + 1}`}
+                                width={64}
+                                height={64}
                                 className="h-full w-full object-cover transition-transform group-hover:scale-110"
                                 loading="lazy"
+                                unoptimized
                               />
                               <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition-colors group-hover:bg-black/20">
                                 <Camera className="h-4 w-4 text-white opacity-0 transition-opacity group-hover:opacity-100" />
