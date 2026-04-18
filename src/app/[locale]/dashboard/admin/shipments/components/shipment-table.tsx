@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import {
@@ -22,6 +23,7 @@ import { cn } from "@/lib/utils";
 import { Eye, MoreHorizontal } from "lucide-react";
 import { useRouter } from "@/i18n/routing";
 import { rowNumber } from "@/lib/list-query";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface ShipmentTableProps {
   rows: Array<{
@@ -73,8 +75,45 @@ function ShipmentActionsMenu({ shipmentId, waybill }: { shipmentId: number; wayb
 }
 
 export function ShipmentTable({ rows, meta, perPage, loading }: ShipmentTableProps) {
+  const preparedRows = useMemo(
+    () =>
+      rows.map((shipment) => {
+        const st = String(shipment.status ?? "");
+        const company = (shipment.company ?? shipment.Company) as { name?: string } | undefined;
+        const origin = (shipment.origin_location ?? shipment.originLocation) as { name?: string } | undefined;
+        const dest = (shipment.destination_location ?? shipment.destinationLocation) as
+          | { name?: string }
+          | undefined;
+        const svc = (shipment.service_type ?? shipment.serviceType) as { name?: string } | undefined;
+        const wb = String(shipment.waybill_number ?? shipment.shipment_number ?? "");
+        const route = [origin?.name, dest?.name].filter(Boolean).join(" → ") || "—";
+
+        return {
+          shipment,
+          st,
+          company,
+          svc,
+          wb,
+          route,
+        };
+      }),
+    [rows]
+  );
+
   if (loading) {
-    return <p className="text-sm text-muted-foreground p-4">Memuat data shipment…</p>;
+    return (
+      <div className="space-y-3 p-4">
+        {[...Array(perPage)].map((_, i) => (
+          <div key={i} className="flex items-center space-x-4">
+            <Skeleton className="h-8 w-8 rounded-full" />
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-[300px]" />
+              <Skeleton className="h-4 w-[250px]" />
+            </div>
+          </div>
+        ))}
+      </div>
+    );
   }
 
   return (
@@ -93,17 +132,7 @@ export function ShipmentTable({ rows, meta, perPage, loading }: ShipmentTablePro
         </TableRow>
       </TableHeader>
       <TableBody>
-        {rows.map((shipment, index) => {
-          const st = String(shipment.status ?? "");
-          const company = (shipment.company ?? shipment.Company) as { name?: string } | undefined;
-          const origin = (shipment.origin_location ?? shipment.originLocation) as { name?: string } | undefined;
-          const dest = (shipment.destination_location ?? shipment.destinationLocation) as
-            | { name?: string }
-            | undefined;
-          const svc = (shipment.service_type ?? shipment.serviceType) as { name?: string } | undefined;
-          const wb = String(shipment.waybill_number ?? shipment.shipment_number ?? "");
-          const route = [origin?.name, dest?.name].filter(Boolean).join(" → ") || "—";
-          
+        {preparedRows.map(({ shipment, st, company, svc, wb, route }, index) => {
           return (
             <TableRow key={wb || String(shipment.id)} className="group">
               <TableCell className="tabular-nums text-muted-foreground pl-4">
@@ -130,7 +159,7 @@ export function ShipmentTable({ rows, meta, perPage, loading }: ShipmentTablePro
           );
         })}
       </TableBody>
-      {rows.length === 0 ? (
+      {preparedRows.length === 0 ? (
         <TableCaption className="text-xs py-10">Belum ada shipment ditemukan.</TableCaption>
       ) : (
         <TableCaption className="text-[10px] text-muted-foreground uppercase tracking-widest pb-4">

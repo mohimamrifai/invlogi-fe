@@ -49,6 +49,8 @@ export default function AdminCustomerEditPage() {
   const [npwp, setNpwp] = useState("");
   const [nib, setNib] = useState("");
   const [billingCycle, setBillingCycle] = useState("");
+  const [paymentType, setPaymentType] = useState<"prepaid" | "postpaid">("postpaid");
+  const [postpaidTermDays, setPostpaidTermDays] = useState("");
   const [address, setAddress] = useState("");
   const [city, setCity] = useState("");
   const [province, setProvince] = useState("");
@@ -75,6 +77,12 @@ export default function AdminCustomerEditPage() {
       setContactPerson(String(d.contact_person ?? ""));
       setEmail(String(d.email ?? ""));
       setPhone(String(d.phone ?? ""));
+      setPaymentType(
+        (String(d.payment_type ?? "postpaid") === "prepaid" ? "prepaid" : "postpaid")
+      );
+      setPostpaidTermDays(
+        d.postpaid_term_days != null ? String(d.postpaid_term_days) : ""
+      );
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Gagal memuat data customer.");
     }
@@ -101,6 +109,11 @@ export default function AdminCustomerEditPage() {
         npwp: npwp.trim() || null,
         nib: nib.trim() || null,
         billing_cycle: billingCycle,
+        payment_type: paymentType,
+        postpaid_term_days:
+          paymentType === "postpaid" && postpaidTermDays.trim() !== ""
+            ? Number(postpaidTermDays.trim())
+            : null,
         address: address.trim() || null,
         city: city.trim() || null,
         province: province.trim() || null,
@@ -185,6 +198,23 @@ export default function AdminCustomerEditPage() {
                 <Input className="h-9" value={nib} onChange={(e) => setNib(e.target.value)} />
               </div>
               <div className="space-y-2">
+                <Label>Tipe pembayaran</Label>
+                <Select
+                  value={paymentType}
+                  onValueChange={(v) => v && setPaymentType(v as "prepaid" | "postpaid")}
+                >
+                  <SelectTrigger className="h-9 w-full rounded-lg">
+                    <SelectValue placeholder="Pilih tipe pembayaran">
+                      {paymentType === "prepaid" ? "Pre-paid" : "Post-paid"}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="prepaid">Pre-paid</SelectItem>
+                    <SelectItem value="postpaid">Post-paid</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
                 <Label>Siklus penagihan</Label>
                 <Select
                   value={billingCycle}
@@ -204,6 +234,19 @@ export default function AdminCustomerEditPage() {
                   </SelectContent>
                 </Select>
               </div>
+              {paymentType === "postpaid" && (
+                <div className="space-y-2">
+                  <Label>Jatuh tempo (hari)</Label>
+                  <Input
+                    className="h-9"
+                    value={postpaidTermDays}
+                    onChange={(e) => setPostpaidTermDays(e.target.value.replace(/\D/g, ""))}
+                    placeholder="Contoh: 30"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                  />
+                </div>
+              )}
               <div className="space-y-2">
                 <Label>Alamat</Label>
                 <Textarea className="min-h-[80px]" value={address} onChange={(e) => setAddress(e.target.value)} rows={3} />

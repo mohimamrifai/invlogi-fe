@@ -4,11 +4,14 @@ import type { LaravelPaginated } from "./types-api";
 
 export type { ListQueryParams };
 
-export async function fetchCustomerShipments(input?: number | ListQueryParams) {
+export async function fetchCustomerShipments(
+  input?: number | ListQueryParams,
+  signal?: AbortSignal
+) {
   const params = normalizeListParams(input);
   return apiFetch<LaravelPaginated<Record<string, unknown>>>(
     `/customer/shipments${buildListQuery(params)}`,
-    { method: "GET" }
+    { method: "GET", signal }
   );
 }
 
@@ -40,11 +43,14 @@ export async function fetchCustomerPayments(input?: number | ListQueryParams) {
   );
 }
 
-export async function fetchCustomerBookings(input?: number | ListQueryParams) {
+export async function fetchCustomerBookings(
+  input?: number | ListQueryParams,
+  signal?: AbortSignal
+) {
   const params = normalizeListParams(input);
   return apiFetch<LaravelPaginated<Record<string, unknown>>>(
     `/customer/bookings${buildListQuery(params)}`,
-    { method: "GET" }
+    { method: "GET", signal }
   );
 }
 

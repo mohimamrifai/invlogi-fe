@@ -12,5 +12,8 @@ export async function performLogout(): Promise<void> {
   } catch {
     /* abaikan jaringan */
   }
+  if (typeof window !== "undefined") {
+    sessionStorage.removeItem("invlogi_profile_cached_at");
+  }
   useAuthStore.getState().clearSession();
 }

@@ -39,6 +39,8 @@ import {
 import { useRouter } from "@/i18n/routing";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useQuery } from "@tanstack/react-query";
 
 import { BookingStats } from "@/components/dashboard/admin/bookings/booking-stats";
 import { BookingActionsMenu } from "@/components/dashboard/admin/bookings/booking-actions-menu";
@@ -46,8 +48,6 @@ import { BookingDetailDialog } from "@/components/dashboard/admin/bookings/booki
 import { BookingRejectDialog } from "@/components/dashboard/admin/bookings/booking-reject-dialog";
 import type { BookingDetail } from "@/components/dashboard/admin/bookings/types";
 
-const PER_PAGE = 10;
-const STATS_CAP = 1000;
 
 const BOOKING_STATUS_FILTERS = [
   { value: "all", label: "Semua status" },
@@ -84,12 +84,8 @@ export default function AdminBookingsPage() {
   const canProcessOperations =
     authHydrated && (roles.includes("super_admin") || roles.includes("operations"));
 
-  const [bookings, setBookings] = useState<BookingRow[]>([]);
-  const [statsRows, setStatsRows] = useState<BookingRow[]>([]);
-  const [statsMeta, setStatsMeta] = useState<LaravelPaginated<BookingRow> | null>(null);
-  const [meta, setMeta] = useState<LaravelPaginated<BookingRow> | null>(null);
-  const [loadError, setLoadError] = useState<string | null>(null);
-  const [loadingTable, setLoadingTable] = useState(true);
+  const PER_PAGE = 10;
+  const STATS_CAP = 1000;
 
   const [page, setPage] = useState(1);
   const [searchInput, setSearchInput] = useState("");
@@ -105,70 +101,68 @@ export default function AdminBookingsPage() {
   const [rejectReason, setRejectReason] = useState("");
   const [rejectSaving, setRejectSaving] = useState(false);
 
-  useEffect(() => {
-    setPage(1);
-  }, [debouncedSearch, statusFilter]);
-
   const statusParam = statusFilter === "all" ? undefined : statusFilter;
 
-  const loadStats = useCallback(async () => {
-    if (!mounted || !authHydrated) return;
-    try {
-      const res = await fetchAdminBookings({
-        page: 1,
-        perPage: STATS_CAP,
-      });
-      const paginated = res as LaravelPaginated<BookingRow>;
-      setStatsRows((paginated.data as BookingRow[]) ?? []);
-      setStatsMeta(paginated);
-    } catch {
-      setStatsRows([]);
-      setStatsMeta(null);
-    }
-  }, [mounted, authHydrated]);
+  const {
+    data: paginatedStatsBookings,
+    refetch: refetchStats,
+  } = useQuery({
+    queryKey: ["adminBookingsStats", debouncedSearch, statusParam],
+    queryFn: async ({ signal }) => {
+      if (!mounted || !authHydrated) return null;
+      const res = await fetchAdminBookings(
+        {
+          page: 1,
+          perPage: STATS_CAP,
+          search: debouncedSearch.trim() || undefined,
+          status: statusParam,
+        },
+        signal
+      );
+      return res as LaravelPaginated<BookingRow>;
+    },
+    enabled: mounted && authHydrated,
+    placeholderData: (previousData) => previousData,
+    staleTime: 1000 * 60 * 5, // 5 minutes stale time
+  });
 
-  const loadTable = useCallback(async () => {
-    if (!mounted || !authHydrated) return;
-    setLoadError(null);
-    setLoadingTable(true);
-    try {
-      const res = await fetchAdminBookings({
-        page,
-        perPage: PER_PAGE,
-        search: debouncedSearch.trim() || undefined,
-        status: statusParam,
-      });
-      const paginated = res as LaravelPaginated<BookingRow>;
-      setBookings((paginated.data as BookingRow[]) ?? []);
-      setMeta(paginated);
-    } catch (e) {
-      setLoadError(e instanceof ApiError ? e.message : "Gagal memuat booking");
-      setBookings([]);
-      setMeta(null);
-    } finally {
-      setLoadingTable(false);
-    }
-  }, [mounted, authHydrated, page, debouncedSearch, statusParam]);
+  const {
+    data: paginatedBookings,
+    isLoading: isLoadingTable,
+    error: tableError,
+    refetch: refetchTable,
+  } = useQuery({
+    queryKey: ["adminBookingsTable", page, debouncedSearch, statusParam],
+    queryFn: async ({ signal }) => {
+      if (!mounted || !authHydrated) return null;
+      const res = await fetchAdminBookings(
+        {
+          page,
+          perPage: PER_PAGE,
+          search: debouncedSearch.trim() || undefined,
+          status: statusParam,
+        },
+        signal
+      );
+      return res as LaravelPaginated<BookingRow>;
+    },
+    enabled: mounted && authHydrated,
+    placeholderData: (previousData) => previousData,
+    staleTime: 1000 * 60 * 5, // 5 minutes stale time
+  });
 
-  const openBookingDetail = useCallback(async (id: number) => {
-    setDetailOpen(true);
-    setDetailLoading(true);
-    setDetailData(null);
-    try {
-      const res = await fetchAdminBooking(id);
-      setDetailData((res as { data: BookingDetail }).data);
-    } catch (e) {
-      toast.error(e instanceof ApiError ? e.message : "Gagal memuat detail.");
-      setDetailOpen(false);
-    } finally {
-      setDetailLoading(false);
-    }
-  }, []);
+  const bookings = paginatedBookings?.data ?? [];
+  const meta = paginatedBookings;
+  const loadError = tableError ? (tableError instanceof ApiError ? tableError.message : "Gagal memuat booking") : null;
+  const loadingTable = isLoadingTable;
+
+  const statsRows = paginatedStatsBookings?.data ?? [];
+  const statsMeta = paginatedStatsBookings;
 
   const reloadAll = useCallback(async () => {
-    await loadStats();
-    await loadTable();
-  }, [loadStats, loadTable]);
+    await refetchStats();
+    await refetchTable();
+  }, [refetchStats, refetchTable]);
 
   const submitReject = useCallback(async () => {
     if (rejectId == null || !rejectReason.trim()) return;
@@ -187,17 +181,36 @@ export default function AdminBookingsPage() {
     }
   }, [rejectId, rejectReason, reloadAll]);
 
+  const openBookingDetail = useCallback(async (id: number) => {
+    setDetailOpen(true);
+    setDetailLoading(true);
+    setDetailData(null);
+    try {
+      const res = await fetchAdminBooking(id);
+      setDetailData((res as { data: BookingDetail }).data);
+    } catch (e) {
+      toast.error(e instanceof ApiError ? e.message : "Gagal memuat detail booking.");
+      setDetailOpen(false);
+    } finally {
+      setDetailLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch, statusFilter]);
+
   useEffect(() => {
     setMounted(true);
   }, []);
 
   useEffect(() => {
-    if (mounted && authHydrated) void loadStats();
-  }, [mounted, authHydrated, loadStats]);
+    if (mounted && authHydrated) void refetchStats();
+  }, [mounted, authHydrated, refetchStats]);
 
   useEffect(() => {
-    if (mounted && authHydrated) void loadTable();
-  }, [mounted, authHydrated, loadTable]);
+    if (mounted && authHydrated) void refetchTable();
+  }, [mounted, authHydrated, refetchTable]);
 
   if (!mounted) return null;
 
@@ -262,7 +275,17 @@ export default function AdminBookingsPage() {
             filterOptions={BOOKING_STATUS_FILTERS}
           />
           {loadingTable ? (
-            <p className="text-sm text-muted-foreground">Memuat…</p>
+            <div className="space-y-3">
+              {[...Array(PER_PAGE)].map((_, i) => (
+                <div key={i} className="flex items-center space-x-4">
+                  <Skeleton className="h-8 w-8 rounded-full" />
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-[250px]" />
+                    <Skeleton className="h-4 w-[200px]" />
+                  </div>
+                </div>
+              ))}
+            </div>
           ) : (
             <>
               <Table>

@@ -101,6 +101,8 @@ export function CompanyAdminDialog({
                 npwp={vm.npwp}
                 nib={vm.nib}
                 billingCycle={vm.billingCycle}
+                paymentType={vm.paymentType}
+                postpaidTermDays={vm.postpaidTermDays}
                 address={vm.address}
                 city={vm.city}
                 province={vm.province}
@@ -112,6 +114,8 @@ export function CompanyAdminDialog({
                 onNpwpChange={vm.setNpwp}
                 onNibChange={vm.setNib}
                 onBillingCycleChange={vm.setBillingCycle}
+                onPaymentTypeChange={vm.setPaymentType}
+                onPostpaidTermDaysChange={vm.setPostpaidTermDays}
                 onAddressChange={vm.setAddress}
                 onCityChange={vm.setCity}
                 onProvinceChange={vm.setProvince}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -35,6 +35,8 @@ import { ApiError } from "@/lib/api-client";
 import { rowNumber } from "@/lib/list-query";
 import { useDebouncedValue } from "@/lib/use-debounced-value";
 import { toast } from "sonner";
+import { useQuery } from "@tanstack/react-query";
+import { Skeleton } from "@/components/ui/skeleton";
 
 function downloadBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
@@ -47,8 +49,6 @@ function downloadBlob(blob: Blob, filename: string) {
 
 type Row = Record<string, unknown>;
 
-const PER_PAGE = 10;
-
 const SHIPMENT_STATUS_FILTERS = [
   { value: "all", label: "Semua status" },
   ...SHIPMENT_STATUS_KEYS.map((k) => ({
@@ -58,61 +58,52 @@ const SHIPMENT_STATUS_FILTERS = [
 ];
 
 export default function CustomerShipmentsPage() {
-  const [rows, setRows] = useState<Row[]>([]);
-  const [meta, setMeta] = useState<LaravelPaginated<Row> | null>(null);
-  const [totalAllShipments, setTotalAllShipments] = useState<number | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-
+  const PER_PAGE = 10;
   const [page, setPage] = useState(1);
   const [searchInput, setSearchInput] = useState("");
   const debouncedSearch = useDebouncedValue(searchInput, 400);
   const [statusFilter, setStatusFilter] = useState("all");
 
-  useEffect(() => {
-    setPage(1);
-  }, [debouncedSearch, statusFilter]);
-
   const statusParam = statusFilter === "all" ? undefined : statusFilter;
 
-  const loadStatsTotal = useCallback(async () => {
-    try {
-      const res = await fetchCustomerShipments({ page: 1, perPage: 1 });
-      setTotalAllShipments((res as LaravelPaginated<Row>).total);
-    } catch {
-      setTotalAllShipments(null);
-    }
-  }, []);
+  const {
+    data: paginatedShipments,
+    isLoading: isLoadingShipments,
+    error: shipmentsError,
+  } = useQuery({
+    queryKey: ["customerShipments", page, debouncedSearch, statusParam],
+    queryFn: async ({ signal }) => {
+      const res = await fetchCustomerShipments(
+        {
+          page,
+          perPage: PER_PAGE,
+          search: debouncedSearch.trim() || undefined,
+          status: statusParam,
+        },
+        signal
+      );
+      return res as LaravelPaginated<Row>;
+    },
+    placeholderData: (previousData) => previousData,
+    staleTime: 1000 * 60 * 5, // 5 minutes stale time
+  });
 
-  const load = useCallback(async () => {
-    setError(null);
-    setLoading(true);
-    try {
-      const res = await fetchCustomerShipments({
-        page,
-        perPage: PER_PAGE,
-        search: debouncedSearch.trim() || undefined,
-        status: statusParam,
-      });
-      const paginated = res as LaravelPaginated<Row>;
-      setRows(paginated.data ?? []);
-      setMeta(paginated);
-    } catch (e) {
-      setError(e instanceof ApiError ? e.message : "Gagal memuat shipment.");
-      setRows([]);
-      setMeta(null);
-    } finally {
-      setLoading(false);
-    }
-  }, [page, debouncedSearch, statusParam]);
+  const { data: totalAllShipmentsData } = useQuery({
+    queryKey: ["customerShipmentsTotal"],
+    queryFn: async ({ signal }) => {
+      const res = await fetchCustomerShipments({ page: 1, perPage: 1 }, signal);
+      return (res as LaravelPaginated<Row>).total;
+    },
+    staleTime: 1000 * 60 * 15, // 15 minutes stale time for total count
+  });
 
-  useEffect(() => {
-    void loadStatsTotal();
-  }, [loadStatsTotal]);
+  const rows = paginatedShipments?.data ?? [];
+  const meta = paginatedShipments;
+  const totalAllShipments = totalAllShipmentsData ?? null;
+  const error = shipmentsError ? (shipmentsError instanceof ApiError ? shipmentsError.message : "Gagal memuat shipment.") : null;
+  const loading = isLoadingShipments;
 
-  useEffect(() => {
-    void load();
-  }, [load]);
+
 
   const handleDownloadCN = async (id: number, wb: string) => {
     try {
@@ -172,7 +163,17 @@ export default function CustomerShipmentsPage() {
             filterOptions={SHIPMENT_STATUS_FILTERS}
           />
           {loading ? (
-            <p className="text-sm text-muted-foreground">Memuat…</p>
+            <div className="space-y-3">
+              {[...Array(PER_PAGE)].map((_, i) => (
+                <div key={i} className="flex items-center space-x-4">
+                  <Skeleton className="h-8 w-8 rounded-full" />
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-[250px]" />
+                    <Skeleton className="h-4 w-[200px]" />
+                  </div>
+                </div>
+              ))}
+            </div>
           ) : (
             <>
               <Table>

@@ -25,6 +25,8 @@ export function useCompanyForm(
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [billingCycle, setBillingCycle] = useState("end_of_month");
+  const [paymentType, setPaymentType] = useState<"prepaid" | "postpaid">("postpaid");
+  const [postpaidTermDays, setPostpaidTermDays] = useState<string>("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -41,6 +43,12 @@ export function useCompanyForm(
       setEmail(String(initialData.email ?? ""));
       setPhone(String(initialData.phone ?? ""));
       setBillingCycle(String(initialData.billing_cycle || "end_of_month"));
+      setPaymentType(
+        (String(initialData.payment_type ?? "postpaid") === "prepaid" ? "prepaid" : "postpaid")
+      );
+      setPostpaidTermDays(
+        initialData.postpaid_term_days != null ? String(initialData.postpaid_term_days) : ""
+      );
     } else if (mode === "create") {
       setName("");
       setNpwp("");
@@ -53,6 +61,8 @@ export function useCompanyForm(
       setEmail("");
       setPhone("");
       setBillingCycle("end_of_month");
+      setPaymentType("postpaid");
+      setPostpaidTermDays("");
     }
   }, [initialData, mode]);
 
@@ -81,6 +91,11 @@ export function useCompanyForm(
         email: email.trim() || null,
         phone: cleanedPhone || null,
         billing_cycle: billingCycle,
+        payment_type: paymentType,
+        postpaid_term_days:
+          paymentType === "postpaid" && postpaidTermDays.trim() !== ""
+            ? Number(postpaidTermDays.trim())
+            : null,
       };
 
       if (mode === "create") {
@@ -109,8 +124,36 @@ export function useCompanyForm(
                      (mode === "create" && !capabilities.canCreateCustomer);
 
   return {
-    fields: { name, npwp, nib, address, city, province, postalCode, contactPerson, email, phone, billingCycle },
-    setters: { setName, setNpwp, setNib, setAddress, setCity, setProvince, setPostalCode, setContactPerson, setEmail, setPhone, setBillingCycle },
+    fields: {
+      name,
+      npwp,
+      nib,
+      address,
+      city,
+      province,
+      postalCode,
+      contactPerson,
+      email,
+      phone,
+      billingCycle,
+      paymentType,
+      postpaidTermDays,
+    },
+    setters: {
+      setName,
+      setNpwp,
+      setNib,
+      setAddress,
+      setCity,
+      setProvince,
+      setPostalCode,
+      setContactPerson,
+      setEmail,
+      setPhone,
+      setBillingCycle,
+      setPaymentType,
+      setPostpaidTermDays,
+    },
     saving,
     error,
     setError,

@@ -305,6 +305,15 @@ export function useBookingForm() {
     try {
       const payload = buildPayload();
 
+      let bookingResponse:
+        | {
+            prepaid?: {
+              invoice?: { id?: number | string };
+              midtrans?: { token?: string; redirect_url?: string | null; order_id?: string };
+            } | null;
+          }
+        | undefined;
+
       if (msdsFile) {
         // Use multipart/form-data only when there's a file to upload
         const fd = new FormData();
@@ -317,12 +326,25 @@ export function useBookingForm() {
           }
         });
         fd.append("msds_file", msdsFile);
-        await createCustomerBookingMultipart(fd);
+        bookingResponse = await createCustomerBookingMultipart(fd) as typeof bookingResponse;
       } else {
         // Send as JSON directly — this is the correct way
-        await createCustomerBooking(payload as unknown as Record<string, unknown>);
+        bookingResponse = await createCustomerBooking(payload as unknown as Record<string, unknown>) as typeof bookingResponse;
       }
 
+      const prepaid = bookingResponse?.prepaid;
+      const redirectUrl = prepaid?.midtrans?.redirect_url;
+      if (redirectUrl) {
+        toast.success("Booking pre-paid berhasil dibuat. Mengarahkan ke pembayaran...");
+        window.location.href = redirectUrl;
+        return;
+      }
+
+      if (prepaid?.invoice?.id) {
+        toast.success("Booking pre-paid berhasil dibuat dan invoice sudah terbit.");
+      } else {
+        toast.success("Booking berhasil dikirim.");
+      }
       setShowSuccess(true);
     } catch (err) {
       if (err instanceof ApiError && err.status === 422) {

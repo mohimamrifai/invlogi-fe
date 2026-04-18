@@ -18,6 +18,8 @@ type Props = {
   npwp: string;
   nib: string;
   billingCycle: string;
+  paymentType: "prepaid" | "postpaid";
+  postpaidTermDays: string;
   address: string;
   city: string;
   province: string;
@@ -29,6 +31,8 @@ type Props = {
   onNpwpChange: (v: string) => void;
   onNibChange: (v: string) => void;
   onBillingCycleChange: (v: string) => void;
+  onPaymentTypeChange: (v: "prepaid" | "postpaid") => void;
+  onPostpaidTermDaysChange: (v: string) => void;
   onAddressChange: (v: string) => void;
   onCityChange: (v: string) => void;
   onProvinceChange: (v: string) => void;
@@ -45,6 +49,8 @@ export function CompanyMainFields({
   npwp,
   nib,
   billingCycle,
+  paymentType,
+  postpaidTermDays,
   address,
   city,
   province,
@@ -56,6 +62,8 @@ export function CompanyMainFields({
   onNpwpChange,
   onNibChange,
   onBillingCycleChange,
+  onPaymentTypeChange,
+  onPostpaidTermDaysChange,
   onAddressChange,
   onCityChange,
   onProvinceChange,
@@ -97,6 +105,24 @@ export function CompanyMainFields({
         />
       </div>
       <div className="space-y-2 md:col-span-1">
+        <Label>Tipe pembayaran</Label>
+        <Select
+          value={paymentType}
+          onValueChange={(v) => v && onPaymentTypeChange(v as "prepaid" | "postpaid")}
+          disabled={readOnly}
+        >
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Pilih tipe pembayaran">
+              {paymentType === "prepaid" ? "Pre-paid" : "Post-paid"}
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="prepaid">Pre-paid</SelectItem>
+            <SelectItem value="postpaid">Post-paid</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="space-y-2 md:col-span-1">
         <Label>Siklus penagihan</Label>
         <Select
           value={billingCycle}
@@ -117,6 +143,20 @@ export function CompanyMainFields({
           </SelectContent>
         </Select>
       </div>
+      {paymentType === "postpaid" && (
+        <div className="space-y-2 md:col-span-1">
+          <Label htmlFor="co-term">Jatuh tempo (hari)</Label>
+          <Input
+            id="co-term"
+            value={postpaidTermDays}
+            onChange={(e) => onPostpaidTermDaysChange(e.target.value.replace(/\D/g, ""))}
+            placeholder="Contoh: 30"
+            disabled={readOnly}
+            inputMode="numeric"
+            pattern="[0-9]*"
+          />
+        </div>
+      )}
       <div className="space-y-2 md:col-span-1">
         <Label htmlFor="co-addr">Alamat</Label>
         <Textarea

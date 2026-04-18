@@ -3,6 +3,7 @@
 import { useAuthStore } from "@/lib/store";
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
+import dynamic from "next/dynamic";
 import { getDashboardUiRole } from "@/lib/auth-role";
 import {
   fetchAdminDashboard,
@@ -11,14 +12,29 @@ import {
   type CustomerDashboardPayload,
 } from "@/lib/dashboard-api";
 import { fetchCustomerShipments, fetchCustomerInvoices } from "@/lib/customer-api";
-import { DashboardSuperAdmin } from "@/components/dashboard/role/DashboardSuperAdmin";
-import { DashboardOperations } from "@/components/dashboard/role/DashboardOperations";
-import { DashboardFinance } from "@/components/dashboard/role/DashboardFinance";
-import { DashboardSales } from "@/components/dashboard/role/DashboardSales";
-import { DashboardCompanyAdmin } from "@/components/dashboard/role/DashboardCompanyAdmin";
-import { DashboardOpsPic } from "@/components/dashboard/role/DashboardOpsPic";
-import { DashboardFinancePic } from "@/components/dashboard/role/DashboardFinancePic";
 import { LayoutDashboard } from "lucide-react";
+
+const DashboardSuperAdmin = dynamic(
+  () => import("@/components/dashboard/role/DashboardSuperAdmin").then((m) => m.DashboardSuperAdmin)
+);
+const DashboardOperations = dynamic(
+  () => import("@/components/dashboard/role/DashboardOperations").then((m) => m.DashboardOperations)
+);
+const DashboardFinance = dynamic(
+  () => import("@/components/dashboard/role/DashboardFinance").then((m) => m.DashboardFinance)
+);
+const DashboardSales = dynamic(
+  () => import("@/components/dashboard/role/DashboardSales").then((m) => m.DashboardSales)
+);
+const DashboardCompanyAdmin = dynamic(
+  () => import("@/components/dashboard/role/DashboardCompanyAdmin").then((m) => m.DashboardCompanyAdmin)
+);
+const DashboardOpsPic = dynamic(
+  () => import("@/components/dashboard/role/DashboardOpsPic").then((m) => m.DashboardOpsPic)
+);
+const DashboardFinancePic = dynamic(
+  () => import("@/components/dashboard/role/DashboardFinancePic").then((m) => m.DashboardFinancePic)
+);
 
 export default function DashboardPage() {
   const { user } = useAuthStore();

@@ -55,6 +55,8 @@ export default function AdminShipmentsPage() {
     setPage(1);
   }, [debouncedSearch, statusFilter]);
 
+
+
   const statusParam = statusFilter === "all" ? undefined : statusFilter;
 
   const loadStats = useCallback(async () => {
@@ -63,6 +65,8 @@ export default function AdminShipmentsPage() {
       const res = await fetchAdminShipments({
         page: 1,
         perPage: STATS_CAP,
+        search: debouncedSearch.trim() || undefined,
+        status: statusParam,
       });
       const paginated = res as LaravelPaginated<ShipRow>;
       setStatsRows(paginated.data ?? []);
@@ -71,7 +75,7 @@ export default function AdminShipmentsPage() {
       setStatsRows([]);
       setStatsMeta(null);
     }
-  }, [authHydrated]);
+  }, [authHydrated, debouncedSearch, statusParam]);
 
   const load = useCallback(async () => {
     if (!authHydrated) return;

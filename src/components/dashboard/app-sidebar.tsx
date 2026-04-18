@@ -41,6 +41,7 @@ import { performLogout } from "@/lib/auth-actions";
 import { useAuthPersistHydrated } from "@/lib/use-auth-hydrated";
 import { useRouter } from "@/i18n/routing";
 import { useMemo } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   DASHBOARD_SIDEBAR_ITEM_DEFS,
   type DashboardMenuKey,
@@ -74,6 +75,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const router = useRouter()
   const { user } = useAuthStore()
   const hydrated = useAuthPersistHydrated()
+  const queryClient = useQueryClient();
 
   const allMenuItems = useMemo(
     () =>
@@ -143,15 +145,36 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 normalizedPathname = normalizedPathname.slice(0, -1)
               }
 
-              const bestMatch = [...navItems]
-                .filter(item => {
-                  if (item.url === "/dashboard") return normalizedPathname === "/dashboard"
-                  return normalizedPathname === item.url || normalizedPathname.startsWith(`${item.url}/`)
-                })
-                .sort((a, b) => b.url.length - a.url.length)[0]
+              const bestMatchUrl = navItems.reduce((longestMatchUrl, item) => {
+                if (item.url === "/dashboard") {
+                  if (normalizedPathname === "/dashboard") {
+                    return item.url;
+                  }
+                  return longestMatchUrl;
+                }
+                if (normalizedPathname === item.url || normalizedPathname.startsWith(`${item.url}/`)) {
+                  if (item.url.length > longestMatchUrl.length) {
+                    return item.url;
+                  }
+                }
+                return longestMatchUrl;
+              }, "");
 
               return navItems.map((item) => {
-                const isActive = bestMatch ? item.url === bestMatch.url : false
+                const isActive = item.url === bestMatchUrl
+
+                const handleMouseEnter = () => {
+                  if (item.url === "/dashboard/booking") {
+                    void queryClient.prefetchQuery({
+                      queryKey: ["customerBookings", 1, "", "all"],
+                    });
+                  } else if (item.url === "/dashboard/shipments") {
+                    void queryClient.prefetchQuery({
+                      queryKey: ["customerShipments", 1, "", "all"],
+                    });
+                  }
+                };
+
                 return (
                 <SidebarMenuItem key={item.url}>
                   <SidebarMenuButton
@@ -165,7 +188,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                         : "text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900")
                     }
                     render={
-                      <Link href={item.url} className="flex items-center gap-3 w-full">
+                      <Link href={item.url} className="flex items-center gap-3 w-full" onMouseEnter={handleMouseEnter}>
                         {item.icon && <item.icon className="h-4 w-4" />}
                         <span>{item.title}</span>
                       </Link>

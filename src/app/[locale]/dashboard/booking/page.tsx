@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -42,11 +42,11 @@ import type { LaravelPaginated } from "@/lib/types-api";
 import { ApiError } from "@/lib/api-client";
 import { rowNumber } from "@/lib/list-query";
 import { useDebouncedValue } from "@/lib/use-debounced-value";
+import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
+import { useQuery } from "@tanstack/react-query";
 
 type Row = Record<string, unknown>;
-
-const PER_PAGE = 10;
 
 const STATUS_FILTERS = [
   { value: "all", label: "Semua status" },
@@ -57,11 +57,7 @@ const STATUS_FILTERS = [
 ];
 
 export default function MyBookingsPage() {
-  const [rows, setRows] = useState<Row[]>([]);
-  const [meta, setMeta] = useState<LaravelPaginated<Row> | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-
+  const PER_PAGE = 10;
   const [page, setPage] = useState(1);
   const [searchInput, setSearchInput] = useState("");
   const debouncedSearch = useDebouncedValue(searchInput, 400);
@@ -70,35 +66,43 @@ export default function MyBookingsPage() {
   const [cancellingId, setCancellingId] = useState<number | null>(null);
   const [submittingCancel, setSubmittingCancel] = useState(false);
 
+  const {
+    data: paginatedBookings,
+    isLoading,
+    error,
+    refetch,
+  } = useQuery({
+    queryKey: ["customerBookings", page, debouncedSearch, statusFilter],
+    queryFn: async ({ signal }) => {
+      const res = await fetchCustomerBookings(
+        {
+          page,
+          perPage: PER_PAGE,
+          search: debouncedSearch.trim() || undefined,
+          status: statusFilter === "all" ? undefined : statusFilter,
+        },
+        signal
+      );
+      return res as LaravelPaginated<Row>;
+    },
+    placeholderData: (previousData) => previousData,
+    staleTime: 1000 * 60 * 5, // 5 minutes stale time
+  });
+
+  const rows = paginatedBookings?.data ?? [];
+  const meta = paginatedBookings;
+  const loading = isLoading;
+  const loadError = error
+    ? error instanceof ApiError
+      ? error.message
+      : error instanceof Error
+        ? error.message
+        : "Gagal memuat data booking."
+    : null;
+
   useEffect(() => {
     setPage(1);
   }, [debouncedSearch, statusFilter]);
-
-  const load = useCallback(async () => {
-    setError(null);
-    setLoading(true);
-    try {
-      const res = await fetchCustomerBookings({
-        page,
-        perPage: PER_PAGE,
-        search: debouncedSearch.trim() || undefined,
-        status: statusFilter === "all" ? undefined : statusFilter,
-      });
-      const paginated = res as LaravelPaginated<Row>;
-      setRows(paginated.data ?? []);
-      setMeta(paginated);
-    } catch (e) {
-      setError(e instanceof ApiError ? e.message : "Gagal memuat data booking.");
-      setRows([]);
-      setMeta(null);
-    } finally {
-      setLoading(false);
-    }
-  }, [page, debouncedSearch, statusFilter]);
-
-  useEffect(() => {
-    void load();
-  }, [load]);
 
   const handleCancelRequest = async () => {
     if (!cancellingId) return;
@@ -106,7 +110,7 @@ export default function MyBookingsPage() {
     try {
       await cancelCustomerBooking(cancellingId);
       toast.success("Booking berhasil dibatalkan.");
-      void load();
+      void refetch();
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : "Gagal membatalkan booking.");
     } finally {
@@ -129,8 +133,8 @@ export default function MyBookingsPage() {
         </div>
       </div>
 
-      {error ? (
-        <p className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{error}</p>
+      {loadError ? (
+        <p className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{loadError}</p>
       ) : null}
 
       <Card className="min-w-0 overflow-hidden">
@@ -149,7 +153,17 @@ export default function MyBookingsPage() {
             filterOptions={STATUS_FILTERS}
           />
           {loading ? (
-            <p className="text-sm text-muted-foreground">Memuat…</p>
+            <div className="space-y-3">
+              {[...Array(PER_PAGE)].map((_, i) => (
+                <div key={i} className="flex items-center space-x-4">
+                  <Skeleton className="h-8 w-8 rounded-full" />
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-[250px]" />
+                    <Skeleton className="h-4 w-[200px]" />
+                  </div>
+                </div>
+              ))}
+            </div>
           ) : (
             <>
               <Table>

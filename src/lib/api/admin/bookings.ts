@@ -2,11 +2,14 @@ import { apiFetch } from "../../api-client";
 import { buildListQuery, normalizeListParams, type ListQueryParams } from "../../list-query";
 import type { LaravelPaginated } from "../../types-api";
 
-export async function fetchAdminBookings(input?: number | ListQueryParams) {
+export async function fetchAdminBookings(
+  input?: number | ListQueryParams,
+  signal?: AbortSignal
+) {
   const params = normalizeListParams(input);
   return apiFetch<LaravelPaginated<Record<string, unknown>>>(
     `/admin/bookings${buildListQuery(params)}`,
-    { method: "GET" }
+    { method: "GET", signal }
   );
 }
 

@@ -68,8 +68,12 @@ export async function apiFetch<T = unknown>(
     res = await fetch(apiUrl(path), {
       ...init,
       headers,
+      signal: init.signal, // Pass the AbortSignal
     });
   } catch (err) {
+    if (err instanceof DOMException && err.name === "AbortError") {
+      throw err; // Re-throw AbortError to be handled by TanStack Query
+    }
     throw new ApiError(networkFailureMessage(path, err), 0, err);
   }
 

@@ -38,6 +38,8 @@ export default function AdminCustomerCreatePage() {
   const [npwp, setNpwp] = useState("");
   const [nib, setNib] = useState("");
   const [billingCycle, setBillingCycle] = useState("end_of_month");
+  const [paymentType, setPaymentType] = useState<"prepaid" | "postpaid">("postpaid");
+  const [postpaidTermDays, setPostpaidTermDays] = useState("");
   const [address, setAddress] = useState("");
   const [city, setCity] = useState("");
   const [province, setProvince] = useState("");
@@ -65,6 +67,11 @@ export default function AdminCustomerCreatePage() {
         npwp: npwp.trim() || null,
         nib: nib.trim() || null,
         billing_cycle: billingCycle,
+        payment_type: paymentType,
+        postpaid_term_days:
+          paymentType === "postpaid" && postpaidTermDays.trim() !== ""
+            ? Number(postpaidTermDays.trim())
+            : null,
         address: address.trim() || null,
         city: city.trim() || null,
         province: province.trim() || null,
@@ -130,6 +137,23 @@ export default function AdminCustomerCreatePage() {
             <Input value={nib} onChange={(e) => setNib(e.target.value)} placeholder="Nomor Induk Berusaha" />
           </div>
           <div className="space-y-2">
+            <Label>Tipe pembayaran</Label>
+            <Select
+              value={paymentType}
+              onValueChange={(v) => v && setPaymentType(v as "prepaid" | "postpaid")}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Pilih tipe pembayaran">
+                  {paymentType === "prepaid" ? "Pre-paid" : "Post-paid"}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="prepaid">Pre-paid</SelectItem>
+                <SelectItem value="postpaid">Post-paid</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
             <Label>Siklus penagihan</Label>
             <Select
               value={billingCycle}
@@ -149,6 +173,18 @@ export default function AdminCustomerCreatePage() {
               </SelectContent>
             </Select>
           </div>
+          {paymentType === "postpaid" && (
+            <div className="space-y-2">
+              <Label>Jatuh tempo (hari)</Label>
+              <Input
+                value={postpaidTermDays}
+                onChange={(e) => setPostpaidTermDays(e.target.value.replace(/\D/g, ""))}
+                placeholder="Contoh: 30"
+                inputMode="numeric"
+                pattern="[0-9]*"
+              />
+            </div>
+          )}
           <div className="space-y-2">
             <Label>Alamat</Label>
             <Textarea
