@@ -17,6 +17,14 @@ export async function fetchAdminBooking(id: number) {
   return apiFetch<{ data: Record<string, unknown> }>(`/admin/bookings/${id}`, { method: "GET" });
 }
 
+export async function updateAdminBooking(id: number, payload: Record<string, unknown> | FormData) {
+  const isFormData = payload instanceof FormData;
+  return apiFetch<{ data: Record<string, unknown>; message?: string }>(`/admin/bookings/${id}`, {
+    method: "PUT",
+    body: isFormData ? payload : JSON.stringify(payload),
+  });
+}
+
 export async function estimateAdminBookingPrice(payload: Record<string, unknown>) {
   return apiFetch<{ data: unknown }>(`/admin/bookings/estimate-price`, {
     method: "POST",

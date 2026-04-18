@@ -2,6 +2,14 @@ export type BookingDetail = {
   id: number;
   booking_number: string;
   status: string;
+  has_shipment?: boolean;
+  origin_location_id?: number;
+  destination_location_id?: number;
+  transport_mode_id?: number;
+  service_type_id?: number;
+  container_type_id?: number | null;
+  cargo_category_id?: number;
+  dg_class_id?: number | null;
   company?: { name?: string };
   origin_location?: { name?: string; code?: string };
   destination_location?: { name?: string; code?: string };
@@ -9,7 +17,7 @@ export type BookingDetail = {
   service_type?: { name?: string; code?: string };
   container_type?: { name?: string; size?: string };
   container_count: number;
-  cargo_category?: { name?: string };
+  cargo_category?: { name?: string; requires_temperature?: boolean; is_project_cargo?: boolean };
   estimated_weight?: string;
   estimated_cbm?: string;
   departure_date?: string;
@@ -24,7 +32,9 @@ export type BookingDetail = {
   dg_class?: { name?: string; code?: string };
   un_number?: string;
   msds_file?: string;
+  equipment_condition?: string;
+  temperature?: string | number;
   estimated_price?: string;
   rejection_reason?: string;
-  additional_services?: Array<{ name: string }>;
+  additional_services?: Array<{ id?: number; name: string; notes?: string | null }>;
 };

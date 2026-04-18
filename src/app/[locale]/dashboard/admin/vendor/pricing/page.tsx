@@ -26,6 +26,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Pencil } from "lucide-react";
 import { PaginationBar } from "@/components/data-table/pagination-bar";
 import { Button } from "@/components/ui/button";
 import { VendorPricingDialog } from "@/components/dashboard/admin/vendor-pricing-dialog";
@@ -70,6 +71,8 @@ export default function AdminVendorPricingPage() {
   const [vendorServicesRaw, setVendorServicesRaw] = useState<Record<string, unknown>[]>([]);
   const [serviceDialogOpen, setServiceDialogOpen] = useState(false);
   const [pricingDialogOpen, setPricingDialogOpen] = useState(false);
+  const [pricingDialogMode, setPricingDialogMode] = useState<"create" | "edit">("create");
+  const [pricingDialogRow, setPricingDialogRow] = useState<Record<string, unknown> | null>(null);
 
   const loadPricingForVendor = useCallback(async (vendorId: number, label: string) => {
     setDetailLoading(true);
@@ -108,7 +111,7 @@ export default function AdminVendorPricingPage() {
           const id = Number(first.id);
           if (Number.isFinite(id)) {
             setSelectedVendorId(String(id));
-            await loadPricingForVendor(id, String(first.name ?? first.code ?? `#${id}`));
+            await loadPricingForVendor(id, String(first.name ?? first.code ?? "—"));
           }
         }
       } catch (e) {
@@ -161,10 +164,14 @@ export default function AdminVendorPricingPage() {
   const selectedVendorNumericId = selectedVendorId ? Number(selectedVendorId) : null;
   const vendorServiceOptions = useMemo(
     () =>
-      vendorServicesRaw.map((vs) => ({
-        id: Number(vs.id),
-        label: vendorServiceLabel(vs),
-      })),
+      vendorServicesRaw.map((vs) => {
+        const st = vs.service_type as { name?: string } | undefined;
+        return {
+          id: Number(vs.id),
+          label: vendorServiceLabel(vs),
+          serviceType: st?.name,
+        };
+      }),
     [vendorServicesRaw]
   );
 
@@ -173,7 +180,7 @@ export default function AdminVendorPricingPage() {
     setSelectedVendorId(value);
     const row = vendorOptions.find((x) => String(x.id) === value);
     const id = Number(value);
-    const label = row ? String(row.name ?? row.code ?? `#${id}`) : `#${id}`;
+    const label = row ? String(row.name ?? row.code ?? "—") : "—";
     void loadPricingForVendor(id, label);
   };
 
@@ -185,16 +192,18 @@ export default function AdminVendorPricingPage() {
         vendorId={selectedVendorNumericId}
         onSaved={() => {
           const id = selectedVendorNumericId;
-          if (id != null) void loadPricingForVendor(id, pricingVendorLabel || `#${id}`);
+          if (id != null) void loadPricingForVendor(id, pricingVendorLabel || "—");
         }}
       />
       <VendorPricingDialog
         open={pricingDialogOpen}
         onOpenChange={setPricingDialogOpen}
+        mode={pricingDialogMode}
+        row={pricingDialogRow}
         vendorServiceOptions={vendorServiceOptions}
         onSaved={() => {
           const id = selectedVendorNumericId;
-          if (id != null) void loadPricingForVendor(id, pricingVendorLabel || `#${id}`);
+          if (id != null) void loadPricingForVendor(id, pricingVendorLabel || "—");
         }}
       />
       {error ? (
@@ -221,7 +230,11 @@ export default function AdminVendorPricingPage() {
                 disabled={
                   !selectedVendorNumericId || detailLoading || vendorServiceOptions.length === 0
                 }
-                onClick={() => setPricingDialogOpen(true)}
+                onClick={() => {
+                  setPricingDialogMode("create");
+                  setPricingDialogRow(null);
+                  setPricingDialogOpen(true);
+                }}
               >
                 Tambah tarif
               </Button>
@@ -265,14 +278,21 @@ export default function AdminVendorPricingPage() {
               disabled={loading || vendorOptions.length === 0}
             >
               <SelectTrigger className="h-9 w-full sm:max-w-md">
-                <SelectValue placeholder={loading ? "Memuat…" : "Pilih vendor"} />
+                <SelectValue placeholder={loading ? "Memuat…" : "Pilih vendor"}>
+                  {selectedVendorId
+                    ? (() => {
+                        const sel = vendorOptions.find((v) => String(v.id) === selectedVendorId);
+                        return sel ? String(sel.name ?? sel.code ?? "—") : undefined;
+                      })()
+                    : undefined}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {displayVendorOptions.map((v) => {
                   const id = String(v.id ?? "");
                   return (
                     <SelectItem key={id} value={id}>
-                      {String(v.name ?? v.code ?? id)}
+                      {String(v.name ?? v.code ?? "—")}
                     </SelectItem>
                   );
                 })}
@@ -306,6 +326,7 @@ export default function AdminVendorPricingPage() {
                         Tipe harga
                       </TableHead>
                       <TableHead className="min-w-48">Komponen tarif</TableHead>
+                      <TableHead className="w-16 text-right">Aksi</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -319,6 +340,21 @@ export default function AdminVendorPricingPage() {
                         <TableCell className="text-xs">{priceTypeLabel(row.priceType)}</TableCell>
                         <TableCell className="whitespace-pre-line text-sm leading-relaxed text-muted-foreground">
                           {row.detail}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon-sm"
+                            title="Edit tarif"
+                            onClick={() => {
+                              setPricingDialogMode("edit");
+                              setPricingDialogRow({ ...row.raw, vendor_service_id: row.vsId });
+                              setPricingDialogOpen(true);
+                            }}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
                         </TableCell>
                       </TableRow>
                     ))}

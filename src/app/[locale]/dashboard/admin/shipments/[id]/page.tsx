@@ -20,6 +20,7 @@ import { ItemAdminDialog } from "./components/dialogs/item-admin-dialog";
 
 type ShipmentDetailData = {
   company?: { name?: string };
+  booking?: { booking_number?: string; id?: number | string };
   origin_location?: { name?: string };
   destination_location?: { name?: string };
   estimated_departure?: string;
@@ -63,22 +64,18 @@ export default function AdminShipmentDetailPage() {
     );
   }
 
-  const wb = String(s.data.waybill_number ?? s.data.shipment_number ?? "Shipment");
+  const cnNum = String(s.data.waybill_number ?? s.data.shipment_number ?? "Shipment");
   const st = String(s.data.status ?? "");
   const detail = s.data as ShipmentDetailData;
 
   return (
     <div className="flex min-w-0 flex-col gap-6 pb-20">
-      <ShipmentHeader waybillNumber={wb} status={st} />
+      <ShipmentHeader cnNumber={cnNum} status={st} />
 
       <div className="flex flex-wrap gap-2">
         <Button type="button" variant="outline" size="sm" className="gap-1.5" onClick={() => void s.pdf()}>
           <Download className="h-4 w-4" />
           Cetak Consignment Note (CN)
-        </Button>
-        <Button type="button" variant="outline" size="sm" className="gap-1.5" onClick={() => void s.waybillPdf()}>
-          <Download className="h-4 w-4" />
-          Cetak Waybill
         </Button>
         <Button type="button" size="sm" onClick={s.openEditShipment}>
           Edit Jadwal
@@ -99,6 +96,8 @@ export default function AdminShipmentDetailPage() {
       <div className="grid gap-6 lg:grid-cols-2">
         <ShipmentSummaryCard
           companyName={String(detail.company?.name ?? "—")}
+          bookingNumber={detail.booking?.booking_number ? String(detail.booking.booking_number) : undefined}
+          bookingId={detail.booking?.id}
           origin={String(detail.origin_location?.name ?? "—")}
           destination={String(detail.destination_location?.name ?? "—")}
           departure={s.data.estimated_departure ? String(s.data.estimated_departure).slice(0, 10) : "—"}

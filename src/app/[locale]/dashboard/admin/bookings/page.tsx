@@ -27,6 +27,7 @@ import {
   fetchAdminBooking,
   fetchAdminBookings,
   rejectBooking,
+  updateAdminBooking,
 } from "@/lib/admin-api";
 import { ApiError } from "@/lib/api-client";
 import { rowNumber } from "@/lib/list-query";
@@ -45,6 +46,7 @@ import { useQuery } from "@tanstack/react-query";
 import { BookingStats } from "@/components/dashboard/admin/bookings/booking-stats";
 import { BookingActionsMenu } from "@/components/dashboard/admin/bookings/booking-actions-menu";
 import { BookingDetailDialog } from "@/components/dashboard/admin/bookings/booking-detail-dialog";
+import { BookingEditDialog } from "@/components/dashboard/admin/bookings/booking-edit-dialog";
 import { BookingRejectDialog } from "@/components/dashboard/admin/bookings/booking-reject-dialog";
 import type { BookingDetail } from "@/components/dashboard/admin/bookings/types";
 
@@ -69,6 +71,8 @@ type BookingRow = {
   id: number;
   booking_number: string;
   status: string;
+  shipment_exists?: boolean;
+  shipment_id?: number | null;
   company?: { name?: string };
   origin_location?: { name?: string };
   destination_location?: { name?: string };
@@ -95,6 +99,11 @@ export default function AdminBookingsPage() {
   const [detailOpen, setDetailOpen] = useState(false);
   const [detailData, setDetailData] = useState<BookingDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [detailSaving, setDetailSaving] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editData, setEditData] = useState<BookingDetail | null>(null);
+  const [editLoading, setEditLoading] = useState(false);
+  const [editSaving, setEditSaving] = useState(false);
 
   const [rejectOpen, setRejectOpen] = useState(false);
   const [rejectId, setRejectId] = useState<number | null>(null);
@@ -195,6 +204,62 @@ export default function AdminBookingsPage() {
       setDetailLoading(false);
     }
   }, []);
+
+  const openBookingEdit = useCallback(async (id: number) => {
+    setEditOpen(true);
+    setEditLoading(true);
+    setEditData(null);
+    try {
+      const res = await fetchAdminBooking(id);
+      setEditData((res as { data: BookingDetail }).data);
+    } catch (e) {
+      toast.error(e instanceof ApiError ? e.message : "Gagal memuat form edit booking.");
+      setEditOpen(false);
+    } finally {
+      setEditLoading(false);
+    }
+  }, []);
+
+  const submitDetailEdit = useCallback(async (payload: {
+    departure_date: string | null;
+    cargo_description: string | null;
+    shipper_name: string | null;
+    shipper_address: string | null;
+    shipper_phone: string | null;
+    consignee_name: string | null;
+    consignee_address: string | null;
+    consignee_phone: string | null;
+  }) => {
+    if (!detailData?.id) return;
+    setDetailSaving(true);
+    try {
+      const res = await updateAdminBooking(detailData.id, payload);
+      setDetailData((res as { data: BookingDetail }).data);
+      await reloadAll();
+      toast.success("Detail booking berhasil diperbarui.");
+    } catch (e) {
+      toast.error(e instanceof ApiError ? e.message : "Gagal memperbarui booking.");
+      throw e;
+    } finally {
+      setDetailSaving(false);
+    }
+  }, [detailData?.id, reloadAll]);
+
+  const submitBookingEdit = useCallback(async (payload: FormData) => {
+    if (!editData?.id) return;
+    setEditSaving(true);
+    try {
+      const res = await updateAdminBooking(editData.id, payload);
+      setEditData((res as { data: BookingDetail }).data);
+      await reloadAll();
+      toast.success("Booking berhasil diperbarui.");
+    } catch (e) {
+      toast.error(e instanceof ApiError ? e.message : "Gagal memperbarui booking.");
+      throw e;
+    } finally {
+      setEditSaving(false);
+    }
+  }, [editData?.id, reloadAll]);
 
   useEffect(() => {
     setPage(1);
@@ -325,6 +390,7 @@ export default function AdminBookingsPage() {
                             booking={booking}
                             canProcessOperations={canProcessOperations}
                             onOpenDetail={openBookingDetail}
+                            onOpenEdit={openBookingEdit}
                             onOpenReject={(id) => {
                               setRejectId(id);
                               setRejectReason("");
@@ -361,6 +427,18 @@ export default function AdminBookingsPage() {
         onOpenChange={setDetailOpen}
         loading={detailLoading}
         data={detailData}
+        canEdit={false}
+        saving={detailSaving}
+        onSave={submitDetailEdit}
+      />
+
+      <BookingEditDialog
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        data={editData}
+        loading={editLoading}
+        saving={editSaving}
+        onSave={submitBookingEdit}
       />
 
       <BookingRejectDialog

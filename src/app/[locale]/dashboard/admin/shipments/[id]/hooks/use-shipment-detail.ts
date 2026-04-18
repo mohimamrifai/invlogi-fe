@@ -11,7 +11,6 @@ import {
   updateAdminShipmentItem,
   deleteAdminShipmentItem,
   downloadAdminConsignmentNotePdf,
-  downloadAdminWaybillPdf,
 } from "@/lib/admin-api";
 import { ApiError } from "@/lib/api-client";
 import { firstLaravelError } from "@/lib/laravel-errors";
@@ -326,22 +325,11 @@ export function useShipmentDetail(shipmentId: number) {
   const pdf = async () => {
     try {
       const blob = await downloadAdminConsignmentNotePdf(shipmentId);
-      const wb = String(data?.waybill_number ?? shipmentId);
-      downloadBlob(blob, `consignment-note-${wb}.pdf`);
+      const cnNum = String(data?.waybill_number ?? shipmentId);
+      downloadBlob(blob, `consignment-note-${cnNum}.pdf`);
       toast.success("PDF consignment note berhasil diunduh.");
     } catch (e) {
       toast.error(e instanceof ApiError ? e.message : "Gagal unduh PDF.");
-    }
-  };
-
-  const waybillPdf = async () => {
-    try {
-      const blob = await downloadAdminWaybillPdf(shipmentId);
-      const wb = String(data?.waybill_number ?? shipmentId);
-      downloadBlob(blob, `waybill-${wb}.pdf`);
-      toast.success("PDF waybill berhasil diunduh.");
-    } catch (e) {
-      toast.error(e instanceof ApiError ? e.message : "Gagal unduh waybill PDF.");
     }
   };
 
@@ -432,6 +420,5 @@ export function useShipmentDetail(shipmentId: number) {
 
     // PDF
     pdf,
-    waybillPdf,
   };
 }

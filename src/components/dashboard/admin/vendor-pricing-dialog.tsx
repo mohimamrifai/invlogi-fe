@@ -19,23 +19,27 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { createAdminVendorPricing, fetchAdminContainerTypes } from "@/lib/admin-api";
+import { createAdminVendorPricing, updateAdminPricing, fetchAdminContainerTypes } from "@/lib/admin-api";
 import { ApiError } from "@/lib/api-client";
 import { firstLaravelError } from "@/lib/laravel-errors";
 import type { LaravelPaginated } from "@/lib/types-api";
 import { DIALOG_CREATE_HEADER_CLASS } from "@/lib/dialog-create-header";
 import { toast } from "sonner";
 
-export type VendorServiceOption = { id: number; label: string };
+export type VendorServiceOption = { id: number; label: string; serviceType?: string };
 
 export function VendorPricingDialog({
   open,
   onOpenChange,
+  mode = "create",
+  row = null,
   vendorServiceOptions,
   onSaved,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  mode?: "create" | "edit";
+  row?: Record<string, unknown> | null;
   vendorServiceOptions: VendorServiceOption[];
   onSaved: () => void;
 }) {
@@ -49,6 +53,7 @@ export function VendorPricingDialog({
   const [pricePerCbm, setPricePerCbm] = useState("");
   const [pricePerContainer, setPricePerContainer] = useState("");
   const [minimumCharge, setMinimumCharge] = useState("");
+  const [minKg, setMinKg] = useState("");
   const [effectiveFrom, setEffectiveFrom] = useState("");
   const [effectiveTo, setEffectiveTo] = useState("");
   const [isActive, setIsActive] = useState(true);
@@ -58,16 +63,31 @@ export function VendorPricingDialog({
   useEffect(() => {
     if (!open) return;
     setError(null);
-    setVendorServiceId(vendorServiceOptions[0] ? String(vendorServiceOptions[0].id) : "");
-    setContainerTypeId("");
-    setPriceType("buy");
-    setPricePerKg("");
-    setPricePerCbm("");
-    setPricePerContainer("");
-    setMinimumCharge("");
-    setEffectiveFrom("");
-    setEffectiveTo("");
-    setIsActive(true);
+    if (mode === "edit" && row) {
+      setVendorServiceId(String(row.vendor_service_id ?? ""));
+      setContainerTypeId(row.container_type_id != null ? String(row.container_type_id) : "");
+      setPriceType(row.price_type === "sell" ? "sell" : "buy");
+      setPricePerKg(row.price_per_kg != null ? String(row.price_per_kg) : "");
+      setPricePerCbm(row.price_per_cbm != null ? String(row.price_per_cbm) : "");
+      setPricePerContainer(row.price_per_container != null ? String(row.price_per_container) : "");
+      setMinimumCharge(row.minimum_charge != null ? String(row.minimum_charge) : "");
+      setMinKg(row.min_kg != null ? String(row.min_kg) : "");
+      setEffectiveFrom(row.effective_from ? String(row.effective_from).slice(0, 10) : "");
+      setEffectiveTo(row.effective_to ? String(row.effective_to).slice(0, 10) : "");
+      setIsActive(row.is_active !== false);
+    } else {
+      setVendorServiceId(vendorServiceOptions[0] ? String(vendorServiceOptions[0].id) : "");
+      setContainerTypeId("");
+      setPriceType("buy");
+      setPricePerKg("");
+      setPricePerCbm("");
+      setPricePerContainer("");
+      setMinimumCharge("");
+      setMinKg("");
+      setEffectiveFrom("");
+      setEffectiveTo("");
+      setIsActive(true);
+    }
     let cancelled = false;
     void (async () => {
       setListsLoading(true);
@@ -90,7 +110,7 @@ export function VendorPricingDialog({
     return () => {
       cancelled = true;
     };
-  }, [open, vendorServiceOptions]);
+  }, [open, mode, row, vendorServiceOptions]);
 
   const numOrNull = (s: string) => {
     const t = s.trim();
@@ -115,15 +135,22 @@ export function VendorPricingDialog({
       const pcbm = numOrNull(pricePerCbm);
       const pcont = numOrNull(pricePerContainer);
       const minc = numOrNull(minimumCharge);
+      const mkg = numOrNull(minKg);
       if (pkg != null) body.price_per_kg = pkg;
       if (pcbm != null) body.price_per_cbm = pcbm;
       if (pcont != null) body.price_per_container = pcont;
       if (minc != null) body.minimum_charge = minc;
+      if (mkg != null) body.min_kg = mkg;
       if (effectiveFrom.trim()) body.effective_from = effectiveFrom.trim();
       if (effectiveTo.trim()) body.effective_to = effectiveTo.trim();
 
-      await createAdminVendorPricing(vsId, body);
-      toast.success("Tarif berhasil ditambahkan.");
+      if (mode === "edit" && row?.id) {
+        await updateAdminPricing(Number(row.id), body);
+        toast.success("Tarif berhasil diperbarui.");
+      } else {
+        await createAdminVendorPricing(vsId, body);
+        toast.success("Tarif berhasil ditambahkan.");
+      }
       onOpenChange(false);
       onSaved();
     } catch (e) {
@@ -138,11 +165,15 @@ export function VendorPricingDialog({
   const disabled =
     !vendorServiceId || vendorServiceOptions.length === 0 || saving || listsLoading;
 
+  const selectedVs = vendorServiceOptions.find(o => String(o.id) === vendorServiceId);
+  const isFcl = selectedVs?.serviceType?.toUpperCase().includes("FCL");
+  const isLcl = selectedVs?.serviceType?.toUpperCase().includes("LCL");
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-md">
         <DialogHeader className={DIALOG_CREATE_HEADER_CLASS}>
-          <DialogTitle>Tambah tarif</DialogTitle>
+          <DialogTitle>{mode === "edit" ? "Edit tarif" : "Tambah tarif"}</DialogTitle>
         </DialogHeader>
         {error ? (
           <p className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-md px-3 py-2">{error}</p>
@@ -158,7 +189,11 @@ export function VendorPricingDialog({
               disabled={listsLoading}
             >
               <SelectTrigger className="w-full">
-                <SelectValue placeholder="Pilih lane / layanan" />
+                <SelectValue placeholder="Pilih lane / layanan">
+                  {vendorServiceId
+                    ? vendorServiceOptions.find((o) => String(o.id) === vendorServiceId)?.label ?? undefined
+                    : undefined}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {vendorServiceOptions.map((o) => (
@@ -213,48 +248,68 @@ export function VendorPricingDialog({
             </Select>
           </div>
           <div className="grid grid-cols-2 gap-2">
-            <div className="space-y-2">
-              <Label htmlFor="ppkg">Per kg</Label>
-              <Input
-                id="ppkg"
-                inputMode="decimal"
-                value={pricePerKg}
-                onChange={(e) => setPricePerKg(e.target.value)}
-                placeholder="0"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="pcbm">Per CBM</Label>
-              <Input
-                id="pcbm"
-                inputMode="decimal"
-                value={pricePerCbm}
-                onChange={(e) => setPricePerCbm(e.target.value)}
-                placeholder="0"
-              />
-            </div>
+            {!isFcl && (
+              <div className="space-y-2">
+                <Label htmlFor="ppkg">Next Tarif (Per kg)</Label>
+                <Input
+                  id="ppkg"
+                  inputMode="decimal"
+                  value={pricePerKg}
+                  onChange={(e) => setPricePerKg(e.target.value)}
+                  placeholder="0"
+                />
+              </div>
+            )}
+            {!isFcl && (
+              <div className="space-y-2">
+                <Label htmlFor="pcbm">Per CBM</Label>
+                <Input
+                  id="pcbm"
+                  inputMode="decimal"
+                  value={pricePerCbm}
+                  onChange={(e) => setPricePerCbm(e.target.value)}
+                  placeholder="0"
+                />
+              </div>
+            )}
           </div>
           <div className="grid grid-cols-2 gap-2">
-            <div className="space-y-2">
-              <Label htmlFor="pcont">Per kontainer</Label>
-              <Input
-                id="pcont"
-                inputMode="decimal"
-                value={pricePerContainer}
-                onChange={(e) => setPricePerContainer(e.target.value)}
-                placeholder="0"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="minc">Minimum charge</Label>
-              <Input
-                id="minc"
-                inputMode="decimal"
-                value={minimumCharge}
-                onChange={(e) => setMinimumCharge(e.target.value)}
-                placeholder="0"
-              />
-            </div>
+            {!isLcl && (
+              <div className="space-y-2">
+                <Label htmlFor="pcont">Harga per kontainer</Label>
+                <Input
+                  id="pcont"
+                  inputMode="decimal"
+                  value={pricePerContainer}
+                  onChange={(e) => setPricePerContainer(e.target.value)}
+                  placeholder="0"
+                />
+              </div>
+            )}
+            {!isFcl && (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="minkg">Min. Kg Awal</Label>
+                  <Input
+                    id="minkg"
+                    inputMode="numeric"
+                    value={minKg}
+                    onChange={(e) => setMinKg(e.target.value)}
+                    placeholder="Contoh: 5"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="minc">Min. Tarif (Charge awal)</Label>
+                  <Input
+                    id="minc"
+                    inputMode="decimal"
+                    value={minimumCharge}
+                    onChange={(e) => setMinimumCharge(e.target.value)}
+                    placeholder="0"
+                  />
+                </div>
+              </>
+            )}
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div className="space-y-2">

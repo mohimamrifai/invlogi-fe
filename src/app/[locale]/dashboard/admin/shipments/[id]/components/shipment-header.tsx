@@ -8,11 +8,11 @@ import { cn } from "@/lib/utils";
 import { ArrowLeft } from "lucide-react";
 
 interface ShipmentHeaderProps {
-  waybillNumber: string;
+  cnNumber: string;
   status: string;
 }
 
-export function ShipmentHeader({ waybillNumber, status }: ShipmentHeaderProps) {
+export function ShipmentHeader({ cnNumber, status }: ShipmentHeaderProps) {
   return (
     <div className="flex flex-wrap items-center gap-3">
       <Link
@@ -23,7 +23,7 @@ export function ShipmentHeader({ waybillNumber, status }: ShipmentHeaderProps) {
         Daftar shipment
       </Link>
       <h1 className="text-xl font-semibold tracking-tight">
-        CN: {waybillNumber}
+        CN: {cnNumber}
       </h1>
       <Badge variant="outline" className={cn(shipmentStatusBadgeClass(status))}>
         {shipmentStatusLabel(status)}

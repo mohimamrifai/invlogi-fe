@@ -51,7 +51,7 @@ const actionsHeadClass =
 const actionsCellClass =
   "max-md:sticky max-md:right-0 max-md:z-10 max-md:border-l max-md:border-border max-md:bg-card max-md:shadow-[-8px_0_12px_-8px_rgba(0,0,0,0.08)] max-md:group-hover:bg-muted/50 md:static md:z-auto md:border-l-0 md:shadow-none md:group-hover:bg-transparent";
 
-function ShipmentActionsMenu({ shipmentId, waybill }: { shipmentId: number; waybill: string }) {
+function ShipmentActionsMenu({ shipmentId, cnNumber }: { shipmentId: number; cnNumber: string }) {
   const router = useRouter();
   return (
     <DropdownMenu>
@@ -59,7 +59,7 @@ function ShipmentActionsMenu({ shipmentId, waybill }: { shipmentId: number; wayb
         className={cn(buttonVariants({ variant: "ghost", size: "icon-sm" }), "shrink-0")}
       >
         <MoreHorizontal className="h-4 w-4" />
-        <span className="sr-only">Menu aksi waybill {waybill}</span>
+        <span className="sr-only">Menu aksi CN {cnNumber}</span>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-52">
         <DropdownMenuItem
@@ -85,7 +85,7 @@ export function ShipmentTable({ rows, meta, perPage, loading }: ShipmentTablePro
           | { name?: string }
           | undefined;
         const svc = (shipment.service_type ?? shipment.serviceType) as { name?: string } | undefined;
-        const wb = String(shipment.waybill_number ?? shipment.shipment_number ?? "");
+        const cnNum = String(shipment.waybill_number ?? shipment.shipment_number ?? "");
         const route = [origin?.name, dest?.name].filter(Boolean).join(" → ") || "—";
 
         return {
@@ -93,7 +93,7 @@ export function ShipmentTable({ rows, meta, perPage, loading }: ShipmentTablePro
           st,
           company,
           svc,
-          wb,
+          cnNum,
           route,
         };
       }),
@@ -132,13 +132,13 @@ export function ShipmentTable({ rows, meta, perPage, loading }: ShipmentTablePro
         </TableRow>
       </TableHeader>
       <TableBody>
-        {preparedRows.map(({ shipment, st, company, svc, wb, route }, index) => {
+        {preparedRows.map(({ shipment, st, company, svc, cnNum, route }, index) => {
           return (
-            <TableRow key={wb || String(shipment.id)} className="group">
+            <TableRow key={cnNum || String(shipment.id)} className="group">
               <TableCell className="tabular-nums text-muted-foreground pl-4">
                 {rowNumber(meta?.current_page ?? 1, perPage, index)}
               </TableCell>
-              <TableCell className="font-mono text-xs font-bold text-zinc-900">{wb}</TableCell>
+              <TableCell className="font-mono text-xs font-bold text-zinc-900">{cnNum}</TableCell>
               <TableCell className="font-medium">{company?.name ?? "—"}</TableCell>
               <TableCell>{svc?.name ?? "—"}</TableCell>
               <TableCell className="text-xs">{route}</TableCell>
@@ -151,7 +151,7 @@ export function ShipmentTable({ rows, meta, perPage, loading }: ShipmentTablePro
                 <div className="flex justify-end">
                   <ShipmentActionsMenu
                     shipmentId={Number(shipment.id)}
-                    waybill={wb}
+                    cnNumber={cnNum}
                   />
                 </div>
               </TableCell>

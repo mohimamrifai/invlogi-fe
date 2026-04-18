@@ -170,7 +170,7 @@ export default function AdminVendorListPage() {
                       <TableHead className="w-12">No</TableHead>
                       <TableHead>Kode</TableHead>
                       <TableHead>Nama Vendor</TableHead>
-                      <TableHead className="text-right">Layanan</TableHead>
+                      <TableHead className="text-right">Jumlah Layanan</TableHead>
                       <TableHead className="w-24 text-right">Aksi</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -181,9 +181,9 @@ export default function AdminVendorListPage() {
                           {rowNumber(vendorMeta?.current_page ?? vendorPage, VENDOR_PER_PAGE, index)}
                         </TableCell>
                         <TableCell className="font-mono text-xs">{String(v.code ?? "—")}</TableCell>
-                        <TableCell>{String(v.name ?? "")}</TableCell>
+                        <TableCell>{String(v.name ?? "—")}</TableCell>
                         <TableCell className="text-right tabular-nums">
-                          {String(v.vendor_services_count ?? 0)}
+                          {String(v.vendor_services_count ?? 0)} Layanan
                         </TableCell>
                         <TableCell className="text-right">
                           <DropdownMenu>
@@ -261,7 +261,7 @@ export default function AdminVendorListPage() {
         open={deleteOpen}
         onOpenChange={setDeleteOpen}
         title="Hapus vendor?"
-        description={`Yakin hapus "${String(deleteRow?.name ?? "")}"?`}
+        description={`Yakin hapus "${String(deleteRow?.name ?? "—")}"?`}
         loading={deleteLoading}
         onConfirm={handleDelete}
       />

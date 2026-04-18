@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Poppins } from "next/font/google";
 import { Navbar } from "@/components/navbar";
 import { AppToaster } from "@/components/app-toaster";
+import { QueryProvider } from "@/components/query-provider";
 import "../globals.css";
 import {NextIntlClientProvider} from 'next-intl';
 import {getMessages} from 'next-intl/server';
@@ -32,11 +33,13 @@ export default async function RootLayout({
       <body
         className={`${poppins.className} antialiased bg-gray-50`}
       >
-        <NextIntlClientProvider messages={messages}>
-          <Navbar />
-          {children}
-          <AppToaster />
-        </NextIntlClientProvider>
+        <QueryProvider>
+          <NextIntlClientProvider messages={messages}>
+            <Navbar />
+            {children}
+            <AppToaster />
+          </NextIntlClientProvider>
+        </QueryProvider>
       </body>
     </html>
   );

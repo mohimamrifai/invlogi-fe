@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -10,6 +11,8 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { bookingStatusBadgeClass, bookingStatusLabelFromApi } from "@/lib/booking-status";
 import type { BookingDetail } from "./types";
@@ -19,6 +22,18 @@ interface BookingDetailDialogProps {
   onOpenChange: (open: boolean) => void;
   loading: boolean;
   data: BookingDetail | null;
+  canEdit?: boolean;
+  saving?: boolean;
+  onSave?: (payload: {
+    departure_date: string | null;
+    cargo_description: string | null;
+    shipper_name: string | null;
+    shipper_address: string | null;
+    shipper_phone: string | null;
+    consignee_name: string | null;
+    consignee_address: string | null;
+    consignee_phone: string | null;
+  }) => void | Promise<void>;
 }
 
 export function BookingDetailDialog({
@@ -26,7 +41,51 @@ export function BookingDetailDialog({
   onOpenChange,
   loading,
   data,
+  canEdit = false,
+  saving = false,
+  onSave,
 }: BookingDetailDialogProps) {
+  const editable = useMemo(
+    () => canEdit && !!data && data.status !== "cancelled",
+    [canEdit, data]
+  );
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [departureDate, setDepartureDate] = useState("");
+  const [cargoDescription, setCargoDescription] = useState("");
+  const [shipperName, setShipperName] = useState("");
+  const [shipperAddress, setShipperAddress] = useState("");
+  const [shipperPhone, setShipperPhone] = useState("");
+  const [consigneeName, setConsigneeName] = useState("");
+  const [consigneeAddress, setConsigneeAddress] = useState("");
+  const [consigneePhone, setConsigneePhone] = useState("");
+
+  const hydrateEditForm = () => {
+    if (!data) return;
+    setDepartureDate(data.departure_date ? String(data.departure_date).slice(0, 10) : "");
+    setCargoDescription(data.cargo_description ?? "");
+    setShipperName(data.shipper_name ?? "");
+    setShipperAddress(data.shipper_address ?? "");
+    setShipperPhone(data.shipper_phone ?? "");
+    setConsigneeName(data.consignee_name ?? "");
+    setConsigneeAddress(data.consignee_address ?? "");
+    setConsigneePhone(data.consignee_phone ?? "");
+  };
+
+  const submitEdit = async () => {
+    if (!onSave) return;
+    await onSave({
+      departure_date: departureDate || null,
+      cargo_description: cargoDescription || null,
+      shipper_name: shipperName || null,
+      shipper_address: shipperAddress || null,
+      shipper_phone: shipperPhone || null,
+      consignee_name: consigneeName || null,
+      consignee_address: consigneeAddress || null,
+      consignee_phone: consigneePhone || null,
+    });
+    setIsEditMode(false);
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] flex flex-col p-0 overflow-hidden sm:max-w-2xl">
@@ -92,13 +151,20 @@ export function BookingDetailDialog({
                   <InfoItem label="Service Type" value={data.service_type?.name} />
                   <InfoItem
                     label="Tgl Keberangkatan"
-                    value={
+                    value={isEditMode ? (
+                      <Input
+                        type="date"
+                        value={departureDate}
+                        onChange={(e) => setDepartureDate(e.target.value)}
+                        className="h-9"
+                      />
+                    ) : (
                       data.departure_date
                         ? new Date(data.departure_date).toLocaleDateString("id-ID", {
                             dateStyle: "long",
                           })
                         : "—"
-                    }
+                    )}
                   />
                   <InfoItem
                     label="Kontainer"
@@ -129,7 +195,15 @@ export function BookingDetailDialog({
                   <InfoItem
                     className="sm:col-span-2"
                     label="Deskripsi Barang"
-                    value={data.cargo_description}
+                    value={isEditMode ? (
+                      <Textarea
+                        value={cargoDescription}
+                        onChange={(e) => setCargoDescription(e.target.value)}
+                        className="min-h-[84px]"
+                      />
+                    ) : (
+                      data.cargo_description
+                    )}
                   />
                 </div>
               </div>
@@ -170,21 +244,41 @@ export function BookingDetailDialog({
                   <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                     Pengirim (Shipper)
                   </p>
-                  <p className="text-sm font-semibold">{data.shipper_name}</p>
-                  <p className="text-xs text-muted-foreground leading-relaxed">
-                    {data.shipper_address}
-                  </p>
-                  <p className="text-xs font-medium">📞 {data.shipper_phone}</p>
+                  {isEditMode ? (
+                    <div className="space-y-2">
+                      <Input value={shipperName} onChange={(e) => setShipperName(e.target.value)} className="h-9" />
+                      <Textarea value={shipperAddress} onChange={(e) => setShipperAddress(e.target.value)} className="min-h-[72px]" />
+                      <Input value={shipperPhone} onChange={(e) => setShipperPhone(e.target.value)} className="h-9" />
+                    </div>
+                  ) : (
+                    <>
+                      <p className="text-sm font-semibold">{data.shipper_name}</p>
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        {data.shipper_address}
+                      </p>
+                      <p className="text-xs font-medium">📞 {data.shipper_phone}</p>
+                    </>
+                  )}
                 </div>
                 <div className="space-y-2 rounded-lg border p-3">
                   <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                     Penerima (Consignee)
                   </p>
-                  <p className="text-sm font-semibold">{data.consignee_name}</p>
-                  <p className="text-xs text-muted-foreground leading-relaxed">
-                    {data.consignee_address}
-                  </p>
-                  <p className="text-xs font-medium">📞 {data.consignee_phone}</p>
+                  {isEditMode ? (
+                    <div className="space-y-2">
+                      <Input value={consigneeName} onChange={(e) => setConsigneeName(e.target.value)} className="h-9" />
+                      <Textarea value={consigneeAddress} onChange={(e) => setConsigneeAddress(e.target.value)} className="min-h-[72px]" />
+                      <Input value={consigneePhone} onChange={(e) => setConsigneePhone(e.target.value)} className="h-9" />
+                    </div>
+                  ) : (
+                    <>
+                      <p className="text-sm font-semibold">{data.consignee_name}</p>
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        {data.consignee_address}
+                      </p>
+                      <p className="text-xs font-medium">📞 {data.consignee_phone}</p>
+                    </>
+                  )}
                 </div>
               </div>
 
@@ -219,6 +313,26 @@ export function BookingDetailDialog({
           )}
         </div>
         <DialogFooter className="border-t p-4">
+          {editable && !isEditMode ? (
+            <Button
+              onClick={() => {
+                hydrateEditForm();
+                setIsEditMode(true);
+              }}
+            >
+              Edit
+            </Button>
+          ) : null}
+          {editable && isEditMode ? (
+            <Button variant="outline" onClick={() => setIsEditMode(false)} disabled={saving}>
+              Batal Edit
+            </Button>
+          ) : null}
+          {editable && isEditMode ? (
+            <Button onClick={() => void submitEdit()} disabled={saving}>
+              {saving ? "Menyimpan..." : "Simpan"}
+            </Button>
+          ) : null}
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Tutup
           </Button>

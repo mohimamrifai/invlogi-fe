@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 import {
   ArrowRightLeft,
   CheckCircle2,
+  FilePenLine,
   Eye,
   MoreHorizontal,
   XCircle,
@@ -25,9 +26,12 @@ interface BookingActionsMenuProps {
   booking: {
     id: number;
     status: string;
+    shipment_exists?: boolean;
+    shipment_id?: number | null;
   };
   canProcessOperations: boolean;
   onOpenDetail: (id: number) => void;
+  onOpenEdit: (id: number) => void;
   onOpenReject: (id: number) => void;
   onDone: () => void;
 }
@@ -36,11 +40,19 @@ export function BookingActionsMenu({
   booking,
   canProcessOperations,
   onOpenDetail,
+  onOpenEdit,
   onOpenReject,
   onDone,
 }: BookingActionsMenuProps) {
   const router = useRouter();
   const st = booking.status.toLowerCase();
+  const editDisabled = st === "cancelled" || booking.shipment_exists === true || typeof booking.shipment_id === "number";
+  const editLabel =
+    st === "cancelled"
+      ? "Edit booking (tidak tersedia: dibatalkan)"
+      : booking.shipment_exists === true || typeof booking.shipment_id === "number"
+        ? "Edit booking (tidak tersedia: sudah ada shipment)"
+        : "Edit booking";
   const showApproveReject =
     canProcessOperations && (st === "submitted" || st === "confirmed");
   const showConvert = canProcessOperations && st === "approved";
@@ -59,6 +71,19 @@ export function BookingActionsMenu({
           <Eye className="h-4 w-4" />
           Lihat detail
         </DropdownMenuItem>
+        {canProcessOperations ? (
+          <DropdownMenuItem
+            className={cn("cursor-pointer", editDisabled && "cursor-not-allowed opacity-50")}
+            disabled={editDisabled}
+            onClick={() => {
+              if (editDisabled) return;
+              onOpenEdit(booking.id);
+            }}
+          >
+            <FilePenLine className="h-4 w-4" />
+            {editLabel}
+          </DropdownMenuItem>
+        ) : null}
         {showOpsDivider ? <DropdownMenuSeparator /> : null}
         {showApproveReject ? (
           <>

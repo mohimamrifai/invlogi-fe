@@ -161,7 +161,11 @@ export function VendorServiceDialog({
               disabled={listsLoading}
             >
               <SelectTrigger className="w-full">
-                <SelectValue placeholder={listsLoading ? "Memuat…" : "Pilih"} />
+                <SelectValue placeholder={listsLoading ? "Memuat…" : "Pilih"}>
+                  {transportModeId
+                    ? transportModes.find((o) => String(o.id) === transportModeId)?.label ?? undefined
+                    : undefined}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {transportModes.map((o) => (
@@ -180,7 +184,11 @@ export function VendorServiceDialog({
               disabled={listsLoading}
             >
               <SelectTrigger className="w-full">
-                <SelectValue placeholder={listsLoading ? "Memuat…" : "Pilih"} />
+                <SelectValue placeholder={listsLoading ? "Memuat…" : "Pilih"}>
+                  {serviceTypeId
+                    ? serviceTypes.find((o) => String(o.id) === serviceTypeId)?.label ?? undefined
+                    : undefined}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {serviceTypes.map((o) => (
@@ -199,7 +207,11 @@ export function VendorServiceDialog({
               disabled={listsLoading}
             >
               <SelectTrigger className="w-full">
-                <SelectValue placeholder={listsLoading ? "Memuat…" : "Pilih"} />
+                <SelectValue placeholder={listsLoading ? "Memuat…" : "Pilih"}>
+                  {originId
+                    ? locations.find((o) => String(o.id) === originId)?.label ?? undefined
+                    : undefined}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {locations.map((o) => (
@@ -218,7 +230,11 @@ export function VendorServiceDialog({
               disabled={listsLoading}
             >
               <SelectTrigger className="w-full">
-                <SelectValue placeholder={listsLoading ? "Memuat…" : "Pilih"} />
+                <SelectValue placeholder={listsLoading ? "Memuat…" : "Pilih"}>
+                  {destinationId
+                    ? locations.find((o) => String(o.id) === destinationId)?.label ?? undefined
+                    : undefined}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {locations.map((o) => (
