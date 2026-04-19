@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { Settings, Building, User, Lock, Loader2, Save, CheckCircle2 } from "lucide-react";
+import { Settings, Building, User, Lock, Loader2, Save, CheckCircle2, Users, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,6 +15,8 @@ import { useAuthStore } from "@/lib/store";
 import { toast } from "sonner";
 import { ApiError } from "@/lib/api-client";
 import { firstLaravelError } from "@/lib/laravel-errors";
+
+import { CustomerUsersTab } from "./customer-users-tab";
 
 interface CompanyData {
   id: number;
@@ -63,6 +65,8 @@ export default function CompanySettingsPage() {
 
   // Password change state
   const [savingPassword, setSavingPassword] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showPasswordConfirmation, setShowPasswordConfirmation] = useState(false);
   const [passwordForm, setPasswordForm] = useState({
     password: "",
     password_confirmation: "",
@@ -190,9 +194,9 @@ export default function CompanySettingsPage() {
 
   const billingCycleLabel = (cycle?: string) => {
     switch (cycle) {
-      case "1_to_15": return "1 - 15";
-      case "16_to_eom": return "16 - Akhir Bulan";
-      case "1_to_15_and_16_to_eom": return "1-15 & 16-Akhir Bulan";
+      case "half_monthly_1": return "Tgl 1 - 15";
+      case "half_monthly_2": return "Tgl 16 - Akhir Bulan";
+      case "both_half": return "Tgl 1-15 & 16-Akhir Bulan";
       case "end_of_month": return "Akhir Bulan";
       default: return cycle ?? "—";
     }
@@ -225,11 +229,16 @@ export default function CompanySettingsPage() {
         </div>
       ) : (
         <Tabs defaultValue="company" className="w-full">
-          <TabsList className="mb-4 grid w-full grid-cols-3 lg:w-auto lg:inline-flex">
+          <TabsList className="mb-4 grid w-full grid-cols-4 lg:w-auto lg:inline-flex">
             <TabsTrigger value="company" className="gap-2">
               <Building className="h-4 w-4" />
               <span className="hidden sm:inline">Profil Perusahaan</span>
               <span className="sm:hidden">Perusahaan</span>
+            </TabsTrigger>
+            <TabsTrigger value="users" className="gap-2">
+              <Users className="h-4 w-4" />
+              <span className="hidden sm:inline">Manajemen Pengguna</span>
+              <span className="sm:hidden">Tim</span>
             </TabsTrigger>
             <TabsTrigger value="profile" className="gap-2">
               <User className="h-4 w-4" />
@@ -412,6 +421,11 @@ export default function CompanySettingsPage() {
           </TabsContent>
 
           {/* ══ USER PROFILE TAB ══ */}
+          <TabsContent value="users">
+            <CustomerUsersTab />
+          </TabsContent>
+
+          {/* ══ PROFILE TAB ══ */}
           <TabsContent value="profile">
             <Card>
               <CardHeader>
@@ -494,30 +508,62 @@ export default function CompanySettingsPage() {
                 <div className="grid gap-4 sm:max-w-md">
                   <div className="space-y-2">
                     <Label htmlFor="new-password">Password Baru</Label>
-                    <Input
-                      id="new-password"
-                      type="password"
-                      value={passwordForm.password}
-                      onChange={(e) =>
-                        setPasswordForm((prev) => ({ ...prev, password: e.target.value }))
-                      }
-                      placeholder="Minimal 8 karakter"
-                    />
+                    <div className="relative">
+                      <Input
+                        id="new-password"
+                        type={showPassword ? "text" : "password"}
+                        value={passwordForm.password}
+                        onChange={(e) =>
+                          setPasswordForm((prev) => ({ ...prev, password: e.target.value }))
+                        }
+                        placeholder="Minimal 8 karakter"
+                        className="pr-10"
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                        onClick={() => setShowPassword(!showPassword)}
+                      >
+                        {showPassword ? (
+                          <EyeOff className="h-4 w-4 text-muted-foreground" />
+                        ) : (
+                          <Eye className="h-4 w-4 text-muted-foreground" />
+                        )}
+                      </Button>
+                    </div>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="confirm-password">Konfirmasi Password Baru</Label>
-                    <Input
-                      id="confirm-password"
-                      type="password"
-                      value={passwordForm.password_confirmation}
-                      onChange={(e) =>
-                        setPasswordForm((prev) => ({
-                          ...prev,
-                          password_confirmation: e.target.value,
-                        }))
-                      }
-                      placeholder="Ulangi password baru"
-                    />
+                    <div className="relative">
+                      <Input
+                        id="confirm-password"
+                        type={showPasswordConfirmation ? "text" : "password"}
+                        value={passwordForm.password_confirmation}
+                        onChange={(e) =>
+                          setPasswordForm((prev) => ({
+                            ...prev,
+                            password_confirmation: e.target.value,
+                          }))
+                        }
+                        placeholder="Ulangi password baru"
+                        className="pr-10"
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                        onClick={() => setShowPasswordConfirmation(!showPasswordConfirmation)}
+                      >
+                        {showPasswordConfirmation ? (
+                          <EyeOff className="h-4 w-4 text-muted-foreground" />
+                        ) : (
+                          <Eye className="h-4 w-4 text-muted-foreground" />
+                        )}
+                      </Button>
+                    </div>
                   </div>
                 </div>
 
