@@ -233,10 +233,12 @@ export function useBookingForm() {
 
   // NEW: Auto-DG logic
   useEffect(() => {
-    if (equipmentCondition === "RESIDUAL") {
+    if (equipmentCondition === "RESIDUAL" || selectedCC?.code === "DG") {
       setIsDG(true);
+    } else {
+      setIsDG(false);
     }
-  }, [equipmentCondition]);
+  }, [equipmentCondition, selectedCC]);
 
   const buildPayload = () => ({
     origin_location_id: originId ? Number(originId) : null,

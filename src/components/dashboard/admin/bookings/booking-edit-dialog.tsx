@@ -215,6 +215,18 @@ export function BookingEditDialog({
   ];
   const cargoCategoryOptions: ComboOption[] = cargoCats.map((c) => ({ value: String(c.id), label: c.name }));
 
+  // Sync isDg
+  useEffect(() => {
+    if (cargoCategoryOptions.length > 0) {
+      const selectedCat = cargoCats.find((c) => String(c.id) === cargoCategoryId);
+      if (selectedCat?.code === "DG" || equipmentCondition === "RESIDUAL") {
+        setIsDg(true);
+      } else {
+        setIsDg(false);
+      }
+    }
+  }, [cargoCategoryId, equipmentCondition, cargoCats, cargoCategoryOptions.length]);
+
   const renderError = (field: string) => {
     const msgs = validationErrors?.[field];
     if (!msgs?.length) return null;
@@ -387,11 +399,11 @@ export function BookingEditDialog({
 
             <DangerousGoodsSection
               isDg={isDg}
-              onIsDgChange={setIsDg}
               dgClassId={dgClassId}
               onDgClassIdChange={setDgClassId}
               unNumber={unNumber}
               onUnNumberChange={setUnNumber}
+              msdsFile={msdsFile}
               onMsdsFileChange={setMsdsFile}
               dgClasses={dgClasses}
               validationErrors={validationErrors ?? undefined}

@@ -5,7 +5,6 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { CT, CC, DC } from "../../hooks/use-booking-form";
-import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import {
   Combobox,
@@ -48,7 +47,6 @@ interface CargoDetailSectionProps {
   selectedCT?: CT;
   selectedCC?: CC;
   isDG: boolean;
-  setIsDG: (v: boolean) => void;
   dgClassId: string;
   setDgClassId: (v: string) => void;
   unNumber: string;
@@ -93,7 +91,6 @@ export function CargoDetailSection({
   selectedCT,
   selectedCC,
   isDG,
-  setIsDG,
   dgClassId,
   setDgClassId,
   unNumber,
@@ -340,20 +337,12 @@ export function CargoDetailSection({
         )}
 
         {/* DG Section */}
-        <div className="sm:col-span-2 border-t pt-4 mt-2">
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="is_dg"
-              checked={isDG}
-              onCheckedChange={(checked) => setIsDG(!!checked)}
-            />
-            <Label htmlFor="is_dg" className="text-sm font-bold cursor-pointer">
-              Kargo Berbahaya (Dangerous Goods)
+        {isDG && (
+          <div className="sm:col-span-2 border-t pt-4 mt-2">
+            <Label className="text-sm font-bold text-red-600 mb-2 block">
+              Detail Kargo Berbahaya (Dangerous Goods)
             </Label>
-          </div>
-          
-          {isDG && (
-            <div className="grid gap-4 sm:grid-cols-3 mt-4 animate-in fade-in slide-in-from-top-2 duration-300 bg-amber-50/30 p-4 rounded-xl border border-amber-100">
+            <div className="grid gap-4 sm:grid-cols-3 animate-in fade-in slide-in-from-top-2 duration-300 bg-amber-50/30 p-4 rounded-xl border border-amber-100">
               <div className="space-y-1">
                 <Label>DG Class <span className="text-red-500">*</span></Label>
                 <Combobox
@@ -411,8 +400,8 @@ export function CargoDetailSection({
                 )}
               </div>
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
         <div className="sm:col-span-2 space-y-1">
           <Label className="flex justify-between items-center">

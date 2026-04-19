@@ -26,9 +26,23 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Pencil } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Eye, MoreHorizontal, Pencil } from "lucide-react";
 import { PaginationBar } from "@/components/data-table/pagination-bar";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { VendorPricingDialog } from "@/components/dashboard/admin/vendor-pricing-dialog";
 import { VendorServiceDialog } from "@/components/dashboard/admin/vendor-service-dialog";
 import { fetchAdminVendor, fetchAdminVendors } from "@/lib/admin-api";
@@ -73,6 +87,9 @@ export default function AdminVendorPricingPage() {
   const [pricingDialogOpen, setPricingDialogOpen] = useState(false);
   const [pricingDialogMode, setPricingDialogMode] = useState<"create" | "edit">("create");
   const [pricingDialogRow, setPricingDialogRow] = useState<Record<string, unknown> | null>(null);
+  
+  const [viewDialogOpen, setViewDialogOpen] = useState(false);
+  const [viewDialogRow, setViewDialogRow] = useState<PricingRow | null>(null);
 
   const loadPricingForVendor = useCallback(async (vendorId: number, label: string) => {
     setDetailLoading(true);
@@ -342,19 +359,36 @@ export default function AdminVendorPricingPage() {
                           {row.detail}
                         </TableCell>
                         <TableCell className="text-right">
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon-sm"
-                            title="Edit tarif"
-                            onClick={() => {
-                              setPricingDialogMode("edit");
-                              setPricingDialogRow({ ...row.raw, vendor_service_id: row.vsId });
-                              setPricingDialogOpen(true);
-                            }}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger
+                              className={cn(buttonVariants({ variant: "ghost", size: "icon-sm" }), "shrink-0")}
+                            >
+                              <MoreHorizontal className="h-4 w-4" />
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                className="cursor-pointer"
+                                onClick={() => {
+                                  setViewDialogRow(row);
+                                  setViewDialogOpen(true);
+                                }}
+                              >
+                                <Eye className="mr-2 h-4 w-4" />
+                                Detail
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                className="cursor-pointer"
+                                onClick={() => {
+                                  setPricingDialogMode("edit");
+                                  setPricingDialogRow({ ...row.raw, vendor_service_id: row.vsId });
+                                  setPricingDialogOpen(true);
+                                }}
+                              >
+                                <Pencil className="mr-2 h-4 w-4" />
+                                Edit
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -380,6 +414,55 @@ export default function AdminVendorPricingPage() {
           )}
         </CardContent>
       </Card>
+
+      <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
+        <DialogContent className="sm:max-w-md max-h-[85vh] overflow-y-auto" showCloseButton>
+          <DialogHeader>
+            <DialogTitle>Detail Tarif Vendor</DialogTitle>
+          </DialogHeader>
+          {viewDialogRow ? (
+            <div className="grid grid-cols-3 gap-3 px-1 text-sm max-h-[65vh] overflow-y-auto">
+              <div className="text-muted-foreground">Lane</div>
+              <div className="col-span-2 font-medium">{viewDialogRow.lane}</div>
+
+              <div className="text-muted-foreground">Service</div>
+              <div className="col-span-2 font-medium">{viewDialogRow.service}</div>
+
+              <div className="text-muted-foreground">Tipe Harga</div>
+              <div className="col-span-2 font-medium">{priceTypeLabel(viewDialogRow.priceType)}</div>
+
+              <div className="text-muted-foreground">Komponen Tarif</div>
+              <div className="col-span-2 whitespace-pre-line font-medium leading-relaxed">
+                {viewDialogRow.detail}
+              </div>
+
+              <div className="text-muted-foreground">Berlaku Dari</div>
+              <div className="col-span-2 font-medium">
+                {viewDialogRow.raw?.effective_from ? String(viewDialogRow.raw.effective_from).slice(0, 10) : "—"}
+              </div>
+
+              <div className="text-muted-foreground">Berlaku S/d</div>
+              <div className="col-span-2 font-medium">
+                {viewDialogRow.raw?.effective_to ? String(viewDialogRow.raw.effective_to).slice(0, 10) : "—"}
+              </div>
+
+              <div className="text-muted-foreground">Status Aktif</div>
+              <div className="col-span-2 font-medium">
+                {viewDialogRow.raw?.is_active === false ? (
+                  <span className="text-red-600">Tidak Aktif</span>
+                ) : (
+                  <span className="text-green-600">Aktif</span>
+                )}
+              </div>
+            </div>
+          ) : null}
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setViewDialogOpen(false)}>
+              Tutup
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

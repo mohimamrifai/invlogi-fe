@@ -136,7 +136,6 @@ export default function CreateBookingPage() {
             selectedCT={f.selectedCT}
             selectedCC={f.selectedCC}
             isDG={f.isDG}
-            setIsDG={f.setIsDG}
             dgClassId={f.dgClassId}
             setDgClassId={f.setDgClassId}
             unNumber={f.unNumber}

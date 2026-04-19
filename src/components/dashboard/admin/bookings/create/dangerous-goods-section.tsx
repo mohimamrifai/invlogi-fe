@@ -1,6 +1,5 @@
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import {
   Select,
@@ -12,11 +11,11 @@ import {
 
 interface DangerousGoodsSectionProps {
   isDg: boolean;
-  onIsDgChange: (v: boolean) => void;
   dgClassId: string;
   onDgClassIdChange: (v: string) => void;
   unNumber: string;
   onUnNumberChange: (v: string) => void;
+  msdsFile: File | null;
   onMsdsFileChange: (file: File | null) => void;
   dgClasses: { id: number; name: string; code: string }[];
   validationErrors?: Record<string, string[]>;
@@ -25,11 +24,11 @@ interface DangerousGoodsSectionProps {
 
 export function DangerousGoodsSection({
   isDg,
-  onIsDgChange,
   dgClassId,
   onDgClassIdChange,
   unNumber,
   onUnNumberChange,
+  msdsFile,
   onMsdsFileChange,
   dgClasses,
   validationErrors,
@@ -37,17 +36,15 @@ export function DangerousGoodsSection({
 }: DangerousGoodsSectionProps) {
   return (
     <div className="sm:col-span-2 space-y-4">
-      <div className="flex items-center gap-2 pt-2">
-        <Checkbox id="is-dg" checked={isDg} onCheckedChange={(v) => onIsDgChange(v === true)} />
-        <Label htmlFor="is-dg" className="font-semibold text-red-600">
-          Barang Berbahaya (DG / Dangerous Goods)
-        </Label>
-      </div>
-      {renderError("is_dangerous_goods")}
-
       {isDg && (
-        <div className="grid gap-4 sm:grid-cols-2 rounded-lg border border-red-100 bg-red-50/20 p-4">
-          <div className="space-y-2">
+        <>
+          <div className="flex items-center gap-2 pt-2">
+            <Label className="font-semibold text-red-600">
+              Detail Barang Berbahaya (DG / Dangerous Goods)
+            </Label>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2 rounded-lg border border-red-100 bg-red-50/20 p-4">
+            <div className="space-y-2">
             <Label>DG Class</Label>
             <Select value={dgClassId} onValueChange={(v) => v && onDgClassIdChange(v)}>
               <SelectTrigger
@@ -99,7 +96,8 @@ export function DangerousGoodsSection({
             </p>
             {renderError("msds_file")}
           </div>
-        </div>
+          </div>
+        </>
       )}
     </div>
   );

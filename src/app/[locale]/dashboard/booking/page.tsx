@@ -28,10 +28,19 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { PaginationBar } from "@/components/data-table/pagination-bar";
 import { TableToolbar } from "@/components/data-table/table-toolbar";
-import { ClipboardList, Trash2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { ClipboardList, Trash2, Eye, Pencil, MoreHorizontal } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   BOOKING_STATUS_KEYS,
   bookingStatusBadgeClass,
@@ -45,6 +54,10 @@ import { useDebouncedValue } from "@/lib/use-debounced-value";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
+import { BookingDetailDialog } from "@/components/dashboard/admin/bookings/booking-detail-dialog";
+import { BookingEditDialog } from "@/components/dashboard/admin/bookings/booking-edit-dialog";
+import type { BookingDetail } from "@/components/dashboard/admin/bookings/types";
+import { updateCustomerBooking, fetchCustomerBookingDetail } from "@/lib/customer-api";
 
 type Row = Record<string, unknown>;
 
@@ -64,7 +77,16 @@ export default function MyBookingsPage() {
   const [statusFilter, setStatusFilter] = useState("all");
 
   const [cancellingId, setCancellingId] = useState<number | null>(null);
+  const [cancelReason, setCancelReason] = useState("");
   const [submittingCancel, setSubmittingCancel] = useState(false);
+
+  const [detailDialogOpen, setDetailDialogOpen] = useState(false);
+  const [detailId, setDetailId] = useState<number | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailData, setDetailData] = useState<BookingDetail | null>(null);
+
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [submittingEdit, setSubmittingEdit] = useState(false);
 
   const {
     data: paginatedBookings,
@@ -106,9 +128,13 @@ export default function MyBookingsPage() {
 
   const handleCancelRequest = async () => {
     if (!cancellingId) return;
+    if (!cancelReason.trim()) {
+      toast.error("Alasan pembatalan wajib diisi.");
+      return;
+    }
     setSubmittingCancel(true);
     try {
-      await cancelCustomerBooking(cancellingId);
+      await cancelCustomerBooking(cancellingId, cancelReason.trim());
       toast.success("Booking berhasil dibatalkan.");
       void refetch();
     } catch (err) {
@@ -116,6 +142,61 @@ export default function MyBookingsPage() {
     } finally {
       setSubmittingCancel(false);
       setCancellingId(null);
+      setCancelReason("");
+    }
+  };
+
+  const handleOpenDetail = async (id: number) => {
+    setDetailId(id);
+    setDetailDialogOpen(true);
+    setDetailLoading(true);
+    setDetailData(null);
+    try {
+      const res = await fetchCustomerBookingDetail(id);
+      setDetailData((res as { data: BookingDetail }).data);
+    } catch (e) {
+      toast.error(e instanceof ApiError ? e.message : "Gagal memuat detail booking.");
+      setDetailDialogOpen(false);
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+
+  const handleOpenEdit = async (id: number) => {
+    setDetailId(id);
+    setEditDialogOpen(true);
+    setDetailLoading(true);
+    setDetailData(null);
+    try {
+      const res = await fetchCustomerBookingDetail(id);
+      setDetailData((res as { data: BookingDetail }).data);
+    } catch (e) {
+      toast.error(e instanceof ApiError ? e.message : "Gagal memuat detail booking.");
+      setEditDialogOpen(false);
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+
+  const handleSaveEdit = async (payload: FormData) => {
+    if (!detailId) return;
+    setSubmittingEdit(true);
+    try {
+      const payloadObj: Record<string, unknown> = {};
+      payload.forEach((val, key) => {
+        if (key === "additional_services") {
+          payloadObj[key] = JSON.parse(val as string);
+        } else {
+          payloadObj[key] = val;
+        }
+      });
+      await updateCustomerBooking(detailId, payloadObj);
+      toast.success("Booking berhasil diperbarui.");
+      void refetch();
+    } catch (e) {
+      throw e;
+    } finally {
+      setSubmittingEdit(false);
     }
   };
 
@@ -185,7 +266,8 @@ export default function MyBookingsPage() {
                     const dest = (booking.destination_location ?? booking.destinationLocation) as { name?: string; code?: string } | undefined;
                     const svc = (booking.service_type ?? booking.serviceType) as { name?: string } | undefined;
                     const bNum = String(booking.booking_number ?? "");
-                    const canCancel = st === "submitted";
+                    const canEdit = st === "submitted" || (st === "approved" && !booking.shipment);
+                    const canCancel = st === "submitted" || (st === "approved" && !booking.shipment);
 
                     return (
                       <TableRow key={booking.id as number}>
@@ -209,17 +291,42 @@ export default function MyBookingsPage() {
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right">
-                          {canCancel && (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50"
-                              onClick={() => setCancellingId(booking.id as number)}
-                              title="Batalkan Booking"
+                          <DropdownMenu>
+                            <DropdownMenuTrigger
+                              className={cn(buttonVariants({ variant: "ghost", size: "icon-sm" }), "shrink-0")}
                             >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          )}
+                              <MoreHorizontal className="h-4 w-4" />
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                className="cursor-pointer"
+                                onClick={() => handleOpenDetail(Number(booking.id))}
+                              >
+                                <Eye className="mr-2 h-4 w-4" />
+                                Detail
+                              </DropdownMenuItem>
+                              
+                              {canEdit && (
+                                <DropdownMenuItem
+                                  className="cursor-pointer"
+                                  onClick={() => handleOpenEdit(Number(booking.id))}
+                                >
+                                  <Pencil className="mr-2 h-4 w-4" />
+                                  Edit
+                                </DropdownMenuItem>
+                              )}
+
+                              {canCancel && (
+                                <DropdownMenuItem
+                                  className="cursor-pointer text-red-600 focus:text-red-700"
+                                  onClick={() => setCancellingId(booking.id as number)}
+                                >
+                                  <Trash2 className="mr-2 h-4 w-4" />
+                                  Batalkan
+                                </DropdownMenuItem>
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </TableCell>
                       </TableRow>
                     );
@@ -244,7 +351,12 @@ export default function MyBookingsPage() {
         </CardContent>
       </Card>
 
-      <AlertDialog open={!!cancellingId} onOpenChange={(o) => !o && setCancellingId(null)}>
+      <AlertDialog open={!!cancellingId} onOpenChange={(o) => {
+        if (!o) {
+          setCancellingId(null);
+          setCancelReason("");
+        }
+      }}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Batalkan Booking?</AlertDialogTitle>
@@ -252,6 +364,16 @@ export default function MyBookingsPage() {
               Apakah Anda yakin ingin membatalkan permintaan booking ini? Tindakan ini tidak dapat dibatalkan.
             </AlertDialogDescription>
           </AlertDialogHeader>
+          <div className="py-4">
+            <Label htmlFor="cancel-reason" className="text-xs mb-2 block font-medium">Alasan Pembatalan</Label>
+            <Input
+              id="cancel-reason"
+              placeholder="Berikan alasan pembatalan..."
+              value={cancelReason}
+              onChange={(e) => setCancelReason(e.target.value)}
+              disabled={submittingCancel}
+            />
+          </div>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={submittingCancel}>Kembali</AlertDialogCancel>
             <AlertDialogAction
@@ -267,6 +389,22 @@ export default function MyBookingsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <BookingDetailDialog
+        open={detailDialogOpen}
+        onOpenChange={setDetailDialogOpen}
+        loading={detailLoading}
+        data={detailData}
+      />
+
+      <BookingEditDialog
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        loading={detailLoading}
+        saving={submittingEdit}
+        data={detailData}
+        onSave={handleSaveEdit}
+      />
     </div>
   );
 }

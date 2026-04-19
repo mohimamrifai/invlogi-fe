@@ -53,6 +53,10 @@ export function AddOnServiceSection({
             if (svcs.length === 0) return null;
 
             const activeCount = svcs.filter((s) => selectedAddOns.includes(s.id)).length;
+            const activeNames = svcs
+              .filter((s) => selectedAddOns.includes(s.id))
+              .map((s) => s.name)
+              .join(", ");
 
             return (
               <Popover key={cat.key}>
@@ -68,8 +72,8 @@ export function AddOnServiceSection({
                         </div>
                         <div className="flex flex-col min-w-0">
                           <span className="text-xs font-bold text-zinc-900 leading-tight">{cat.label}</span>
-                          <span className="text-xs text-zinc-500 leading-tight">
-                            {activeCount > 0 ? `${activeCount} dipilih` : "Pilih layanan"}
+                          <span className="text-xs text-zinc-500 leading-tight truncate max-w-[120px]">
+                            {activeCount > 0 ? activeNames : "Pilih layanan"}
                           </span>
                         </div>
                       </div>

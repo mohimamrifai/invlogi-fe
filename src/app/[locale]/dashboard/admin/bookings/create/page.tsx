@@ -108,6 +108,16 @@ export default function AdminCreateBookingPage() {
   const [unNumber, setUnNumber] = useState("");
   const [msdsFile, setMsdsFile] = useState<File | null>(null);
 
+  // Auto-DG logic based on Cargo Category
+  useEffect(() => {
+    const selectedCC = cargoCats.find((c) => String(c.id) === cargoCategoryId);
+    if (selectedCC?.code === "DG") {
+      setIsDg(true);
+    } else {
+      setIsDg(false);
+    }
+  }, [cargoCategoryId, cargoCats]);
+
   const [selectedAddOns, setSelectedAddOns] = useState<number[]>([]);
   const [estimate, setEstimate] = useState<string | null>(null);
   const [estimateBreakdown, setEstimateBreakdown] = useState<EstimateBreakdown | null>(null);
@@ -609,11 +619,11 @@ export default function AdminCreateBookingPage() {
             
             <DangerousGoodsSection
               isDg={isDg}
-              onIsDgChange={setIsDg}
               dgClassId={dgClassId}
               onDgClassIdChange={setDgClassId}
               unNumber={unNumber}
               onUnNumberChange={setUnNumber}
+              msdsFile={msdsFile}
               onMsdsFileChange={setMsdsFile}
               dgClasses={dgClasses}
               validationErrors={validationErrors ?? undefined}

@@ -108,9 +108,23 @@ export async function createCustomerBookingMultipart(formData: FormData) {
   });
 }
 
-export async function cancelCustomerBooking(bookingId: number) {
+export async function updateCustomerBooking(bookingId: number, payload: Record<string, unknown>) {
+  return apiFetch(`/customer/bookings/${bookingId}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function fetchCustomerBookingDetail(bookingId: number) {
+  return apiFetch<{ data: unknown }>(`/customer/bookings/${bookingId}`, {
+    method: "GET",
+  });
+}
+
+export async function cancelCustomerBooking(bookingId: number, reason: string) {
   return apiFetch(`/customer/bookings/${bookingId}/cancel`, {
     method: "POST",
+    body: JSON.stringify({ reason }),
   });
 }
 
