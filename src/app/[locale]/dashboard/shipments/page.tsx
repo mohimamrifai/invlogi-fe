@@ -20,16 +20,24 @@ import {
 } from "@/components/ui/table";
 import { PaginationBar } from "@/components/data-table/pagination-bar";
 import { TableToolbar } from "@/components/data-table/table-toolbar";
-import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { buttonVariants } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Download, MoreHorizontal, Truck } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { MoreHorizontal, Truck, Eye } from "lucide-react";
 import { SHIPMENT_STATUS_KEYS, shipmentStatusBadgeClass, shipmentStatusLabel } from "@/lib/shipment-status";
-import { downloadCustomerConsignmentNotePdf, downloadCustomerWaybillPdf, fetchCustomerShipments } from "@/lib/customer-api";
+import { fetchCustomerShipments, fetchCustomerShipment } from "@/lib/customer-api";
 import type { LaravelPaginated } from "@/lib/types-api";
 import { ApiError } from "@/lib/api-client";
 import { rowNumber } from "@/lib/list-query";
@@ -37,15 +45,6 @@ import { useDebouncedValue } from "@/lib/use-debounced-value";
 import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
-
-function downloadBlob(blob: Blob, filename: string) {
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(url);
-}
 
 type Row = Record<string, unknown>;
 
@@ -63,6 +62,10 @@ export default function CustomerShipmentsPage() {
   const [searchInput, setSearchInput] = useState("");
   const debouncedSearch = useDebouncedValue(searchInput, 400);
   const [statusFilter, setStatusFilter] = useState("all");
+
+  const [detailDialogOpen, setDetailDialogOpen] = useState(false);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailData, setDetailData] = useState<Record<string, unknown> | null>(null);
 
   const statusParam = statusFilter === "all" ? undefined : statusFilter;
 
@@ -105,23 +108,18 @@ export default function CustomerShipmentsPage() {
 
 
 
-  const handleDownloadCN = async (id: number, wb: string) => {
+  const handleOpenDetail = async (id: number) => {
+    setDetailDialogOpen(true);
+    setDetailLoading(true);
     try {
-      const blob = await downloadCustomerConsignmentNotePdf(id);
-      downloadBlob(blob, `consignment-note-${wb}.pdf`);
-      toast.success("Consignment Note berhasil diunduh.");
+      const res = await fetchCustomerShipment(id);
+      // API mengembalikan objek dengan properti "data" jika menggunakan Laravel Resource
+      const dataObj = res as { data?: Record<string, unknown> };
+      setDetailData(dataObj.data ?? res);
     } catch (e) {
-      toast.error(e instanceof ApiError ? e.message : "Gagal mengunduh CN.");
-    }
-  };
-
-  const handleDownloadWaybill = async (id: number, wb: string) => {
-    try {
-      const blob = await downloadCustomerWaybillPdf(id);
-      downloadBlob(blob, `waybill-${wb}.pdf`);
-      toast.success("Waybill berhasil diunduh.");
-    } catch (e) {
-      toast.error(e instanceof ApiError ? e.message : "Gagal mengunduh waybill.");
+      toast.error(e instanceof ApiError ? e.message : "Gagal memuat detail shipment.");
+    } finally {
+      setDetailLoading(false);
     }
   };
 
@@ -199,13 +197,13 @@ export default function CustomerShipmentsPage() {
                       | { name?: string }
                       | undefined;
                     const svc = (shipment.service_type ?? shipment.serviceType) as { name?: string } | undefined;
-                    const waybill = String(shipment.waybill_number ?? shipment.shipment_number ?? "");
+                    const cnNumber = String(shipment.waybill_number ?? shipment.shipment_number ?? "").replace(/^WB-/i, "CN-");
                     return (
-                      <TableRow key={waybill || String(shipment.id)}>
+                      <TableRow key={cnNumber || String(shipment.id)}>
                         <TableCell className="tabular-nums text-muted-foreground">
                           {rowNumber(meta?.current_page ?? page, PER_PAGE, index)}
                         </TableCell>
-                        <TableCell className="font-mono text-xs">{waybill}</TableCell>
+                        <TableCell className="font-mono text-xs">{cnNumber}</TableCell>
                         <TableCell>{svc?.name ?? "—"}</TableCell>
                         <TableCell>{origin?.name ?? "—"}</TableCell>
                         <TableCell>{dest?.name ?? "—"}</TableCell>
@@ -216,19 +214,15 @@ export default function CustomerShipmentsPage() {
                         </TableCell>
                         <TableCell className="text-right">
                           <DropdownMenu>
-                            <DropdownMenuTrigger>
-                              <Button variant="ghost" size="icon-sm">
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
+                            <DropdownMenuTrigger
+                              className={cn(buttonVariants({ variant: "ghost", size: "icon-sm" }), "shrink-0")}
+                            >
+                              <MoreHorizontal className="h-4 w-4" />
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => void handleDownloadCN(id, waybill)}>
-                                <Download className="mr-2 h-4 w-4" />
-                                Cetak Consignment Note (CN)
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => void handleDownloadWaybill(id, waybill)}>
-                                <Download className="mr-2 h-4 w-4" />
-                                Cetak Waybill
+                              <DropdownMenuItem onClick={() => handleOpenDetail(id)}>
+                                <Eye className="mr-2 h-4 w-4" />
+                                Lihat Detail
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -257,6 +251,91 @@ export default function CustomerShipmentsPage() {
           )}
         </CardContent>
       </Card>
+
+      <Dialog open={detailDialogOpen} onOpenChange={setDetailDialogOpen}>
+        <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Detail Shipment {detailData?.shipment_number || detailData?.waybill_number ? `- ${String(detailData.waybill_number ?? detailData.shipment_number).replace(/^WB-/i, "CN-")}` : ""}</DialogTitle>
+            <DialogDescription>
+              Informasi lengkap untuk shipment ini.
+            </DialogDescription>
+          </DialogHeader>
+          {detailLoading ? (
+            <div className="space-y-4 py-4">
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-3/4" />
+            </div>
+          ) : detailData ? (
+            <div className="space-y-6 py-4 text-sm">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-muted-foreground">CN Number</p>
+                  <p className="font-medium">{String(detailData.waybill_number ?? detailData.shipment_number ?? "—").replace(/^WB-/i, "CN-")}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Status</p>
+                  <Badge variant="outline" className={shipmentStatusBadgeClass(String(detailData.status ?? ""))}>
+                    {shipmentStatusLabel(String(detailData.status ?? ""))}
+                  </Badge>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Service</p>
+                  <p className="font-medium">{((detailData.service_type ?? detailData.serviceType) as { name?: string } | undefined)?.name ?? "—"}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Origin</p>
+                  <p className="font-medium">{((detailData.origin_location ?? detailData.originLocation) as { name?: string } | undefined)?.name ?? "—"}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Destination</p>
+                  <p className="font-medium">{((detailData.destination_location ?? detailData.destinationLocation) as { name?: string } | undefined)?.name ?? "—"}</p>
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <h4 className="font-semibold text-base">Pengirim</h4>
+                <div className="grid grid-cols-2 gap-2 p-3 bg-muted/50 rounded-md">
+                  <div>
+                    <p className="text-muted-foreground text-xs">Nama</p>
+                    <p>{String((detailData.booking as Record<string, unknown> | undefined)?.shipper_name ?? "—")}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground text-xs">Telepon</p>
+                    <p>{String((detailData.booking as Record<string, unknown> | undefined)?.shipper_phone ?? "—")}</p>
+                  </div>
+                  <div className="col-span-2">
+                    <p className="text-muted-foreground text-xs">Alamat</p>
+                    <p>{String((detailData.booking as Record<string, unknown> | undefined)?.shipper_address ?? "—")}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <h4 className="font-semibold text-base">Penerima</h4>
+                <div className="grid grid-cols-2 gap-2 p-3 bg-muted/50 rounded-md">
+                  <div>
+                    <p className="text-muted-foreground text-xs">Nama</p>
+                    <p>{String((detailData.booking as Record<string, unknown> | undefined)?.consignee_name ?? "—")}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground text-xs">Telepon</p>
+                    <p>{String((detailData.booking as Record<string, unknown> | undefined)?.consignee_phone ?? "—")}</p>
+                  </div>
+                  <div className="col-span-2">
+                    <p className="text-muted-foreground text-xs">Alamat</p>
+                    <p>{String((detailData.booking as Record<string, unknown> | undefined)?.consignee_address ?? "—")}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="py-4 text-center text-muted-foreground">
+              Data tidak ditemukan.
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -28,7 +28,6 @@ export function DangerousGoodsSection({
   onDgClassIdChange,
   unNumber,
   onUnNumberChange,
-  msdsFile,
   onMsdsFileChange,
   dgClasses,
   validationErrors,
