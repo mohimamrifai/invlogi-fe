@@ -38,7 +38,7 @@ export default function AdminCustomerCreatePage() {
   const [npwp, setNpwp] = useState("");
   const [nib, setNib] = useState("");
   const [billingCycle, setBillingCycle] = useState("end_of_month");
-  const [paymentType, setPaymentType] = useState<"prepaid" | "postpaid">("postpaid");
+  const [paymentType, setPaymentType] = useState<"prepaid" | "postpaid">("prepaid");
   const [postpaidTermDays, setPostpaidTermDays] = useState("");
   const [address, setAddress] = useState("");
   const [city, setCity] = useState("");
@@ -66,7 +66,7 @@ export default function AdminCustomerCreatePage() {
         name: name.trim(),
         npwp: npwp.trim() || null,
         nib: nib.trim() || null,
-        billing_cycle: billingCycle,
+        billing_cycle: paymentType === "prepaid" ? null : billingCycle,
         payment_type: paymentType,
         postpaid_term_days:
           paymentType === "postpaid" && postpaidTermDays.trim() !== ""
@@ -153,26 +153,28 @@ export default function AdminCustomerCreatePage() {
               </SelectContent>
             </Select>
           </div>
-          <div className="space-y-2">
-            <Label>Siklus penagihan</Label>
-            <Select
-              value={billingCycle}
-              onValueChange={(v) => v && setBillingCycle(v)}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Pilih siklus penagihan">
-                  {billingCycleLabel(billingCycle)}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                {BILLING_CYCLE_OPTIONS.map((b) => (
-                  <SelectItem key={b.value} value={b.value}>
-                    {b.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {paymentType === "postpaid" && (
+            <div className="space-y-2">
+              <Label>Siklus penagihan</Label>
+              <Select
+                value={billingCycle}
+                onValueChange={(v) => v && setBillingCycle(v)}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Pilih siklus penagihan">
+                    {billingCycleLabel(billingCycle)}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {BILLING_CYCLE_OPTIONS.map((b) => (
+                    <SelectItem key={b.value} value={b.value}>
+                      {b.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           {paymentType === "postpaid" && (
             <div className="space-y-2">
               <Label>Jatuh tempo (hari)</Label>

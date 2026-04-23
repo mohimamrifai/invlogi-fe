@@ -386,6 +386,7 @@ export default function AdminCustomersPage() {
                     const id = Number(cust.id);
                     const st = String(cust.status ?? "");
                     const bc = String(cust.billing_cycle ?? "—");
+                    const pt = String(cust.payment_type ?? "postpaid");
                     return (
                       <TableRow key={id} className="group">
                         <TableCell className="tabular-nums text-muted-foreground">
@@ -393,7 +394,7 @@ export default function AdminCustomersPage() {
                         </TableCell>
                         <TableCell className="font-medium">{String(cust.name ?? "")}</TableCell>
                         <TableCell className="text-xs text-muted-foreground">{String(cust.npwp ?? "—")}</TableCell>
-                        <TableCell>{billingCycleLabel(bc)}</TableCell>
+                        <TableCell>{pt === "prepaid" ? "Pre-paid" : billingCycleLabel(bc)}</TableCell>
                         <TableCell>
                           <Badge variant="outline" className={customerStatusBadgeClass(st)}>
                             {customerStatusLabelFromApi(st)}

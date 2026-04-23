@@ -2,19 +2,23 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Pencil } from "lucide-react";
 
 interface ContainerRackCardProps {
   containers: Array<{
     id?: number | string;
     container_type?: { name?: string; size?: string };
+    container_type_id?: number | string;
     container_number?: string;
     seal_number?: string;
     racks?: Array<{ id: number | string; name?: string }>;
   }>;
   onAddRack: (containerId: number) => void;
+  onEditContainer: (container: ContainerRackCardProps["containers"][number]) => void;
+  onEditRack: (rack: Record<string, unknown>, containerId: number) => void;
 }
 
-export function ContainerRackCard({ containers, onAddRack }: ContainerRackCardProps) {
+export function ContainerRackCard({ containers, onAddRack, onEditContainer, onEditRack }: ContainerRackCardProps) {
   return (
     <Card>
       <CardHeader>
@@ -32,8 +36,16 @@ export function ContainerRackCard({ containers, onAddRack }: ContainerRackCardPr
               <div key={cid} className="rounded-lg border p-4 bg-zinc-50/50 space-y-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="space-y-0.5">
-                    <div className="font-bold text-zinc-900">
-                      {ct?.name ?? "Kontainer"} {ct?.size ? `(${ct.size})` : ""}
+                    <div className="font-bold text-zinc-900 flex items-center gap-2">
+                      <span>{ct?.name ?? "Kontainer"} {ct?.size ? `(${ct.size})` : ""}</span>
+                      <button
+                        type="button"
+                        onClick={() => onEditContainer(c)}
+                        className="text-zinc-400 hover:text-blue-600 transition-colors"
+                        title="Edit Kontainer"
+                      >
+                        <Pencil className="h-3 w-3" />
+                      </button>
                     </div>
                     <div className="text-xs text-muted-foreground font-mono">
                       Num: {String(c.container_number ?? "—")} / Seal: {String(c.seal_number ?? "—")}
@@ -46,9 +58,17 @@ export function ContainerRackCard({ containers, onAddRack }: ContainerRackCardPr
                 {Array.isArray(racks) && racks.length > 0 && (
                   <div className="flex flex-wrap gap-2 pt-1 border-t border-zinc-100 mt-2">
                     {racks.map((r) => (
-                      <span key={String(r.id)} className="bg-white border text-[10px] px-2 py-0.5 rounded text-zinc-600">
-                        {String(r.name ?? r.id)}
-                      </span>
+                      <div key={String(r.id)} className="group flex items-center gap-1 bg-white border text-[10px] pl-2 pr-1 py-0.5 rounded text-zinc-600">
+                        <span>{String(r.name ?? r.id)}</span>
+                        <button
+                          type="button"
+                          onClick={() => onEditRack(r, cid)}
+                          className="text-zinc-300 hover:text-blue-600 opacity-0 group-hover:opacity-100 transition-all"
+                          title="Edit Rack"
+                        >
+                          <Pencil className="h-3 w-3" />
+                        </button>
+                      </div>
                     ))}
                   </div>
                 )}

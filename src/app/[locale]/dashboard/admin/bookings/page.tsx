@@ -107,7 +107,6 @@ export default function AdminBookingsPage() {
 
   const [rejectOpen, setRejectOpen] = useState(false);
   const [rejectId, setRejectId] = useState<number | null>(null);
-  const [rejectReason, setRejectReason] = useState("");
   const [rejectSaving, setRejectSaving] = useState(false);
 
   const statusParam = statusFilter === "all" ? undefined : statusFilter;
@@ -173,14 +172,13 @@ export default function AdminBookingsPage() {
     await refetchTable();
   }, [refetchStats, refetchTable]);
 
-  const submitReject = useCallback(async () => {
-    if (rejectId == null || !rejectReason.trim()) return;
+  const submitReject = useCallback(async (reason: string) => {
+    if (rejectId == null || !reason.trim()) return;
     setRejectSaving(true);
     try {
-      await rejectBooking(rejectId, rejectReason.trim());
+      await rejectBooking(rejectId, reason.trim());
       setRejectOpen(false);
       setRejectId(null);
-      setRejectReason("");
       await reloadAll();
       toast.success("Booking ditolak.");
     } catch (e) {
@@ -188,7 +186,7 @@ export default function AdminBookingsPage() {
     } finally {
       setRejectSaving(false);
     }
-  }, [rejectId, rejectReason, reloadAll]);
+  }, [rejectId, reloadAll]);
 
   const openBookingDetail = useCallback(async (id: number) => {
     setDetailOpen(true);
@@ -393,7 +391,6 @@ export default function AdminBookingsPage() {
                             onOpenEdit={openBookingEdit}
                             onOpenReject={(id) => {
                               setRejectId(id);
-                              setRejectReason("");
                               setRejectOpen(true);
                             }}
                             onDone={reloadAll}
@@ -444,10 +441,8 @@ export default function AdminBookingsPage() {
       <BookingRejectDialog
         open={rejectOpen}
         onOpenChange={setRejectOpen}
-        reason={rejectReason}
-        onReasonChange={setRejectReason}
         loading={rejectSaving}
-        onSubmit={() => void submitReject()}
+        onSubmit={(reason) => void submitReject(reason)}
       />
     </div>
   );

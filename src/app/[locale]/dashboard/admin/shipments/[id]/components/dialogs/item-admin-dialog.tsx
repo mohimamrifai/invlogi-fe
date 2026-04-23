@@ -77,6 +77,17 @@ export function ItemAdminDialog({
   saving,
   onSave,
 }: ItemAdminDialogProps) {
+  const recalcCbm = (lStr: string, wStr: string, hStr: string, qStr: string) => {
+    const l = Number(lStr) || 0;
+    const w = Number(wStr) || 0;
+    const h = Number(hStr) || 0;
+    const q = Number(qStr) || 1;
+    if (l > 0 && w > 0 && h > 0) {
+      const cbm = ((l * w * h) / 1000000) * q;
+      setters.setItemCbm(String(cbm));
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent showCloseButton className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
@@ -107,7 +118,10 @@ export function ItemAdminDialog({
               <Input
                 type="number"
                 value={values.itemQty}
-                onChange={(e) => setters.setItemQty(e.target.value)}
+                onChange={(e) => {
+                  setters.setItemQty(e.target.value);
+                  recalcCbm(values.itemLength, values.itemWidth, values.itemHeight, e.target.value);
+                }}
               />
             </div>
             <div className="space-y-1">
@@ -124,15 +138,33 @@ export function ItemAdminDialog({
           <div className="grid grid-cols-3 gap-2">
             <div className="space-y-1">
               <Label>P (cm)</Label>
-              <Input value={values.itemLength} onChange={(e) => setters.setItemLength(e.target.value)} />
+              <Input 
+                value={values.itemLength} 
+                onChange={(e) => {
+                  setters.setItemLength(e.target.value);
+                  recalcCbm(e.target.value, values.itemWidth, values.itemHeight, values.itemQty);
+                }} 
+              />
             </div>
             <div className="space-y-1">
               <Label>L (cm)</Label>
-              <Input value={values.itemWidth} onChange={(e) => setters.setItemWidth(e.target.value)} />
+              <Input 
+                value={values.itemWidth} 
+                onChange={(e) => {
+                  setters.setItemWidth(e.target.value);
+                  recalcCbm(values.itemLength, e.target.value, values.itemHeight, values.itemQty);
+                }} 
+              />
             </div>
             <div className="space-y-1">
               <Label>T (cm)</Label>
-              <Input value={values.itemHeight} onChange={(e) => setters.setItemHeight(e.target.value)} />
+              <Input 
+                value={values.itemHeight} 
+                onChange={(e) => {
+                  setters.setItemHeight(e.target.value);
+                  recalcCbm(values.itemLength, values.itemWidth, e.target.value, values.itemQty);
+                }} 
+              />
             </div>
           </div>
 
@@ -143,7 +175,7 @@ export function ItemAdminDialog({
                 value={values.itemPlacement}
                 onValueChange={(v) => setters.setItemPlacement(v === "rack" ? "rack" : "floor")}
               >
-                <SelectTrigger>
+                <SelectTrigger className="w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -162,7 +194,7 @@ export function ItemAdminDialog({
             <div className="space-y-1">
               <Label>Kontainer</Label>
               <Select value={values.itemContainerId} onValueChange={(v) => setters.setItemContainerId(v ?? "")}>
-                <SelectTrigger>
+                <SelectTrigger className="w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -182,7 +214,7 @@ export function ItemAdminDialog({
               <div className="space-y-1">
                 <Label>Pilih Rack</Label>
                 <Select value={values.itemRackId} onValueChange={(v) => setters.setItemRackId(v ?? "")}>
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>

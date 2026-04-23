@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import {
   fetchCustomerMasterLocations,
@@ -13,6 +14,7 @@ import {
   estimateBookingPrice,
   createCustomerBooking,
   createCustomerBookingMultipart,
+  fetchCustomerBookingDetail,
 } from "@/lib/customer-api";
 import { ApiError } from "@/lib/api-client";
 import type { LaravelPaginated } from "@/lib/types-api";
@@ -60,6 +62,8 @@ const ALL_MANDATORY_CODES = [...FCL_MANDATORY_CODES, ...LCL_MANDATORY_CODES];
 export function useBookingForm() {
   const { user } = useAuthStore();
   const userCompany = user?.company as { name?: string; address?: string; phone?: string } | undefined;
+  const searchParams = useSearchParams();
+  const rebookId = searchParams.get("rebook");
 
   // Master Data
   const [locations, setLocations] = useState<Loc[]>([]);
@@ -146,7 +150,47 @@ export function useBookingForm() {
         setAddServices(((asRes as { data: AS[] }).data ?? []) as AS[]);
         setCargoCategories(((ccRes as { data: CC[] }).data ?? []) as CC[]);
         setDgClasses(((dgRes as { data: DC[] }).data ?? []) as DC[]);
-        if (rawModes[0]?.id) setModeId(String(rawModes[0].id));
+        if (rawModes[0]?.id && !rebookId) setModeId(String(rawModes[0].id));
+
+        // Auto-fill if rebooking
+        if (rebookId) {
+          const detailRes = await fetchCustomerBookingDetail(Number(rebookId));
+          const bd = (detailRes as { data?: Record<string, unknown> }).data;
+          if (bd) {
+            setOriginId(bd.origin_location_id ? String(bd.origin_location_id) : "");
+            setDestId(bd.destination_location_id ? String(bd.destination_location_id) : "");
+            setModeId(bd.transport_mode_id ? String(bd.transport_mode_id) : "");
+            // Service type is loaded in next effect, so we defer setting serviceTypeId
+            setTimeout(() => {
+              if (active) setServiceTypeId(bd.service_type_id ? String(bd.service_type_id) : "");
+            }, 500);
+
+            setContainerTypeId(bd.container_type_id ? String(bd.container_type_id) : "");
+            setContainerCount(String(bd.container_count ?? 1));
+            setWeight(bd.estimated_weight ? String(bd.estimated_weight) : "");
+            setCbm(bd.estimated_cbm ? String(bd.estimated_cbm) : "");
+            setCargo(String(bd.cargo_description ?? ""));
+            setCargoCategoryId(bd.cargo_category_id ? String(bd.cargo_category_id) : "");
+            
+            setShipperName(String(bd.shipper_name ?? ""));
+            setShipperAddress(String(bd.shipper_address ?? ""));
+            setShipperPhone(String(bd.shipper_phone ?? ""));
+            
+            setConsigneeName(String(bd.consignee_name ?? ""));
+            setConsigneeAddress(String(bd.consignee_address ?? ""));
+            setConsigneePhone(String(bd.consignee_phone ?? ""));
+            
+            setIsDG(Boolean(bd.is_dangerous_goods));
+            setDgClassId(bd.dg_class_id ? String(bd.dg_class_id) : "");
+            setUnNumber(String(bd.un_number ?? ""));
+            setEquipmentCondition(String(bd.equipment_condition ?? ""));
+            setTemperature(bd.temperature != null ? String(bd.temperature) : "");
+            
+            if (bd.additional_services && Array.isArray(bd.additional_services)) {
+              setSelectedAddOns(bd.additional_services.map((s: Record<string, unknown>) => Number(s.id)).filter(Boolean));
+            }
+          }
+        }
       } catch {
         setError("Gagal memuat master data.");
       } finally {
@@ -154,7 +198,7 @@ export function useBookingForm() {
       }
     })();
     return () => { active = false; };
-  }, []);
+  }, [rebookId]);
 
   // Mode change -> update service types
   useEffect(() => {

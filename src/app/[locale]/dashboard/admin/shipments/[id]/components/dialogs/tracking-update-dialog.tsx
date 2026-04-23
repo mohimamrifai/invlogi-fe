@@ -58,7 +58,7 @@ export function TrackingUpdateDialog({
           <div className="space-y-1">
             <Label>Status Baru</Label>
             <Select value={status} onValueChange={(v) => v && setStatus(v)}>
-              <SelectTrigger>
+              <SelectTrigger className="w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

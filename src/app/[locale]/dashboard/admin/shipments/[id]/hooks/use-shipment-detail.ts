@@ -6,7 +6,9 @@ import {
   updateAdminShipment,
   updateAdminShipmentTracking,
   addAdminShipmentContainer,
+  updateAdminContainer,
   addAdminContainerRack,
+  updateAdminRack,
   addAdminShipmentItem,
   updateAdminShipmentItem,
   deleteAdminShipmentItem,
@@ -52,11 +54,15 @@ export function useShipmentDetail(shipmentId: number) {
   const [trackFiles, setTrackFiles] = useState<FileList | null>(null);
   const [savingTrack, setSavingTrack] = useState(false);
 
+  const [contMode, setContMode] = useState<"create" | "edit">("create");
+  const [contRow, setContRow] = useState<Row | null>(null);
   const [contTypeId, setContTypeId] = useState("");
   const [contNum, setContNum] = useState("");
   const [contSeal, setContSeal] = useState("");
   const [savingCont, setSavingCont] = useState(false);
 
+  const [rackMode, setRackMode] = useState<"create" | "edit">("create");
+  const [rackRow, setRackRow] = useState<Row | null>(null);
   const [rackContainerId, setRackContainerId] = useState<number | null>(null);
   const [rackName, setRackName] = useState("");
   const [savingRack, setSavingRack] = useState(false);
@@ -185,30 +191,62 @@ export function useShipmentDetail(shipmentId: number) {
     }
   };
 
+  const openAddContainer = () => {
+    setContMode("create");
+    setContRow(null);
+    setContTypeId(containerTypes[0]?.id ? String(containerTypes[0].id) : "");
+    setContNum("");
+    setContSeal("");
+    setContOpen(true);
+  };
+
+  const openEditContainer = (row: Row) => {
+    setContMode("edit");
+    setContRow(row);
+    setContTypeId(row.container_type_id ? String(row.container_type_id) : "");
+    setContNum(String(row.container_number ?? ""));
+    setContSeal(String(row.seal_number ?? ""));
+    setContOpen(true);
+  };
+
   const saveContainer = async () => {
     if (!contTypeId) return;
     setSavingCont(true);
     try {
-      await addAdminShipmentContainer(shipmentId, {
+      const payload = {
         container_type_id: Number(contTypeId),
         container_number: contNum.trim() || null,
         seal_number: contSeal.trim() || null,
-      });
-      toast.success("Kontainer berhasil ditambahkan.");
+      };
+      if (contMode === "create") {
+        await addAdminShipmentContainer(shipmentId, payload);
+        toast.success("Kontainer berhasil ditambahkan.");
+      } else if (contRow?.id != null) {
+        await updateAdminContainer(Number(contRow.id), payload);
+        toast.success("Kontainer berhasil diperbarui.");
+      }
       setContOpen(false);
-      setContNum("");
-      setContSeal("");
       await load();
     } catch (e) {
-      toast.error(e instanceof ApiError ? e.message : "Gagal menambah kontainer.");
+      toast.error(e instanceof ApiError ? e.message : "Gagal menyimpan kontainer.");
     } finally {
       setSavingCont(false);
     }
   };
 
   const openRack = (containerId: number) => {
+    setRackMode("create");
+    setRackRow(null);
     setRackContainerId(containerId);
     setRackName("");
+    setRackOpen(true);
+  };
+
+  const openEditRack = (row: Row, containerId: number) => {
+    setRackMode("edit");
+    setRackRow(row);
+    setRackContainerId(containerId);
+    setRackName(String(row.name ?? ""));
     setRackOpen(true);
   };
 
@@ -216,12 +254,17 @@ export function useShipmentDetail(shipmentId: number) {
     if (rackContainerId == null || !rackName.trim()) return;
     setSavingRack(true);
     try {
-      await addAdminContainerRack(rackContainerId, { name: rackName.trim() });
-      toast.success("Rack berhasil ditambahkan.");
+      if (rackMode === "create") {
+        await addAdminContainerRack(rackContainerId, { name: rackName.trim() });
+        toast.success("Rack berhasil ditambahkan.");
+      } else if (rackRow?.id != null) {
+        await updateAdminRack(Number(rackRow.id), { name: rackName.trim() });
+        toast.success("Rack berhasil diperbarui.");
+      }
       setRackOpen(false);
       await load();
     } catch (e) {
-      toast.error(e instanceof ApiError ? e.message : "Gagal menambah rack.");
+      toast.error(e instanceof ApiError ? e.message : "Gagal menyimpan rack.");
     } finally {
       setSavingRack(false);
     }
@@ -381,16 +424,21 @@ export function useShipmentDetail(shipmentId: number) {
     saveTracking,
 
     // Container logic
+    contMode,
     contTypeId, setContTypeId,
     contNum, setContNum,
     contSeal, setContSeal,
     savingCont,
+    openAddContainer,
+    openEditContainer,
     saveContainer,
 
     // Rack logic
+    rackMode,
     rackName, setRackName,
     savingRack,
     openRack,
+    openEditRack,
     saveRack,
 
     // Item logic

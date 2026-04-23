@@ -14,15 +14,23 @@ import { ItemCargoCard } from "./components/sections/item-cargo-card";
 // Dialogs
 import { EditShipmentDialog } from "./components/dialogs/edit-shipment-dialog";
 import { TrackingUpdateDialog } from "./components/dialogs/tracking-update-dialog";
-import { ContainerAddDialog } from "./components/dialogs/container-add-dialog";
-import { RackAddDialog } from "./components/dialogs/rack-add-dialog";
+import { ContainerDialog } from "./components/dialogs/container-add-dialog";
+import { RackDialog } from "./components/dialogs/rack-add-dialog";
 import { ItemAdminDialog } from "./components/dialogs/item-admin-dialog";
+import { BookingDetailDialog } from "@/components/dashboard/admin/bookings/booking-detail-dialog";
+import { useState } from "react";
+import { toast } from "sonner";
+import { fetchAdminBooking } from "@/lib/admin-api";
+import { ApiError } from "@/lib/api-client";
+import type { BookingDetail } from "@/components/dashboard/admin/bookings/types";
 
 type ShipmentDetailData = {
   company?: { name?: string };
   booking?: { booking_number?: string; id?: number | string };
-  origin_location?: { name?: string };
-  destination_location?: { name?: string };
+  originLocation?: { name?: string };
+  destinationLocation?: { name?: string };
+  transportMode?: { name?: string };
+  serviceType?: { name?: string };
   estimated_departure?: string;
   estimated_arrival?: string;
   notes?: string;
@@ -44,6 +52,24 @@ export default function AdminShipmentDetailPage() {
   const shipmentId = Number(Array.isArray(rawId) ? rawId[0] : rawId);
 
   const s = useShipmentDetail(shipmentId);
+  const [bookingDialogOpen, setBookingDialogOpen] = useState(false);
+  const [bookingData, setBookingData] = useState<BookingDetail | null>(null);
+  const [bookingLoading, setBookingLoading] = useState(false);
+
+  const handleOpenBooking = async (bId: number | string) => {
+    setBookingDialogOpen(true);
+    setBookingLoading(true);
+    setBookingData(null);
+    try {
+      const res = await fetchAdminBooking(Number(bId));
+      setBookingData((res as { data: BookingDetail }).data);
+    } catch (e) {
+      toast.error(e instanceof ApiError ? e.message : "Gagal memuat detail booking.");
+      setBookingDialogOpen(false);
+    } finally {
+      setBookingLoading(false);
+    }
+  };
 
   if (!Number.isFinite(shipmentId) || shipmentId < 1) {
     return <p className="text-sm text-red-600 p-6">ID shipment tidak valid.</p>;
@@ -83,7 +109,7 @@ export default function AdminShipmentDetailPage() {
         <Button type="button" size="sm" variant="secondary" onClick={() => s.setTrackOpen(true)}>
           Update Tracking
         </Button>
-        <Button type="button" size="sm" variant="secondary" onClick={() => s.setContOpen(true)}>
+        <Button type="button" size="sm" variant="secondary" onClick={s.openAddContainer}>
           <Plus className="h-4 w-4 mr-1" />
           Kontainer
         </Button>
@@ -98,16 +124,31 @@ export default function AdminShipmentDetailPage() {
           companyName={String(detail.company?.name ?? "—")}
           bookingNumber={detail.booking?.booking_number ? String(detail.booking.booking_number) : undefined}
           bookingId={detail.booking?.id}
-          origin={String(detail.origin_location?.name ?? "—")}
-          destination={String(detail.destination_location?.name ?? "—")}
+          origin={String(detail.originLocation?.name ?? "—")}
+          destination={String(detail.destinationLocation?.name ?? "—")}
+          transportMode={String(detail.transportMode?.name ?? "—")}
+          serviceType={String(detail.serviceType?.name ?? "—")}
+          containerInfo={
+            s.containers.length > 0 
+              ? `${s.containers.length} Kontainer` 
+              : undefined
+          }
           departure={s.data.estimated_departure ? String(s.data.estimated_departure).slice(0, 10) : "—"}
           arrival={s.data.estimated_arrival ? String(s.data.estimated_arrival).slice(0, 10) : "—"}
           notes={detail.notes ? String(detail.notes) : undefined}
+          onOpenBooking={() => {
+            if (detail.booking?.id) handleOpenBooking(detail.booking.id);
+          }}
         />
 
         <TrackingTimelineCard trackings={s.trackings as TrackingRow[]} />
 
-        <ContainerRackCard containers={s.containers} onAddRack={s.openRack} />
+        <ContainerRackCard
+          containers={s.containers}
+          onAddRack={s.openRack}
+          onEditContainer={s.openEditContainer}
+          onEditRack={s.openEditRack}
+        />
 
         <div className="lg:col-span-2">
           <ItemCargoCard items={s.items} onEdit={s.openEditItem} onDelete={(it) => {
@@ -144,9 +185,10 @@ export default function AdminShipmentDetailPage() {
         onSave={() => void s.saveTracking()}
       />
 
-      <ContainerAddDialog
+      <ContainerDialog
         open={s.contOpen}
         onOpenChange={s.setContOpen}
+        mode={s.contMode}
         containerTypes={s.containerTypes}
         contTypeId={s.contTypeId}
         setContTypeId={s.setContTypeId}
@@ -158,9 +200,10 @@ export default function AdminShipmentDetailPage() {
         onSave={() => void s.saveContainer()}
       />
 
-      <RackAddDialog
+      <RackDialog
         open={s.rackOpen}
         onOpenChange={s.setRackOpen}
+        mode={s.rackMode}
         rackName={s.rackName}
         setRackName={s.setRackName}
         saving={s.savingRack}
@@ -214,6 +257,13 @@ export default function AdminShipmentDetailPage() {
         description={`Anda akan menghapus item "${s.deleteItemRow?.name ?? ""}". Tindakan ini tidak dapat dibatalkan.`}
         loading={s.deleteItemLoading}
         onConfirm={() => void s.handleDeleteItem()}
+      />
+
+      <BookingDetailDialog
+        open={bookingDialogOpen}
+        onOpenChange={setBookingDialogOpen}
+        loading={bookingLoading}
+        data={bookingData}
       />
     </div>
   );

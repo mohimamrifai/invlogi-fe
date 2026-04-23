@@ -38,6 +38,20 @@ export async function fetchPublicMasterAdditionalServices() {
   });
 }
 
+export async function fetchPublicMasterCargoCategories() {
+  return apiFetch<{ data: unknown[] }>(`/public/master/cargo-categories`, {
+    method: "GET",
+    token: null,
+  });
+}
+
+export async function fetchPublicMasterDgClasses() {
+  return apiFetch<{ data: unknown[] }>(`/public/master/dg-classes`, {
+    method: "GET",
+    token: null,
+  });
+}
+
 export async function publicEstimateBookingPrice(payload: Record<string, unknown>) {
   return apiFetch<{ data: unknown }>(`/public/bookings/estimate-price`, {
     method: "POST",

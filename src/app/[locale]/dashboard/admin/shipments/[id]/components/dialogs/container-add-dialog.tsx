@@ -25,9 +25,10 @@ type ContainerTypeRow = {
   size?: string;
 };
 
-interface ContainerAddDialogProps {
+interface ContainerDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  mode?: "create" | "edit";
   containerTypes: ContainerTypeRow[];
   contTypeId: string;
   setContTypeId: (v: string) => void;
@@ -39,9 +40,10 @@ interface ContainerAddDialogProps {
   onSave: () => void;
 }
 
-export function ContainerAddDialog({
+export function ContainerDialog({
   open,
   onOpenChange,
+  mode = "create",
   containerTypes,
   contTypeId,
   setContTypeId,
@@ -51,18 +53,18 @@ export function ContainerAddDialog({
   setContSeal,
   saving,
   onSave,
-}: ContainerAddDialogProps) {
+}: ContainerDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent showCloseButton>
-        <DialogHeader className={DIALOG_CREATE_HEADER_CLASS}>
-          <DialogTitle>Tambah kontainer baru</DialogTitle>
+        <DialogHeader className={mode === "create" ? DIALOG_CREATE_HEADER_CLASS : undefined}>
+          <DialogTitle>{mode === "create" ? "Tambah kontainer baru" : "Edit kontainer"}</DialogTitle>
         </DialogHeader>
         <div className="grid gap-3 py-2">
           <div className="space-y-1">
             <Label>Tipe Kontainer</Label>
             <Select value={contTypeId} onValueChange={(v) => v && setContTypeId(v)}>
-              <SelectTrigger>
+              <SelectTrigger className="w-full">
                 <SelectValue placeholder="Pilih tipe" />
               </SelectTrigger>
               <SelectContent>
@@ -96,7 +98,7 @@ export function ContainerAddDialog({
             Batal
           </Button>
           <Button type="button" onClick={onSave} disabled={saving || !contTypeId}>
-            {saving ? "Menyimpan…" : "Tambahkan"}
+            {saving ? "Menyimpan…" : (mode === "create" ? "Tambahkan" : "Simpan")}
           </Button>
         </DialogFooter>
       </DialogContent>

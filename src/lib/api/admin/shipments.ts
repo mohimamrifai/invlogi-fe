@@ -22,9 +22,16 @@ export async function updateAdminShipmentTracking(id: number, formData: FormData
   return apiFetch(`/admin/shipments/${id}/tracking`, { method: "POST", body: formData });
 }
 
-export async function addAdminShipmentContainer(id: number, body: Record<string, unknown>) {
-  return apiFetch(`/admin/shipments/${id}/containers`, {
+export async function addAdminShipmentContainer(shipmentId: number, body: Record<string, unknown>) {
+  return apiFetch(`/admin/shipments/${shipmentId}/containers`, {
     method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export async function updateAdminContainer(containerId: number, body: Record<string, unknown>) {
+  return apiFetch(`/admin/containers/${containerId}`, {
+    method: "PUT",
     body: JSON.stringify(body),
   });
 }
@@ -32,6 +39,13 @@ export async function addAdminShipmentContainer(id: number, body: Record<string,
 export async function addAdminContainerRack(containerId: number, body: Record<string, unknown>) {
   return apiFetch(`/admin/containers/${containerId}/racks`, {
     method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export async function updateAdminRack(rackId: number, body: Record<string, unknown>) {
+  return apiFetch(`/admin/racks/${rackId}`, {
+    method: "PUT",
     body: JSON.stringify(body),
   });
 }

@@ -221,8 +221,8 @@ export default function CreateBookingPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="sm:justify-center">
-            <AlertDialogAction onClick={() => router.push("/dashboard")} className="w-full sm:w-auto px-10">
-              Kembali ke Dashboard
+            <AlertDialogAction onClick={() => router.push("/dashboard/booking")} className="w-full sm:w-auto px-10">
+              Lihat My Bookings
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

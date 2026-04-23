@@ -34,13 +34,20 @@ import { PaginationBar } from "@/components/data-table/pagination-bar";
 import { TableToolbar } from "@/components/data-table/table-toolbar";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ClipboardList, Trash2, Eye, Pencil, MoreHorizontal } from "lucide-react";
+import { ClipboardList, Trash2, Eye, Pencil, MoreHorizontal, RefreshCw } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   BOOKING_STATUS_KEYS,
   bookingStatusBadgeClass,
@@ -53,6 +60,7 @@ import { rowNumber } from "@/lib/list-query";
 import { useDebouncedValue } from "@/lib/use-debounced-value";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
+import { useRouter } from "@/i18n/routing";
 import { useQuery } from "@tanstack/react-query";
 import { BookingDetailDialog } from "@/components/dashboard/admin/bookings/booking-detail-dialog";
 import { BookingEditDialog } from "@/components/dashboard/admin/bookings/booking-edit-dialog";
@@ -69,7 +77,16 @@ const STATUS_FILTERS = [
   })),
 ];
 
+const CANCEL_REASONS = [
+  "Salah pilih layanan / rute",
+  "Kargo tidak jadi dikirim",
+  "Mendapat harga lebih murah di tempat lain",
+  "Ingin mengubah detail yang tidak bisa diedit",
+  "Lainnya"
+];
+
 export default function MyBookingsPage() {
+  const router = useRouter();
   const PER_PAGE = 10;
   const [page, setPage] = useState(1);
   const [searchInput, setSearchInput] = useState("");
@@ -77,7 +94,8 @@ export default function MyBookingsPage() {
   const [statusFilter, setStatusFilter] = useState("all");
 
   const [cancellingId, setCancellingId] = useState<number | null>(null);
-  const [cancelReason, setCancelReason] = useState("");
+  const [cancelReasonType, setCancelReasonType] = useState<string>("");
+  const [cancelReasonOther, setCancelReasonOther] = useState("");
   const [submittingCancel, setSubmittingCancel] = useState(false);
 
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
@@ -128,13 +146,14 @@ export default function MyBookingsPage() {
 
   const handleCancelRequest = async () => {
     if (!cancellingId) return;
-    if (!cancelReason.trim()) {
+    const finalReason = cancelReasonType === "Lainnya" ? cancelReasonOther : cancelReasonType;
+    if (!finalReason.trim()) {
       toast.error("Alasan pembatalan wajib diisi.");
       return;
     }
     setSubmittingCancel(true);
     try {
-      await cancelCustomerBooking(cancellingId, cancelReason.trim());
+      await cancelCustomerBooking(cancellingId, finalReason.trim());
       toast.success("Booking berhasil dibatalkan.");
       void refetch();
     } catch (err) {
@@ -142,7 +161,8 @@ export default function MyBookingsPage() {
     } finally {
       setSubmittingCancel(false);
       setCancellingId(null);
-      setCancelReason("");
+      setCancelReasonType("");
+      setCancelReasonOther("");
     }
   };
 
@@ -182,15 +202,7 @@ export default function MyBookingsPage() {
     if (!detailId) return;
     setSubmittingEdit(true);
     try {
-      const payloadObj: Record<string, unknown> = {};
-      payload.forEach((val, key) => {
-        if (key === "additional_services") {
-          payloadObj[key] = JSON.parse(val as string);
-        } else {
-          payloadObj[key] = val;
-        }
-      });
-      await updateCustomerBooking(detailId, payloadObj);
+      await updateCustomerBooking(detailId, payload);
       toast.success("Booking berhasil diperbarui.");
       void refetch();
     } catch (e) {
@@ -266,7 +278,7 @@ export default function MyBookingsPage() {
                     const dest = (booking.destination_location ?? booking.destinationLocation) as { name?: string; code?: string } | undefined;
                     const svc = (booking.service_type ?? booking.serviceType) as { name?: string } | undefined;
                     const bNum = String(booking.booking_number ?? "");
-                    const canEdit = st === "submitted" || (st === "approved" && !booking.shipment);
+                    const canEdit = st === "submitted";
                     const canCancel = st === "submitted" || (st === "approved" && !booking.shipment);
 
                     return (
@@ -316,6 +328,14 @@ export default function MyBookingsPage() {
                                 </DropdownMenuItem>
                               )}
 
+                              <DropdownMenuItem
+                                className="cursor-pointer"
+                                onClick={() => router.push(`/dashboard/booking/create?rebook=${booking.id}`)}
+                              >
+                                <RefreshCw className="mr-2 h-4 w-4" />
+                                Ajukan Ulang
+                              </DropdownMenuItem>
+
                               {canCancel && (
                                 <DropdownMenuItem
                                   className="cursor-pointer text-red-600 focus:text-red-700"
@@ -354,7 +374,8 @@ export default function MyBookingsPage() {
       <AlertDialog open={!!cancellingId} onOpenChange={(o) => {
         if (!o) {
           setCancellingId(null);
-          setCancelReason("");
+          setCancelReasonType("");
+          setCancelReasonOther("");
         }
       }}>
         <AlertDialogContent>
@@ -364,15 +385,33 @@ export default function MyBookingsPage() {
               Apakah Anda yakin ingin membatalkan permintaan booking ini? Tindakan ini tidak dapat dibatalkan.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <div className="py-4">
-            <Label htmlFor="cancel-reason" className="text-xs mb-2 block font-medium">Alasan Pembatalan</Label>
-            <Input
-              id="cancel-reason"
-              placeholder="Berikan alasan pembatalan..."
-              value={cancelReason}
-              onChange={(e) => setCancelReason(e.target.value)}
-              disabled={submittingCancel}
-            />
+          <div className="py-4 space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="cancel-reason-type" className="text-xs font-medium">Pilih Alasan Pembatalan</Label>
+              <Select value={cancelReasonType} onValueChange={(val) => setCancelReasonType(val || "")} disabled={submittingCancel}>
+                <SelectTrigger id="cancel-reason-type" className="w-full">
+                  <SelectValue placeholder="Pilih alasan..." />
+                </SelectTrigger>
+                <SelectContent className="w-full">
+                  {CANCEL_REASONS.map((r) => (
+                    <SelectItem key={r} value={r}>{r}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            {cancelReasonType === "Lainnya" && (
+              <div className="space-y-2">
+                <Label htmlFor="cancel-reason-other" className="text-xs font-medium">Alasan Spesifik</Label>
+                <Input
+                  id="cancel-reason-other"
+                  placeholder="Ketikkan alasan pembatalan Anda..."
+                  value={cancelReasonOther}
+                  onChange={(e) => setCancelReasonOther(e.target.value)}
+                  disabled={submittingCancel}
+                />
+              </div>
+            )}
           </div>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={submittingCancel}>Kembali</AlertDialogCancel>

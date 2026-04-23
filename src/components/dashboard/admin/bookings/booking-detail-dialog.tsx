@@ -141,14 +141,14 @@ export function BookingDetailDialog({
                 <div className="grid gap-x-4 gap-y-3 rounded-lg border p-4 sm:grid-cols-2">
                   <InfoItem
                     label="Origin"
-                    value={`${data.origin_location?.name} (${data.origin_location?.code})`}
+                    value={`${data.origin_location?.name ?? data.originLocation?.name} (${data.origin_location?.code ?? data.originLocation?.code})`}
                   />
                   <InfoItem
                     label="Destination"
-                    value={`${data.destination_location?.name} (${data.destination_location?.code})`}
+                    value={`${data.destination_location?.name ?? data.destinationLocation?.name} (${data.destination_location?.code ?? data.destinationLocation?.code})`}
                   />
-                  <InfoItem label="Transport Mode" value={data.transport_mode?.name} />
-                  <InfoItem label="Service Type" value={data.service_type?.name} />
+                  <InfoItem label="Transport Mode" value={data.transport_mode?.name ?? data.transportMode?.name} />
+                  <InfoItem label="Service Type" value={data.service_type?.name ?? data.serviceType?.name} />
                   <InfoItem
                     label="Tgl Keberangkatan"
                     value={isEditMode ? (
@@ -169,8 +169,8 @@ export function BookingDetailDialog({
                   <InfoItem
                     label="Kontainer"
                     value={
-                      data.container_type
-                        ? `${data.container_count}x ${data.container_type.name} (${data.container_type.size})`
+                      (data.container_type || data.containerType)
+                        ? `${data.container_count}x ${(data.container_type?.name ?? data.containerType?.name)} (${(data.container_type?.size ?? data.containerType?.size)})`
                         : `${data.container_count}x —`
                     }
                   />
@@ -183,7 +183,7 @@ export function BookingDetailDialog({
                   Detail Kargo
                 </h3>
                 <div className="grid gap-x-4 gap-y-3 rounded-lg border p-4 sm:grid-cols-2">
-                  <InfoItem label="Kategori" value={data.cargo_category?.name} />
+                  <InfoItem label="Kategori" value={data.cargo_category?.name ?? data.cargoCategory?.name} />
                   <InfoItem
                     label="Berat Est."
                     value={data.estimated_weight ? `${data.estimated_weight} kg` : "—"}
@@ -217,7 +217,7 @@ export function BookingDetailDialog({
                   <div className="grid gap-x-4 gap-y-3 rounded-lg border border-red-100 bg-red-50/30 p-4 sm:grid-cols-2">
                     <InfoItem
                       label="DG Class"
-                      value={`${data.dg_class?.name} (${data.dg_class?.code})`}
+                      value={`${data.dg_class?.name ?? data.dgClass?.name} (${data.dg_class?.code ?? data.dgClass?.code})`}
                     />
                     <InfoItem label="UN Number" value={data.un_number} />
                     {data.msds_file && (
@@ -305,6 +305,16 @@ export function BookingDetailDialog({
                     Alasan Penolakan
                   </p>
                   <p className="text-sm text-red-700">{data.rejection_reason}</p>
+                </div>
+              )}
+
+              {/* Cancellation Reason (Notes) */}
+              {data.status === "cancelled" && data.notes && (
+                <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-3">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-600">
+                    Catatan Pembatalan
+                  </p>
+                  <p className="text-sm text-zinc-700 whitespace-pre-line">{data.notes}</p>
                 </div>
               )}
             </div>

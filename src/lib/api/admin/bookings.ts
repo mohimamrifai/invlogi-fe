@@ -20,7 +20,7 @@ export async function fetchAdminBooking(id: number) {
 export async function updateAdminBooking(id: number, payload: Record<string, unknown> | FormData) {
   const isFormData = payload instanceof FormData;
   return apiFetch<{ data: Record<string, unknown>; message?: string }>(`/admin/bookings/${id}`, {
-    method: "PUT",
+    method: "POST", // Laravel uses POST with _method=PUT for multipart forms
     body: isFormData ? payload : JSON.stringify(payload),
   });
 }

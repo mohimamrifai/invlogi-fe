@@ -82,6 +82,15 @@ export async function apiFetch<T = unknown>(
   const body = isJson ? await res.json().catch(() => null) : await res.text();
 
   if (!res.ok) {
+    if (res.status === 401 || res.status === 403) {
+      if (typeof window !== "undefined") {
+        sessionStorage.removeItem("invlogi_token");
+        sessionStorage.removeItem("invlogi_profile_cached_at");
+        // We use window.location.href instead of router.push to force a full reload
+        // clearing any in-memory state.
+        window.location.href = "/login";
+      }
+    }
     const msg =
       typeof body === "object" && body !== null && "message" in body
         ? String((body as { message: string }).message)
@@ -119,6 +128,13 @@ export async function apiFetchBlob(
     throw new ApiError(networkFailureMessage(path, err), 0, err);
   }
   if (!res.ok) {
+    if (res.status === 401 || res.status === 403) {
+      if (typeof window !== "undefined") {
+        sessionStorage.removeItem("invlogi_token");
+        sessionStorage.removeItem("invlogi_profile_cached_at");
+        window.location.href = "/login";
+      }
+    }
     const text = await res.text();
     let msg = text || res.statusText;
     try {

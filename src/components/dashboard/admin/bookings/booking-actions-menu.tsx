@@ -46,13 +46,15 @@ export function BookingActionsMenu({
 }: BookingActionsMenuProps) {
   const router = useRouter();
   const st = booking.status.toLowerCase();
-  const editDisabled = st === "cancelled" || booking.shipment_exists === true || typeof booking.shipment_id === "number";
+  const editDisabled = st === "cancelled" || st === "rejected" || booking.shipment_exists === true || typeof booking.shipment_id === "number";
   const editLabel =
     st === "cancelled"
       ? "Edit booking (tidak tersedia: dibatalkan)"
-      : booking.shipment_exists === true || typeof booking.shipment_id === "number"
-        ? "Edit booking (tidak tersedia: sudah ada shipment)"
-        : "Edit booking";
+      : st === "rejected"
+        ? "Edit booking (tidak tersedia: ditolak)"
+        : booking.shipment_exists === true || typeof booking.shipment_id === "number"
+          ? "Edit booking (tidak tersedia: sudah ada shipment)"
+          : "Edit booking";
   const showApproveReject =
     canProcessOperations && (st === "submitted" || st === "confirmed");
   const showConvert = canProcessOperations && st === "approved";

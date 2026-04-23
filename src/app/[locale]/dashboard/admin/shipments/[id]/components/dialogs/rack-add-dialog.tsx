@@ -11,28 +11,30 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-interface RackAddDialogProps {
+interface RackDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  mode?: "create" | "edit";
   rackName: string;
   setRackName: (v: string) => void;
   saving: boolean;
   onSave: () => void;
 }
 
-export function RackAddDialog({
+export function RackDialog({
   open,
   onOpenChange,
+  mode = "create",
   rackName,
   setRackName,
   saving,
   onSave,
-}: RackAddDialogProps) {
+}: RackDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent showCloseButton>
         <DialogHeader>
-          <DialogTitle>Tambah rack ke kontainer</DialogTitle>
+          <DialogTitle>{mode === "create" ? "Tambah rack ke kontainer" : "Edit rack"}</DialogTitle>
         </DialogHeader>
         <div className="grid gap-3 py-2">
           <div className="space-y-1">
@@ -49,7 +51,7 @@ export function RackAddDialog({
             Batal
           </Button>
           <Button type="button" onClick={onSave} disabled={saving || !rackName.trim()}>
-            {saving ? "Menyimpan…" : "Tambahkan"}
+            {saving ? "Menyimpan…" : (mode === "create" ? "Tambahkan" : "Simpan")}
           </Button>
         </DialogFooter>
       </DialogContent>

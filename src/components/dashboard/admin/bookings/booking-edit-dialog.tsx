@@ -102,6 +102,9 @@ export function BookingEditDialog({
   const [selectedAddOns, setSelectedAddOns] = useState<number[]>([]);
   const [equipmentCondition, setEquipmentCondition] = useState("");
   const [temperature, setTemperature] = useState("");
+  const [itemLength, setItemLength] = useState("");
+  const [itemWidth, setItemWidth] = useState("");
+  const [itemHeight, setItemHeight] = useState("");
   const [validationErrors, setValidationErrors] = useState<Record<string, string[]> | null>(null);
 
   useEffect(() => {
@@ -139,17 +142,17 @@ export function BookingEditDialog({
 
   useEffect(() => {
     if (!open || !data) return;
-    setOriginId(data.origin_location_id ? String(data.origin_location_id) : "");
-    setDestId(data.destination_location_id ? String(data.destination_location_id) : "");
-    setModeId(data.transport_mode_id ? String(data.transport_mode_id) : "");
-    setServiceTypeId(data.service_type_id ? String(data.service_type_id) : "");
-    setContainerTypeId(data.container_type_id ? String(data.container_type_id) : "");
+    setOriginId(data.origin_location_id ? String(data.origin_location_id) : (data.originLocation?.id ? String(data.originLocation.id) : (data.origin_location?.id ? String(data.origin_location.id) : "")));
+    setDestId(data.destination_location_id ? String(data.destination_location_id) : (data.destinationLocation?.id ? String(data.destinationLocation.id) : (data.destination_location?.id ? String(data.destination_location.id) : "")));
+    setModeId(data.transport_mode_id ? String(data.transport_mode_id) : (data.transportMode?.id ? String(data.transportMode.id) : (data.transport_mode?.id ? String(data.transport_mode.id) : "")));
+    setServiceTypeId(data.service_type_id ? String(data.service_type_id) : (data.serviceType?.id ? String(data.serviceType.id) : (data.service_type?.id ? String(data.service_type.id) : "")));
+    setContainerTypeId(data.container_type_id ? String(data.container_type_id) : (data.containerType?.id ? String(data.containerType.id) : (data.container_type?.id ? String(data.container_type.id) : "")));
     setContainerCount(String(data.container_count ?? 1));
     setWeight(data.estimated_weight ? String(data.estimated_weight) : "");
     setCbm(data.estimated_cbm ? String(data.estimated_cbm) : "");
     setDepartureDate(data.departure_date ? String(data.departure_date).slice(0, 10) : "");
     setCargo(data.cargo_description ?? "");
-    setCargoCategoryId(data.cargo_category_id ? String(data.cargo_category_id) : "");
+    setCargoCategoryId(data.cargo_category_id ? String(data.cargo_category_id) : (data.cargoCategory?.id ? String(data.cargoCategory.id) : (data.cargo_category?.id ? String(data.cargo_category.id) : "")));
     setShipper({
       name: data.shipper_name ?? "",
       address: data.shipper_address ?? "",
@@ -161,7 +164,7 @@ export function BookingEditDialog({
       phone: data.consignee_phone ?? "",
     });
     setIsDg(Boolean(data.is_dangerous_goods));
-    setDgClassId(data.dg_class_id ? String(data.dg_class_id) : "");
+    setDgClassId(data.dg_class_id ? String(data.dg_class_id) : (data.dgClass?.id ? String(data.dgClass.id) : (data.dg_class?.id ? String(data.dg_class.id) : "")));
     setUnNumber(data.un_number ?? "");
     setEquipmentCondition(data.equipment_condition ?? "");
     setTemperature(data.temperature != null ? String(data.temperature) : "");
@@ -193,7 +196,11 @@ export function BookingEditDialog({
     };
   }, [open, modeId]);
 
+  const selectedService = serviceTypes.find((s) => String(s.id) === serviceTypeId);
+  const isLCL = selectedService?.code === "LCL";
+  const isFCL = selectedService?.code === "FCL";
   const selectedCargoCategory = cargoCats.find((c) => String(c.id) === cargoCategoryId);
+  const selectedCT = containerTypes.find((c) => String(c.id) === containerTypeId);
   const showTemp = selectedCargoCategory?.requires_temperature;
   const showProject = selectedCargoCategory?.is_project_cargo;
 
@@ -240,8 +247,8 @@ export function BookingEditDialog({
     fd.append("destination_location_id", destId);
     fd.append("transport_mode_id", modeId);
     fd.append("service_type_id", serviceTypeId);
-    if (containerTypeId) fd.append("container_type_id", containerTypeId);
-    fd.append("container_count", containerCount || "1");
+    if (!isLCL && containerTypeId) fd.append("container_type_id", containerTypeId);
+    if (!isLCL) fd.append("container_count", containerCount || "1");
     if (weight) fd.append("estimated_weight", weight);
     if (cbm) fd.append("estimated_cbm", cbm);
     fd.append("cargo_category_id", cargoCategoryId);
@@ -260,6 +267,9 @@ export function BookingEditDialog({
     if (showProject && equipmentCondition) fd.append("equipment_condition", equipmentCondition);
     if (showTemp && temperature) fd.append("temperature", temperature);
     fd.append("additional_services", JSON.stringify(selectedAddOns.map((id) => ({ id }))));
+    
+    // Add Laravel's method spoofing
+    fd.append("_method", "PUT");
 
     try {
       await onSave(fd);
@@ -321,27 +331,65 @@ export function BookingEditDialog({
               </Combobox>
               {renderError("service_type_id")}
             </div>
-            <div className="space-y-2">
-              <Label>Container type</Label>
-              <Combobox items={containerOptions} value={containerOptions.find((x) => x.value === (containerTypeId || "__none__")) ?? null} onValueChange={(next) => setContainerTypeId(next?.value && next.value !== "__none__" ? next.value : "")}>
-                <ComboboxInput className="w-full" placeholder="Pilih tipe kontainer..." />
-                <ComboboxContent><ComboboxEmpty>Data tidak ditemukan.</ComboboxEmpty><ComboboxList>{(item: ComboOption) => <ComboboxItem key={item.value} value={item}>{item.label}</ComboboxItem>}</ComboboxList></ComboboxContent>
-              </Combobox>
-              {renderError("container_type_id")}
-            </div>
-            <div className="space-y-2">
-              <Label>Jumlah kontainer</Label>
-              <Input value={containerCount} onChange={(e) => setContainerCount(e.target.value.replace(/\D/g, ""))} className={cn("h-9", validationErrors?.container_count && "border-red-500")} />
-              {renderError("container_count")}
-            </div>
+            {!isLCL ? (
+              <>
+                <div className="space-y-2">
+                  <Label>Container type {isFCL && <span className="text-red-500">*</span>}</Label>
+                  <Combobox items={containerOptions} value={containerOptions.find((x) => x.value === (containerTypeId || "__none__")) ?? null} onValueChange={(next) => setContainerTypeId(next?.value && next.value !== "__none__" ? next.value : "")}>
+                    <ComboboxInput className="w-full" placeholder="Pilih tipe kontainer..." />
+                    <ComboboxContent><ComboboxEmpty>Data tidak ditemukan.</ComboboxEmpty><ComboboxList>{(item: ComboOption) => <ComboboxItem key={item.value} value={item}>{item.label}</ComboboxItem>}</ComboboxList></ComboboxContent>
+                  </Combobox>
+                  {renderError("container_type_id")}
+                </div>
+                <div className="space-y-2">
+                  <Label>Jumlah kontainer</Label>
+                  <Input type="number" min={1} value={containerCount} onChange={(e) => setContainerCount(e.target.value.replace(/\D/g, ""))} className={cn("h-9", validationErrors?.container_count && "border-red-500")} />
+                  {renderError("container_count")}
+                </div>
+              </>
+            ) : (
+              <div className="sm:col-span-2 grid gap-4 sm:grid-cols-3 bg-zinc-50/50 p-4 rounded-lg border border-dashed">
+                <div className="space-y-1">
+                  <Label>Panjang (cm)</Label>
+                  <Input type="number" value={itemLength} onChange={(e) => {
+                    setItemLength(e.target.value);
+                    const l = Number(e.target.value) || 0;
+                    const w = Number(itemWidth) || 0;
+                    const h = Number(itemHeight) || 0;
+                    if (l && w && h) setCbm(String((l * w * h) / 1000000));
+                  }} placeholder="cm" className="h-9 bg-white" />
+                </div>
+                <div className="space-y-1">
+                  <Label>Lebar (cm)</Label>
+                  <Input type="number" value={itemWidth} onChange={(e) => {
+                    setItemWidth(e.target.value);
+                    const l = Number(itemLength) || 0;
+                    const w = Number(e.target.value) || 0;
+                    const h = Number(itemHeight) || 0;
+                    if (l && w && h) setCbm(String((l * w * h) / 1000000));
+                  }} placeholder="cm" className="h-9 bg-white" />
+                </div>
+                <div className="space-y-1">
+                  <Label>Tinggi (cm)</Label>
+                  <Input type="number" value={itemHeight} onChange={(e) => {
+                    setItemHeight(e.target.value);
+                    const l = Number(itemLength) || 0;
+                    const w = Number(itemWidth) || 0;
+                    const h = Number(e.target.value) || 0;
+                    if (l && w && h) setCbm(String((l * w * h) / 1000000));
+                  }} placeholder="cm" className="h-9 bg-white" />
+                </div>
+                <p className="sm:col-span-3 text-[10px] text-muted-foreground">* Dimensi digunakan untuk menghitung CBM secara otomatis.</p>
+              </div>
+            )}
             <div className="space-y-2">
               <Label>Berat Estimasi (kg)</Label>
-              <Input value={weight} onChange={(e) => setWeight(e.target.value)} className="h-9" />
+              <Input type="number" step="0.01" value={weight} onChange={(e) => setWeight(e.target.value)} disabled={!isLCL && !!selectedCT} className={cn("h-9", !isLCL && selectedCT && "bg-zinc-100 italic", validationErrors?.estimated_weight && "border-red-500")} />
               {renderError("estimated_weight")}
             </div>
             <div className="space-y-2">
               <Label>CBM Estimasi</Label>
-              <Input value={cbm} onChange={(e) => setCbm(e.target.value)} className="h-9" />
+              <Input type="number" step="0.01" value={cbm} onChange={(e) => setCbm(e.target.value)} disabled={!!selectedCT || isLCL} className={cn("h-9", (selectedCT || isLCL) && "bg-zinc-100 italic", validationErrors?.estimated_cbm && "border-red-500")} />
               {renderError("estimated_cbm")}
             </div>
             <div className="space-y-2">
@@ -358,22 +406,41 @@ export function BookingEditDialog({
               {renderError("departure_date")}
             </div>
             <div className="space-y-2 sm:col-span-2">
-              <Label>Deskripsi barang</Label>
-              <Textarea value={cargo} onChange={(e) => setCargo(e.target.value)} className="min-h-[84px]" />
+              <Label className="flex justify-between items-center">
+                <span>Deskripsi barang</span>
+                <span className={selectedCargoCategory?.code === "MIX" ? "text-[10px] text-red-500 font-bold" : "text-[10px] text-zinc-400"}>
+                  {selectedCargoCategory?.code === "MIX" ? "(Wajib untuk Mixed Cargo)" : "(Opsional)"}
+                </span>
+              </Label>
+              <Textarea value={cargo} onChange={(e) => setCargo(e.target.value)} className={cn("min-h-[84px]", validationErrors?.cargo_description && "border-red-500")} required={selectedCargoCategory?.code === "MIX"} />
               {renderError("cargo_description")}
             </div>
 
             {showProject ? (
               <div className="space-y-2">
-                <Label>Kondisi equipment</Label>
-                <Input value={equipmentCondition} onChange={(e) => setEquipmentCondition(e.target.value)} className="h-9" placeholder="CLEAN / RESIDUAL" />
+                <Label>Kondisi Mesin / Unit <span className="text-red-500">*</span></Label>
+                <select
+                  className={cn("flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring", validationErrors?.equipment_condition && "border-red-500")}
+                  value={equipmentCondition}
+                  onChange={(e) => setEquipmentCondition(e.target.value)}
+                  required
+                >
+                  <option value="">— pilih kondisi —</option>
+                  <option value="CLEAN">CLEAN (Bersih/Baru)</option>
+                  <option value="RESIDUAL">RESIDUAL (Bekas/Terdapat sisa BBM)</option>
+                </select>
                 {renderError("equipment_condition")}
+                {equipmentCondition === "RESIDUAL" && (
+                  <p className="text-[10px] text-amber-600 font-medium">
+                    * Unit Residual otomatis menjadi DG.
+                  </p>
+                )}
               </div>
             ) : null}
             {showTemp ? (
               <div className="space-y-2">
-                <Label>Suhu</Label>
-                <Input value={temperature} onChange={(e) => setTemperature(e.target.value)} className="h-9" />
+                <Label>Suhu (Celsius) <span className="text-red-500">*</span></Label>
+                <Input type="number" value={temperature} onChange={(e) => setTemperature(e.target.value)} className={cn("h-9", validationErrors?.temperature && "border-red-500")} placeholder="0.0" required />
                 {renderError("temperature")}
               </div>
             ) : null}

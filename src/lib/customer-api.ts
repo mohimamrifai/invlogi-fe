@@ -108,10 +108,11 @@ export async function createCustomerBookingMultipart(formData: FormData) {
   });
 }
 
-export async function updateCustomerBooking(bookingId: number, payload: Record<string, unknown>) {
+export async function updateCustomerBooking(bookingId: number, payload: Record<string, unknown> | FormData) {
+  const isFormData = payload instanceof FormData;
   return apiFetch(`/customer/bookings/${bookingId}`, {
-    method: "PUT",
-    body: JSON.stringify(payload),
+    method: "POST", // Laravel uses POST with _method=PUT for multipart forms
+    body: isFormData ? payload : JSON.stringify(payload),
   });
 }
 
