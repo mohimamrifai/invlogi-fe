@@ -8,9 +8,15 @@ type BrandLogoProps = {
 };
 
 const sizeClasses = {
-  sm: "h-7 max-w-[12.5rem] sm:max-w-[15rem]",
-  md: "h-9 max-w-[16rem] sm:max-w-[18rem]",
-  lg: "h-11 max-w-[19rem] sm:max-w-[22rem]",
+  sm: "h-20 max-w-[15rem] sm:max-w-[18rem]",
+  md: "h-24 max-w-[20rem] sm:max-w-[24rem]",
+  lg: "h-28 max-w-[24rem] sm:max-w-[28rem]",
+} as const;
+
+const wrapperClasses = {
+  sm: "h-10",
+  md: "h-12",
+  lg: "h-16",
 } as const;
 
 export function BrandLogo({ size = "md", className }: BrandLogoProps) {
@@ -18,14 +24,15 @@ export function BrandLogo({ size = "md", className }: BrandLogoProps) {
     <span
       className={cn(
         "inline-flex items-center justify-center",
+        wrapperClasses[size],
         className
       )}
     >
       <Image
-        src="/logo.png"
-        alt="INVLOGI"
-        width={480}
-        height={80}
+        src="/logo-baru.png"
+        alt="SOL Logistics"
+        width={600}
+        height={200}
         priority
         className={cn("w-auto object-contain object-left", sizeClasses[size])}
       />

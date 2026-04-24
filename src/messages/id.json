@@ -31,7 +31,7 @@
     "f5Body": "Atur siapa yang mengelola booking, siapa yang memantau pengiriman, dan siapa yang mengurus keuangan — dalam satu portal.",
     "f6Title": "Siap untuk berkembang",
     "f6Body": "Mulai dari kereta, lalu ekspansi ke trucking, kapal, atau pesawat — tanpa perlu ganti platform.",
-    "footerBrand": "INVLOGI",
+    "footerBrand": "SOL Logistics",
     "footerTagline": "Platform logistik terpadu untuk mengelola booking dan pengiriman bisnis Anda.",
     "footerEstimasi": "Estimasi Biaya",
     "footerTracking": "Lacak Pengiriman",
@@ -80,9 +80,9 @@
     "cta": "Lacak Sekarang"
   },
   "LandingWhy": {
-    "eyebrow": "Kenapa INVLOGI",
+    "eyebrow": "Kenapa SOL Logistics",
     "title": "Kenapa ratusan perusahaan memilih kami",
-    "lead": "INVLOGI dibangun untuk menyederhanakan logistik bisnis Anda — transparan, efisien, dan tumbuh bersama kebutuhan Anda.",
+    "lead": "SOL Logistics dibangun untuk menyederhanakan logistik bisnis Anda — transparan, efisien, dan tumbuh bersama kebutuhan Anda.",
     "w1Title": "Semua dalam satu tempat",
     "w1Body": "Booking, tracking, tagihan, dan pembayaran — tidak perlu buka banyak aplikasi.",
     "w2Title": "Harga langsung terlihat",
@@ -109,7 +109,7 @@
   "LandingTestimonials": {
     "eyebrow": "Testimoni",
     "title": "Apa kata pelanggan kami",
-    "t1Quote": "INVLOGI menyederhanakan seluruh proses logistik kami. Dari booking sampai pembayaran, semua di satu tempat. Tim operations kami jauh lebih produktif.",
+    "t1Quote": "SOL Logistics menyederhanakan seluruh proses logistik kami. Dari booking sampai pembayaran, semua di satu tempat. Tim operations kami jauh lebih produktif.",
     "t1Name": "Andi Prasetyo",
     "t1Role": "Direktur Operasional, PT Maju Logistik",
     "t2Quote": "Fitur tracking real-time dengan foto bukti sangat membantu kami memantau kargo tanpa harus menelepon vendor setiap saat.",
@@ -163,7 +163,7 @@
   },
   "PlaceholderPages": {
     "servicesTitle": "Layanan",
-    "servicesBody": "Halaman ini akan memuat detail layanan INVLOGI (rail cargo, FCL/LCL, dan lainnya). Konten dapat dilengkapi sesuai kebutuhan pemasaran dan operasional.",
+    "servicesBody": "Halaman ini akan memuat detail layanan SOL Logistics (rail cargo, FCL/LCL, dan lainnya). Konten dapat dilengkapi sesuai kebutuhan pemasaran dan operasional.",
     "infoTitle": "Informasi",
     "infoBody": "Halaman ini dapat digunakan untuk FAQ, kebijakan, atau berita. Silakan isi dengan konten resmi dari tim Anda."
   },
