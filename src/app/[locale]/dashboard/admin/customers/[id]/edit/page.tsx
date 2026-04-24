@@ -108,7 +108,7 @@ export default function AdminCustomerEditPage() {
         name: name.trim(),
         npwp: npwp.trim() || null,
         nib: nib.trim() || null,
-        billing_cycle: paymentType === "prepaid" ? null : billingCycle,
+        billing_cycle: billingCycle || "end_of_month",
         payment_type: paymentType,
         postpaid_term_days:
           paymentType === "postpaid" && postpaidTermDays.trim() !== ""

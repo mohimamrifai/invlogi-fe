@@ -66,7 +66,7 @@ export default function AdminCustomerCreatePage() {
         name: name.trim(),
         npwp: npwp.trim() || null,
         nib: nib.trim() || null,
-        billing_cycle: paymentType === "prepaid" ? null : billingCycle,
+        billing_cycle: billingCycle,
         payment_type: paymentType,
         postpaid_term_days:
           paymentType === "postpaid" && postpaidTermDays.trim() !== ""
