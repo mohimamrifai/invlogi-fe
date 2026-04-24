@@ -43,3 +43,7 @@ export async function createAdminVendorPricing(vendorServiceId: number, body: Re
 export async function updateAdminPricing(pricingId: number, body: Record<string, unknown>) {
   return apiFetch(`/admin/pricings/${pricingId}`, { method: "PUT", body: JSON.stringify(body) });
 }
+
+export async function deleteAdminPricing(pricingId: number) {
+  return apiFetch(`/admin/pricings/${pricingId}`, { method: "DELETE" });
+}

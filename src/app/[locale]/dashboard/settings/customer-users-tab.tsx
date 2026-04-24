@@ -10,10 +10,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Switch } from "@/components/ui/switch";
 import { apiFetch, ApiError } from "@/lib/api-client";
 import { firstLaravelError } from "@/lib/laravel-errors";
 import { toast } from "sonner";
 import { useAuthStore } from "@/lib/store";
+import { customerStatusLabelFromApi, customerStatusBadgeClass } from "@/lib/customer-status";
 
 interface UserData {
   id: number;
@@ -109,6 +112,24 @@ export function CustomerUsersTab() {
     }
   };
 
+  const handleToggleStatus = async (user: UserData, checked: boolean) => {
+    if (currentUser?.id === user.id) {
+      toast.error("Anda tidak dapat mengubah status akun Anda sendiri.");
+      return;
+    }
+    const newStatus = checked ? "active" : "inactive";
+    try {
+      await apiFetch(`/customer/users/${user.id}`, {
+        method: "PUT",
+        body: JSON.stringify({ status: newStatus }),
+      });
+      toast.success(`Status akun ${user.name} berhasil diubah.`);
+      setUsers((prev) => prev.map((u) => u.id === user.id ? { ...u, status: newStatus } : u));
+    } catch (e) {
+      toast.error(e instanceof ApiError ? e.message : "Gagal mengubah status akun.");
+    }
+  };
+
   const roleLabel = (role: string) => {
     switch (role) {
       case "company_admin": return "Admin Perusahaan";
@@ -145,9 +166,9 @@ export function CustomerUsersTab() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Nama</TableHead>
-                  <TableHead>Email</TableHead>
+                  <TableHead>Pengguna</TableHead>
                   <TableHead>Peran</TableHead>
+                  <TableHead>Status</TableHead>
                   <TableHead className="text-right">Aksi</TableHead>
                 </TableRow>
               </TableHeader>
@@ -161,12 +182,36 @@ export function CustomerUsersTab() {
                 ) : (
                   users.map((u) => (
                     <TableRow key={u.id}>
-                      <TableCell className="font-medium">{u.name}</TableCell>
-                      <TableCell>{u.email}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <Avatar size="sm">
+                            <AvatarFallback>
+                              {u.name.substring(0, 2).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex flex-col">
+                            <span className="font-medium">{u.name}</span>
+                            <span className="text-xs text-muted-foreground">{u.email}</span>
+                          </div>
+                        </div>
+                      </TableCell>
                       <TableCell>
                         <Badge variant="secondary">
                           {roleLabel(u.roles?.[0]?.name ?? "")}
                         </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Switch 
+                            size="sm"
+                            checked={u.status === "active"}
+                            onCheckedChange={(checked) => void handleToggleStatus(u, checked)}
+                            disabled={currentUser?.id === u.id}
+                          />
+                          <Badge variant="outline" className={customerStatusBadgeClass(u.status)}>
+                            {customerStatusLabelFromApi(u.status)}
+                          </Badge>
+                        </div>
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">

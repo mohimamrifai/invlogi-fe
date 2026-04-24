@@ -39,13 +39,15 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Eye, MoreHorizontal, Pencil } from "lucide-react";
+import { Eye, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { PaginationBar } from "@/components/data-table/pagination-bar";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { VendorPricingDialog } from "@/components/dashboard/admin/vendor-pricing-dialog";
 import { VendorServiceDialog } from "@/components/dashboard/admin/vendor-service-dialog";
-import { fetchAdminVendor, fetchAdminVendors } from "@/lib/admin-api";
+import { ConfirmDeleteDialog } from "@/components/dashboard/admin/confirm-delete-dialog";
+import { fetchAdminVendor, fetchAdminVendors, deleteAdminPricing } from "@/lib/admin-api";
 import type { LaravelPaginated } from "@/lib/types-api";
 import { ApiError } from "@/lib/api-client";
 import { rowNumber } from "@/lib/list-query";
@@ -90,6 +92,10 @@ export default function AdminVendorPricingPage() {
   
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [viewDialogRow, setViewDialogRow] = useState<PricingRow | null>(null);
+
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteDialogRow, setDeleteDialogRow] = useState<PricingRow | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   const loadPricingForVendor = useCallback(async (vendorId: number, label: string) => {
     setDetailLoading(true);
@@ -199,6 +205,24 @@ export default function AdminVendorPricingPage() {
     const id = Number(value);
     const label = row ? String(row.name ?? row.code ?? "—") : "—";
     void loadPricingForVendor(id, label);
+  };
+
+  const handleDelete = async () => {
+    if (!deleteDialogRow?.raw?.id) return;
+    setDeleteLoading(true);
+    try {
+      await deleteAdminPricing(Number(deleteDialogRow.raw.id));
+      toast.success("Tarif berhasil dihapus.");
+      setDeleteDialogOpen(false);
+      setDeleteDialogRow(null);
+      if (selectedVendorNumericId) {
+        void loadPricingForVendor(selectedVendorNumericId, pricingVendorLabel);
+      }
+    } catch (e) {
+      toast.error(e instanceof ApiError ? e.message : "Gagal menghapus tarif.");
+    } finally {
+      setDeleteLoading(false);
+    }
   };
 
   return (
@@ -387,6 +411,16 @@ export default function AdminVendorPricingPage() {
                                 <Pencil className="mr-2 h-4 w-4" />
                                 Edit
                               </DropdownMenuItem>
+                              <DropdownMenuItem
+                                className="cursor-pointer text-destructive"
+                                onClick={() => {
+                                  setDeleteDialogRow(row);
+                                  setDeleteDialogOpen(true);
+                                }}
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Hapus
+                              </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </TableCell>
@@ -463,6 +497,15 @@ export default function AdminVendorPricingPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDeleteDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        title="Hapus Tarif?"
+        description={`Yakin ingin menghapus tarif untuk layanan ${deleteDialogRow?.service} (${priceTypeLabel(deleteDialogRow?.priceType ?? "")})?`}
+        loading={deleteLoading}
+        onConfirm={handleDelete}
+      />
     </>
   );
 }

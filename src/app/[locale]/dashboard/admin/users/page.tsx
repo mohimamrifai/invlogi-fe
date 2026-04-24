@@ -41,12 +41,14 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ConfirmDeleteDialog } from "@/components/dashboard/admin/confirm-delete-dialog";
+import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
+import { customerStatusLabelFromApi, customerStatusBadgeClass } from "@/lib/customer-status";
 import { firstLaravelError } from "@/lib/laravel-errors";
-import { MoreHorizontal, Pencil, Plus, Trash2 } from "lucide-react";
+import { MoreHorizontal, Pencil, Plus } from "lucide-react";
 import { DIALOG_CREATE_HEADER_CLASS } from "@/lib/dialog-create-header";
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
@@ -165,7 +167,6 @@ export default function AdminUsersPage() {
       } else if (editRow?.id != null) {
         const body: Record<string, unknown> = {
           name: name.trim(),
-          email: email.trim(),
           phone: phone.trim() || null,
           user_type: "internal",
           role,
@@ -187,6 +188,21 @@ export default function AdminUsersPage() {
       toast.error(msg);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleToggleStatus = async (row: Row, checked: boolean) => {
+    if (user?.id === row.id) {
+      toast.error("Anda tidak dapat mengubah status akun Anda sendiri.");
+      return;
+    }
+    const newStatus = checked ? "active" : "inactive";
+    try {
+      await updateAdminUser(Number(row.id), { status: newStatus });
+      toast.success(`Status akun ${String(row.name ?? "")} berhasil diubah.`);
+      setRows((prev) => prev.map((u) => u.id === row.id ? { ...u, status: newStatus } : u));
+    } catch (e) {
+      toast.error(e instanceof ApiError ? e.message : "Gagal mengubah status akun.");
     }
   };
 
@@ -251,12 +267,14 @@ export default function AdminUsersPage() {
                     <TableHead>Nama</TableHead>
                     <TableHead>Email</TableHead>
                     <TableHead>Role</TableHead>
+                    <TableHead>Status</TableHead>
                     <TableHead className="text-right">Aksi</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {rows.map((r, index) => {
                     const rr = r.roles as { name?: string }[] | undefined;
+                    const status = String(r.status ?? "active");
                     return (
                       <TableRow key={String(r.id)}>
                         <TableCell className="text-muted-foreground">
@@ -268,6 +286,19 @@ export default function AdminUsersPage() {
                           {rr?.[0]?.name
                             ? rr[0].name.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
                             : "—"}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Switch 
+                              size="sm"
+                              checked={status === "active"}
+                              onCheckedChange={(checked) => void handleToggleStatus(r, checked)}
+                              disabled={user?.id === r.id}
+                            />
+                            <Badge variant="outline" className={customerStatusBadgeClass(status)}>
+                              {customerStatusLabelFromApi(status)}
+                            </Badge>
+                          </div>
                         </TableCell>
                         <TableCell className="text-right">
                           <DropdownMenu>
@@ -281,17 +312,6 @@ export default function AdminUsersPage() {
                               <DropdownMenuItem className="cursor-pointer" onClick={() => openEdit(r)}>
                                 <Pencil className="h-4 w-4" />
                                 Edit
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem
-                                className="cursor-pointer text-destructive focus:text-destructive"
-                                onClick={() => {
-                                  setDeleteRow(r);
-                                  setDeleteOpen(true);
-                                }}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                                Hapus
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -341,7 +361,11 @@ export default function AdminUsersPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={dialogMode === "edit"}
                 placeholder={dialogMode === "create" ? "email@perusahaan.com" : undefined}
+                className={dialogMode === "edit" ? "bg-muted/50 cursor-not-allowed" : ""}
               />
+              {dialogMode === "edit" && (
+                <p className="text-[0.8rem] text-muted-foreground mt-1">Email tidak dapat diubah.</p>
+              )}
             </div>
             <div className="space-y-1">
               <Label>{dialogMode === "create" ? "Password" : "Password (kosongkan jika tidak diubah)"}</Label>
@@ -389,7 +413,7 @@ export default function AdminUsersPage() {
             <Button
               type="button"
               onClick={() => void save()}
-              disabled={saving || !name.trim() || !email.trim() || (dialogMode === "create" && !password)}
+              disabled={saving || !name.trim() || (dialogMode === "create" && !email.trim()) || (dialogMode === "create" && !password)}
             >
               {saving ? "Menyimpan…" : "Simpan"}
             </Button>

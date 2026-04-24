@@ -30,7 +30,7 @@ import type { LaravelPaginated } from "@/lib/types-api";
 import { DIALOG_CREATE_HEADER_CLASS } from "@/lib/dialog-create-header";
 import { toast } from "sonner";
 
-type Opt = { id: number; label: string };
+type Opt = { id: number; label: string; transportModeId?: number };
 
 export function VendorServiceDialog({
   open,
@@ -87,6 +87,7 @@ export function VendorServiceDialog({
           stData.map((r) => ({
             id: Number(r.id),
             label: String(r.name ?? r.code ?? r.id),
+            transportModeId: Number(r.transport_mode_id),
           }))
         );
         setLocations(
@@ -157,7 +158,12 @@ export function VendorServiceDialog({
             <Label>Moda transport</Label>
             <Select
               value={transportModeId}
-              onValueChange={(v) => v && setTransportModeId(v)}
+              onValueChange={(v) => {
+                if (v) {
+                  setTransportModeId(v);
+                  setServiceTypeId("");
+                }
+              }}
               disabled={listsLoading}
             >
               <SelectTrigger className="w-full">
@@ -181,17 +187,19 @@ export function VendorServiceDialog({
             <Select
               value={serviceTypeId}
               onValueChange={(v) => v && setServiceTypeId(v)}
-              disabled={listsLoading}
+              disabled={listsLoading || !transportModeId}
             >
               <SelectTrigger className="w-full">
-                <SelectValue placeholder={listsLoading ? "Memuat…" : "Pilih"}>
+                <SelectValue placeholder={listsLoading ? "Memuat…" : transportModeId ? "Pilih" : "Pilih moda dulu"}>
                   {serviceTypeId
                     ? serviceTypes.find((o) => String(o.id) === serviceTypeId)?.label ?? undefined
                     : undefined}
                 </SelectValue>
               </SelectTrigger>
               <SelectContent>
-                {serviceTypes.map((o) => (
+                {serviceTypes
+                  .filter((o) => o.transportModeId === Number(transportModeId))
+                  .map((o) => (
                   <SelectItem key={o.id} value={String(o.id)}>
                     {o.label}
                   </SelectItem>

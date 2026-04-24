@@ -79,14 +79,14 @@ function PhotoLightbox({
 export default function PublicTrackingPage() {
   const t = useTranslations("Tracking");
   const searchParams = useSearchParams();
-  const [waybill, setWaybill] = useState("");
+  const [cnNumber, setCnNumber] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<TrackingData | null>(null);
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
 
   const search = async (q?: string) => {
-    const wb = (q ?? waybill).trim();
+    const wb = (q ?? cnNumber).trim().replace(/^WB-/i, "CN-");
     if (!wb) return;
     setLoading(true);
     setError(null);
@@ -105,10 +105,11 @@ export default function PublicTrackingPage() {
   };
 
   useEffect(() => {
-    const wb = searchParams.get("waybill");
+    const wb = searchParams.get("waybill") || searchParams.get("cn");
     if (wb) {
-      setWaybill(wb);
-      void search(wb);
+      const formattedWb = wb.replace(/^WB-/i, "CN-");
+      setCnNumber(formattedWb);
+      void search(formattedWb);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -156,15 +157,15 @@ export default function PublicTrackingPage() {
             <div className="relative flex-1">
               <Search className="pointer-events-none absolute top-1/2 left-4 h-5 w-5 -translate-y-1/2 text-zinc-400" />
               <Input
-                value={waybill}
-                onChange={(e) => setWaybill(e.target.value)}
+                value={cnNumber}
+                onChange={(e) => setCnNumber(e.target.value)}
                 placeholder={t("placeholder")}
                 className="h-13 rounded-xl border-0 bg-white pl-12 pr-4 text-sm text-zinc-900 shadow-lg placeholder:text-zinc-400 focus:ring-2 focus:ring-sky-400 sm:h-14 sm:text-base"
               />
             </div>
             <Button
               type="submit"
-              disabled={loading || !waybill.trim()}
+              disabled={loading || !cnNumber.trim()}
               className="h-13 shrink-0 rounded-xl bg-white px-7 text-sm font-semibold text-[#0b1b69] shadow-lg transition-colors hover:bg-zinc-100 sm:h-14 sm:text-base"
             >
               {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : t("cta")}
@@ -187,7 +188,7 @@ export default function PublicTrackingPage() {
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500">{t("waybillLabel")}</p>
                   <p className="mt-1 font-mono text-xl font-bold tracking-tight text-zinc-900">
-                    {data.waybill_number}
+                    {data.waybill_number.replace(/^WB-/i, "CN-")}
                   </p>
                 </div>
                 <div className="inline-flex items-center gap-2 rounded-full bg-[#0b1b69]/10 px-4 py-2 text-sm font-semibold text-[#0b1b69]">

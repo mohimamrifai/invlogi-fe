@@ -32,20 +32,22 @@ type TrackingData = {
 };
 
 export default function CustomerTrackingPage() {
-  const [waybill, setWaybill] = useState("");
+  const [cnNumber, setCnNumber] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<TrackingData | null>(null);
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
 
   const search = async () => {
-    if (!waybill.trim()) return;
+    if (!cnNumber.trim()) return;
     setLoading(true);
     setError(null);
     setData(null);
     try {
+      // Pastikan pencarian menggunakan CN- jika user tidak mengetik dengan lengkap atau mengganti WB- menjadi CN-
+      const searchWaybill = cnNumber.trim().replace(/^WB-/i, "CN-");
       const res = await apiFetch<{ data: TrackingData }>(
-        `/tracking?waybill=${encodeURIComponent(waybill.trim())}`,
+        `/tracking?waybill=${encodeURIComponent(searchWaybill)}`,
         { method: "GET", token: null }
       );
       setData(res.data);
@@ -71,6 +73,19 @@ export default function CustomerTrackingPage() {
     }
   };
 
+  const fmtDateOnly = (d?: string | null) => {
+    if (!d) return "—";
+    try {
+      return new Date(d).toLocaleDateString("id-ID", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      });
+    } catch {
+      return d;
+    }
+  };
+
   return (
     <div className="flex min-w-0 w-full flex-1 flex-col gap-6 md:px-2">
       <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
@@ -80,24 +95,24 @@ export default function CustomerTrackingPage() {
           </div>
           <div className="min-w-0 flex-1">
             <h1 className="text-xl font-semibold tracking-tight text-zinc-900 sm:text-2xl">Shipment Tracking</h1>
-            <p className="mt-1 text-sm text-muted-foreground">Lacak dengan waybill (API publik yang sama).</p>
+            <p className="mt-1 text-sm text-muted-foreground">Lacak dengan Consignment Note (CN).</p>
           </div>
         </div>
       </div>
 
       <Card className="min-w-0 overflow-hidden">
         <CardHeader>
-          <CardTitle>Cari waybill</CardTitle>
-          <CardDescription>GET /api/tracking?waybill=… tanpa token.</CardDescription>
+          <CardTitle>Cari nomor CN</CardTitle>
+          <CardDescription>Masukkan nomor CN untuk melacak status pengiriman Anda.</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col sm:flex-row gap-3">
           <div className="flex-1 space-y-2">
-            <Label htmlFor="wb-dash">Waybill</Label>
+            <Label htmlFor="cn-dash">Nomor CN</Label>
             <Input
-              id="wb-dash"
-              value={waybill}
-              onChange={(e) => setWaybill(e.target.value)}
-              placeholder="WB-..."
+              id="cn-dash"
+              value={cnNumber}
+              onChange={(e) => setCnNumber(e.target.value)}
+              placeholder="CN-..."
               onKeyDown={(e) => e.key === "Enter" && void search()}
             />
           </div>
@@ -114,7 +129,7 @@ export default function CustomerTrackingPage() {
       {data ? (
         <Card>
           <CardHeader>
-            <CardTitle className="font-mono">{data.waybill_number}</CardTitle>
+            <CardTitle className="font-mono">{data.waybill_number.replace(/^WB-/i, "CN-")}</CardTitle>
             <CardDescription>
               Status: <strong>{shipmentStatusLabel(data.status)}</strong>
             </CardDescription>
@@ -131,11 +146,11 @@ export default function CustomerTrackingPage() {
               </div>
               <div>
                 <p className="text-muted-foreground">Est. berangkat</p>
-                <p>{data.estimated_departure ?? "—"}</p>
+                <p className="font-medium">{fmtDateOnly(data.estimated_departure)}</p>
               </div>
               <div>
                 <p className="text-muted-foreground">Est. tiba</p>
-                <p>{data.estimated_arrival ?? "—"}</p>
+                <p className="font-medium">{fmtDateOnly(data.estimated_arrival)}</p>
               </div>
             </div>
             <div>

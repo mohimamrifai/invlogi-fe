@@ -35,9 +35,9 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { MoreHorizontal, Truck, Eye } from "lucide-react";
+import { MoreHorizontal, Truck, Eye, Download } from "lucide-react";
 import { SHIPMENT_STATUS_KEYS, shipmentStatusBadgeClass, shipmentStatusLabel } from "@/lib/shipment-status";
-import { fetchCustomerShipments, fetchCustomerShipment } from "@/lib/customer-api";
+import { fetchCustomerShipments, fetchCustomerShipment, downloadCustomerConsignmentNotePdf } from "@/lib/customer-api";
 import type { LaravelPaginated } from "@/lib/types-api";
 import { ApiError } from "@/lib/api-client";
 import { rowNumber } from "@/lib/list-query";
@@ -120,6 +120,23 @@ export default function CustomerShipmentsPage() {
       toast.error(e instanceof ApiError ? e.message : "Gagal memuat detail shipment.");
     } finally {
       setDetailLoading(false);
+    }
+  };
+
+  const handleDownloadCn = async (id: number, cnNumber: string) => {
+    try {
+      const blob = await downloadCustomerConsignmentNotePdf(id);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `consignment-note-${cnNumber}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      toast.success("PDF Consignment Note berhasil diunduh.");
+    } catch (e) {
+      toast.error(e instanceof ApiError ? e.message : "Gagal mengunduh PDF.");
     }
   };
 
@@ -223,6 +240,10 @@ export default function CustomerShipmentsPage() {
                               <DropdownMenuItem onClick={() => handleOpenDetail(id)}>
                                 <Eye className="mr-2 h-4 w-4" />
                                 Lihat Detail
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleDownloadCn(id, cnNumber)}>
+                                <Download className="mr-2 h-4 w-4" />
+                                Download CN
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
