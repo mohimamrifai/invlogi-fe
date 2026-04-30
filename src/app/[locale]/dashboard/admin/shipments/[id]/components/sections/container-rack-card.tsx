@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Pencil } from "lucide-react";
+import { Pencil, Trash2 } from "lucide-react";
 
 interface ContainerRackCardProps {
   containers: Array<{
@@ -16,9 +16,10 @@ interface ContainerRackCardProps {
   onAddRack: (containerId: number) => void;
   onEditContainer: (container: ContainerRackCardProps["containers"][number]) => void;
   onEditRack: (rack: Record<string, unknown>, containerId: number) => void;
+  onDeleteRack?: (rack: Record<string, unknown>) => void;
 }
 
-export function ContainerRackCard({ containers, onAddRack, onEditContainer, onEditRack }: ContainerRackCardProps) {
+export function ContainerRackCard({ containers, onAddRack, onEditContainer, onEditRack, onDeleteRack }: ContainerRackCardProps) {
   return (
     <Card>
       <CardHeader>
@@ -68,6 +69,16 @@ export function ContainerRackCard({ containers, onAddRack, onEditContainer, onEd
                         >
                           <Pencil className="h-3 w-3" />
                         </button>
+                        {onDeleteRack && (
+                          <button
+                            type="button"
+                            onClick={() => onDeleteRack(r)}
+                            className="text-zinc-300 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-all ml-1"
+                            title="Hapus Rack"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </button>
+                        )}
                       </div>
                     ))}
                   </div>

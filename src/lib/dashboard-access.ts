@@ -114,7 +114,7 @@ export const DASHBOARD_SIDEBAR_ITEM_DEFS = [
     menuKey: "companySettings",
     url: "/dashboard/settings",
     requiredPermission: null,
-    roles: ["company_admin"] as const,
+    roles: ["company_admin", "ops_pic", "finance_pic", "super_admin", "operations", "finance", "sales"] as const,
   },
 ] as const;
 

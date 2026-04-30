@@ -130,7 +130,7 @@ export function VendorPricingDialog({
         is_active: isActive,
       };
       const ct = containerTypeId ? Number(containerTypeId) : null;
-      if (ct != null && Number.isFinite(ct)) body.container_type_id = ct;
+      body.container_type_id = ct != null && Number.isFinite(ct) ? ct : null;
       const pkg = numOrNull(pricePerKg);
       const pcbm = numOrNull(pricePerCbm);
       const pcont = numOrNull(pricePerContainer);
@@ -186,7 +186,7 @@ export function VendorPricingDialog({
               onValueChange={(v) => {
                 if (v != null) setVendorServiceId(v);
               }}
-              disabled={listsLoading}
+              disabled={listsLoading || mode === "edit"}
             >
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Pilih lane / layanan">

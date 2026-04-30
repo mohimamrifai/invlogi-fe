@@ -84,7 +84,9 @@ export function ItemAdminDialog({
     const q = Number(qStr) || 1;
     if (l > 0 && w > 0 && h > 0) {
       const cbm = ((l * w * h) / 1000000) * q;
-      setters.setItemCbm(String(cbm));
+      setters.setItemCbm(String(Number(cbm.toFixed(4))));
+    } else {
+      setters.setItemCbm("");
     }
   };
 

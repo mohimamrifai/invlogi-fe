@@ -190,7 +190,7 @@ export default function RegisterPage() {
               render={({ field }) => (
                 <RadioGroup 
                   onValueChange={field.onChange}
-                  defaultValue={field.value}
+                  value={field.value}
                   className="flex gap-6 justify-center"
                 >
                   <div className="flex items-center space-x-2">

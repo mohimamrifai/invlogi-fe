@@ -13,6 +13,7 @@ import {
   updateAdminShipmentItem,
   deleteAdminShipmentItem,
   downloadAdminConsignmentNotePdf,
+  deleteAdminRack,
 } from "@/lib/admin-api";
 import { ApiError } from "@/lib/api-client";
 import { firstLaravelError } from "@/lib/laravel-errors";
@@ -86,6 +87,10 @@ export function useShipmentDetail(shipmentId: number) {
 
   const [deleteItemRow, setDeleteItemRow] = useState<Row | null>(null);
   const [deleteItemLoading, setDeleteItemLoading] = useState(false);
+
+  const [deleteRackRow, setDeleteRackRow] = useState<Row | null>(null);
+  const [deleteRackOpen, setDeleteRackOpen] = useState(false);
+  const [deleteRackLoading, setDeleteRackLoading] = useState(false);
 
   const load = useCallback(async () => {
     if (!Number.isFinite(shipmentId) || shipmentId < 1) {
@@ -365,6 +370,22 @@ export function useShipmentDetail(shipmentId: number) {
     }
   };
 
+  const handleDeleteRack = async () => {
+    if (deleteRackRow?.id == null) return;
+    setDeleteRackLoading(true);
+    try {
+      await deleteAdminRack(Number(deleteRackRow.id));
+      toast.success("Rack berhasil dihapus.");
+      setDeleteRackOpen(false);
+      setDeleteRackRow(null);
+      await load();
+    } catch (e) {
+      toast.error(e instanceof ApiError ? e.message : "Gagal menghapus rack. Pastikan tidak ada barang di dalamnya.");
+    } finally {
+      setDeleteRackLoading(false);
+    }
+  };
+
   const pdf = async () => {
     try {
       const blob = await downloadAdminConsignmentNotePdf(shipmentId);
@@ -406,6 +427,7 @@ export function useShipmentDetail(shipmentId: number) {
     rackOpen, setRackOpen,
     itemOpen, setItemOpen,
     deleteItemOpen, setDeleteItemOpen,
+    deleteRackOpen, setDeleteRackOpen,
 
     // Edit logic
     estDep, setEstDep,
@@ -440,6 +462,9 @@ export function useShipmentDetail(shipmentId: number) {
     openRack,
     openEditRack,
     saveRack,
+    deleteRackRow, setDeleteRackRow,
+    deleteRackLoading,
+    handleDeleteRack,
 
     // Item logic
     itemMode,

@@ -45,14 +45,14 @@ import {
   ComboboxList,
 } from "@/components/ui/combobox";
 
-type Company = { id: number; name: string };
+  type Company = { id: number; name: string; address?: string; phone?: string };
 type Loc = { id: number; name: string; code?: string };
 type TM = { id: number; name: string; code?: string };
 type ST = { id: number; name: string; code?: string; transport_mode_id: number };
 type CT = { id: number; name: string; size: string };
 type AS = { id: number; name: string; category: string; code?: string | null };
 type DC = { id: number; name: string; code: string };
-type CC = { id: number; name: string; code: string };
+type CC = { id: number; name: string; code: string; requires_temperature?: boolean; is_project_cargo?: boolean; };
 type EstimateBreakdown = {
   base_freight: number;
   discount_amount: number;
@@ -96,6 +96,9 @@ export default function AdminCreateBookingPage() {
   const [containerCount, setContainerCount] = useState("1");
   const [weight, setWeight] = useState("");
   const [cbm, setCbm] = useState("");
+  const [itemLength, setItemLength] = useState("");
+  const [itemWidth, setItemWidth] = useState("");
+  const [itemHeight, setItemHeight] = useState("");
   const [pickupDate, setPickupDate] = useState("");
   const [cargo, setCargo] = useState("");
   const [cargoCategoryId, setCargoCategoryId] = useState("");
@@ -120,7 +123,7 @@ export default function AdminCreateBookingPage() {
 
   const [selectedAddOns, setSelectedAddOns] = useState<number[]>([]);
   const [estimate, setEstimate] = useState<string | null>(null);
-  const [estimateBreakdown, setEstimateBreakdown] = useState<EstimateBreakdown | null>(null);
+  const [, setEstimateBreakdown] = useState<EstimateBreakdown | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<Record<string, string[]> | null>(null);
   const [loading, setLoading] = useState(true);
@@ -197,11 +200,13 @@ export default function AdminCreateBookingPage() {
   const isFCL = selectedST?.code === "FCL";
   const isLCL = selectedST?.code === "LCL";
   const selectedCompany = companies.find((c) => String(c.id) === companyId);
-  const selectedOrigin = locations.find((l) => String(l.id) === originId);
-  const selectedDestination = locations.find((l) => String(l.id) === destId);
-  const selectedMode = modes.find((m) => String(m.id) === modeId);
   const selectedContainerType = containerTypes.find((c) => String(c.id) === containerTypeId);
   const selectedCargoCategory = cargoCats.find((c) => String(c.id) === cargoCategoryId);
+  const showTemp = selectedCargoCategory?.requires_temperature;
+  const showProject = selectedCargoCategory?.is_project_cargo;
+  const [equipmentCondition, setEquipmentCondition] = useState("");
+  const [temperature, setTemperature] = useState("");
+
   const companyOptions: ComboOption[] = companies.map((c) => ({ value: String(c.id), label: c.name }));
   const locationOptions: ComboOption[] = locations.map((l) => ({
     value: String(l.id),
@@ -265,6 +270,8 @@ export default function AdminCreateBookingPage() {
     if (isDg && dgClassId) fd.append("dg_class_id", dgClassId);
     if (isDg && unNumber) fd.append("un_number", unNumber);
     if (isDg && msdsFile) fd.append("msds_file", msdsFile);
+    if (showProject && equipmentCondition) fd.append("equipment_condition", equipmentCondition);
+    if (showTemp && temperature) fd.append("temperature", temperature);
     
     fd.append("additional_services", JSON.stringify(selectedAddOns.map((id) => ({ id }))));
     
@@ -286,7 +293,7 @@ export default function AdminCreateBookingPage() {
         container_count: Number(containerCount) || 1,
         estimated_weight: weight ? Number(weight) : null,
         estimated_cbm: cbm ? Number(cbm) : null,
-        additional_services: selectedAddOns,
+        additional_services: selectedAddOns.map((id) => ({ id })),
       });
       const inner = (r as { data?: { estimated_price?: number; breakdown?: EstimateBreakdown } }).data;
       setEstimate(
@@ -378,245 +385,357 @@ export default function AdminCreateBookingPage() {
         <p className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{error}</p>
       ) : null}
 
-      <form onSubmit={onSubmit}>
-        <Card className="min-w-0 overflow-hidden">
-          <CardHeader>
-            <CardTitle>Detail pengiriman</CardTitle>
-            <CardDescription>Pilih customer, lokasi, layanan, dan kargo.</CardDescription>
-          </CardHeader>
-          <CardContent className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2 sm:col-span-2">
-              <Label>Customer</Label>
-              <Combobox
-                items={companyOptions}
-                value={companyOptions.find((x) => x.value === companyId) ?? null}
-                onValueChange={(next) => setCompanyId(next?.value ?? "")}
-              >
-                <ComboboxInput
-                  className={cn("w-full", validationErrors?.company_id && "[&_input]:border-red-500")}
-                  placeholder="Pilih customer..."
+      <form onSubmit={onSubmit} className="space-y-8">
+        <div className="space-y-8">
+          {/* Section 1: Rute & Layanan */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-bold text-zinc-900 uppercase tracking-wider border-b border-zinc-200 pb-2">Rute & Layanan</h3>
+            <div className="grid gap-5 sm:grid-cols-2 bg-white p-5 rounded-xl border shadow-sm">
+              <div className="space-y-2 sm:col-span-2">
+                <Label className="text-xs font-semibold uppercase tracking-wider text-zinc-500 ml-1">Customer</Label>
+                <Combobox
+                  items={companyOptions}
+                  value={companyOptions.find((x) => x.value === companyId) ?? null}
+                  onValueChange={(next) => setCompanyId(next?.value ?? "")}
+                >
+                  <ComboboxInput
+                    className={cn("w-full h-10 bg-zinc-50/50", validationErrors?.company_id && "[&_input]:border-red-500")}
+                    placeholder="Pilih customer..."
+                  />
+                  <ComboboxContent>
+                    <ComboboxEmpty>Data tidak ditemukan.</ComboboxEmpty>
+                    <ComboboxList>
+                      {(item: ComboOption) => (
+                        <ComboboxItem key={item.value} value={item}>
+                          {item.label}
+                        </ComboboxItem>
+                      )}
+                    </ComboboxList>
+                  </ComboboxContent>
+                </Combobox>
+                {selectedCompany ? <p className="text-[11px] text-zinc-500 ml-1">Dipilih: {selectedCompany.name}</p> : null}
+                {renderError("company_id")}
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs font-semibold uppercase tracking-wider text-zinc-500 ml-1">Origin</Label>
+                <Combobox
+                  items={locationOptions}
+                  value={locationOptions.find((x) => x.value === originId) ?? null}
+                  onValueChange={(next) => setOriginId(next?.value ?? "")}
+                >
+                  <ComboboxInput
+                    className={cn("w-full h-10 bg-zinc-50/50", validationErrors?.origin_location_id && "[&_input]:border-red-500")}
+                    placeholder="Pilih origin..."
+                  />
+                  <ComboboxContent>
+                    <ComboboxEmpty>Data tidak ditemukan.</ComboboxEmpty>
+                    <ComboboxList>
+                      {(item: ComboOption) => (
+                        <ComboboxItem key={item.value} value={item}>
+                          {item.label}
+                        </ComboboxItem>
+                      )}
+                    </ComboboxList>
+                  </ComboboxContent>
+                </Combobox>
+                {renderError("origin_location_id")}
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs font-semibold uppercase tracking-wider text-zinc-500 ml-1">Destination</Label>
+                <Combobox
+                  items={locationOptions}
+                  value={locationOptions.find((x) => x.value === destId) ?? null}
+                  onValueChange={(next) => setDestId(next?.value ?? "")}
+                >
+                  <ComboboxInput
+                    className={cn("w-full h-10 bg-zinc-50/50", validationErrors?.destination_location_id && "[&_input]:border-red-500")}
+                    placeholder="Pilih destination..."
+                  />
+                  <ComboboxContent>
+                    <ComboboxEmpty>Data tidak ditemukan.</ComboboxEmpty>
+                    <ComboboxList>
+                      {(item: ComboOption) => (
+                        <ComboboxItem key={item.value} value={item}>
+                          {item.label}
+                        </ComboboxItem>
+                      )}
+                    </ComboboxList>
+                  </ComboboxContent>
+                </Combobox>
+                {renderError("destination_location_id")}
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs font-semibold uppercase tracking-wider text-zinc-500 ml-1">Transport mode</Label>
+                <Combobox
+                  items={modeOptions}
+                  value={modeOptions.find((x) => x.value === modeId) ?? null}
+                  onValueChange={(next) => setModeId(next?.value ?? "")}
+                >
+                  <ComboboxInput
+                    className={cn("w-full h-10 bg-zinc-50/50", validationErrors?.transport_mode_id && "[&_input]:border-red-500")}
+                    placeholder="Pilih moda..."
+                  />
+                  <ComboboxContent>
+                    <ComboboxEmpty>Data tidak ditemukan.</ComboboxEmpty>
+                    <ComboboxList>
+                      {(item: ComboOption) => (
+                        <ComboboxItem key={item.value} value={item}>
+                          {item.label}
+                        </ComboboxItem>
+                      )}
+                    </ComboboxList>
+                  </ComboboxContent>
+                </Combobox>
+                {renderError("transport_mode_id")}
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs font-semibold uppercase tracking-wider text-zinc-500 ml-1">Service type</Label>
+                <Combobox
+                  items={serviceOptions}
+                  value={serviceOptions.find((x) => x.value === serviceTypeId) ?? null}
+                  onValueChange={(next) => setServiceTypeId(next?.value ?? "")}
+                >
+                  <ComboboxInput
+                    className={cn("w-full h-10 bg-zinc-50/50", validationErrors?.service_type_id && "[&_input]:border-red-500")}
+                    placeholder="Pilih layanan..."
+                  />
+                  <ComboboxContent>
+                    <ComboboxEmpty>Data tidak ditemukan.</ComboboxEmpty>
+                    <ComboboxList>
+                      {(item: ComboOption) => (
+                        <ComboboxItem key={item.value} value={item}>
+                          {item.label}
+                        </ComboboxItem>
+                      )}
+                    </ComboboxList>
+                  </ComboboxContent>
+                </Combobox>
+                {renderError("service_type_id")}
+              </div>
+            </div>
+          </div>
+
+          {/* Section 2: Pihak Terkait */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-bold text-zinc-900 uppercase tracking-wider border-b border-zinc-200 pb-2">Informasi Pihak Terkait</h3>
+            <ShipperConsigneeSection
+              shipper={shipper}
+              onShipperChange={(fields) => setShipper((prev) => ({ ...prev, ...fields }))}
+              consignee={consignee}
+              onConsigneeChange={(fields) => setConsignee((prev) => ({ ...prev, ...fields }))}
+              renderError={renderError}
+              validationErrors={validationErrors ?? undefined}
+              companyData={selectedCompany}
+            />
+          </div>
+
+          {/* Section 3: Kargo */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-bold text-zinc-900 uppercase tracking-wider border-b border-zinc-200 pb-2">Detail Kargo & Pengiriman</h3>
+            <div className="grid gap-5 sm:grid-cols-2 bg-white p-5 rounded-xl border shadow-sm">
+              {!isLCL ? (
+                <>
+                  <div className="space-y-2">
+                    <Label className="text-xs font-semibold uppercase tracking-wider text-zinc-500 ml-1">
+                      Container type {isFCL && <span className="text-red-500">*</span>}
+                    </Label>
+                    <Combobox
+                      items={containerOptions}
+                      value={containerOptions.find((x) => x.value === (containerTypeId || "__none__")) ?? null}
+                      onValueChange={(next) => setContainerTypeId(next?.value && next.value !== "__none__" ? next.value : "")}
+                    >
+                      <ComboboxInput className="w-full h-10 bg-zinc-50/50" placeholder="Pilih tipe kontainer..." />
+                      <ComboboxContent>
+                        <ComboboxEmpty>Data tidak ditemukan.</ComboboxEmpty>
+                        <ComboboxList>
+                          {(item: ComboOption) => (
+                            <ComboboxItem key={item.value} value={item}>
+                              {item.label}
+                            </ComboboxItem>
+                          )}
+                        </ComboboxList>
+                      </ComboboxContent>
+                    </Combobox>
+                    {renderError("container_type_id")}
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs font-semibold uppercase tracking-wider text-zinc-500 ml-1">Jumlah kontainer</Label>
+                    <Input
+                      type="number"
+                      min={1}
+                      value={containerCount}
+                      onChange={(e) => setContainerCount(e.target.value.replace(/\D/g, ""))}
+                      className={cn("h-10 bg-zinc-50/50", validationErrors?.container_count && "border-red-500")}
+                    />
+                    {renderError("container_count")}
+                  </div>
+                </>
+              ) : (
+                <div className="sm:col-span-2 grid gap-4 sm:grid-cols-3 bg-zinc-50/50 p-4 rounded-lg border border-dashed">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-semibold uppercase tracking-wider text-zinc-500 ml-1">Panjang (cm)</Label>
+                    <Input
+                      type="number"
+                      value={itemLength}
+                      onChange={(e) => {
+                        setItemLength(e.target.value);
+                        const l = Number(e.target.value) || 0;
+                        const w = Number(itemWidth) || 0;
+                        const h = Number(itemHeight) || 0;
+                        if (l && w && h) setCbm(String((l * w * h) / 1000000));
+                      }}
+                      placeholder="cm"
+                      className="h-10 bg-white"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-semibold uppercase tracking-wider text-zinc-500 ml-1">Lebar (cm)</Label>
+                    <Input
+                      type="number"
+                      value={itemWidth}
+                      onChange={(e) => {
+                        setItemWidth(e.target.value);
+                        const l = Number(itemLength) || 0;
+                        const w = Number(e.target.value) || 0;
+                        const h = Number(itemHeight) || 0;
+                        if (l && w && h) setCbm(String((l * w * h) / 1000000));
+                      }}
+                      placeholder="cm"
+                      className="h-10 bg-white"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-semibold uppercase tracking-wider text-zinc-500 ml-1">Tinggi (cm)</Label>
+                    <Input
+                      type="number"
+                      value={itemHeight}
+                      onChange={(e) => {
+                        setItemHeight(e.target.value);
+                        const l = Number(itemLength) || 0;
+                        const w = Number(itemWidth) || 0;
+                        const h = Number(e.target.value) || 0;
+                        if (l && w && h) setCbm(String((l * w * h) / 1000000));
+                      }}
+                      placeholder="cm"
+                      className="h-10 bg-white"
+                    />
+                  </div>
+                  <p className="sm:col-span-3 text-[10px] text-muted-foreground ml-1">
+                    * Dimensi digunakan untuk menghitung CBM secara otomatis.
+                  </p>
+                </div>
+              )}
+              
+              <div className="space-y-2">
+                <Label className="text-xs font-semibold uppercase tracking-wider text-zinc-500 ml-1">Berat Estimasi (kg)</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={weight}
+                  onChange={(e) => setWeight(e.target.value)}
+                  disabled={!isLCL && !!selectedContainerType}
+                  className={cn("h-10 bg-zinc-50/50", !isLCL && selectedContainerType && "bg-zinc-100 italic", validationErrors?.estimated_weight && "border-red-500")}
                 />
-                <ComboboxContent>
-                  <ComboboxEmpty>Data tidak ditemukan.</ComboboxEmpty>
-                  <ComboboxList>
-                    {(item: ComboOption) => (
-                      <ComboboxItem key={item.value} value={item}>
-                        {item.label}
-                      </ComboboxItem>
-                    )}
-                  </ComboboxList>
-                </ComboboxContent>
-              </Combobox>
-              {selectedCompany ? <p className="text-[11px] text-zinc-500">Dipilih: {selectedCompany.name}</p> : null}
-              {renderError("company_id")}
-            </div>
-            <div className="space-y-2">
-              <Label>Origin</Label>
-              <Combobox
-                items={locationOptions}
-                value={locationOptions.find((x) => x.value === originId) ?? null}
-                onValueChange={(next) => setOriginId(next?.value ?? "")}
-              >
-                <ComboboxInput
-                  className={cn("w-full", validationErrors?.origin_location_id && "[&_input]:border-red-500")}
-                  placeholder="Pilih origin..."
+                {renderError("estimated_weight")}
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs font-semibold uppercase tracking-wider text-zinc-500 ml-1">CBM Estimasi</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={cbm}
+                  onChange={(e) => setCbm(e.target.value)}
+                  disabled={!!selectedContainerType || isLCL}
+                  className={cn("h-10 bg-zinc-50/50", (selectedContainerType || isLCL) && "bg-zinc-100 italic", validationErrors?.estimated_cbm && "border-red-500")}
                 />
-                <ComboboxContent>
-                  <ComboboxEmpty>Data tidak ditemukan.</ComboboxEmpty>
-                  <ComboboxList>
-                    {(item: ComboOption) => (
-                      <ComboboxItem key={item.value} value={item}>
-                        {item.label}
-                      </ComboboxItem>
-                    )}
-                  </ComboboxList>
-                </ComboboxContent>
-              </Combobox>
-              {selectedOrigin ? <p className="text-[11px] text-zinc-500">Dipilih: {selectedOrigin.name}</p> : null}
-              {renderError("origin_location_id")}
-            </div>
-            <div className="space-y-2">
-              <Label>Destination</Label>
-              <Combobox
-                items={locationOptions}
-                value={locationOptions.find((x) => x.value === destId) ?? null}
-                onValueChange={(next) => setDestId(next?.value ?? "")}
-              >
-                <ComboboxInput
-                  className={cn("w-full", validationErrors?.destination_location_id && "[&_input]:border-red-500")}
-                  placeholder="Pilih destination..."
+                {renderError("estimated_cbm")}
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs font-semibold uppercase tracking-wider text-zinc-500 ml-1">Tanggal keberangkatan (est.)</Label>
+                <Input
+                  type="date"
+                  value={pickupDate}
+                  onChange={(e) => setPickupDate(e.target.value)}
+                  className="h-10 bg-zinc-50/50"
                 />
-                <ComboboxContent>
-                  <ComboboxEmpty>Data tidak ditemukan.</ComboboxEmpty>
-                  <ComboboxList>
-                    {(item: ComboOption) => (
-                      <ComboboxItem key={item.value} value={item}>
-                        {item.label}
-                      </ComboboxItem>
-                    )}
-                  </ComboboxList>
-                </ComboboxContent>
-              </Combobox>
-              {selectedDestination ? <p className="text-[11px] text-zinc-500">Dipilih: {selectedDestination.name}</p> : null}
-              {renderError("destination_location_id")}
-            </div>
-            <div className="space-y-2">
-              <Label>Transport mode</Label>
-              <Combobox
-                items={modeOptions}
-                value={modeOptions.find((x) => x.value === modeId) ?? null}
-                onValueChange={(next) => setModeId(next?.value ?? "")}
-              >
-                <ComboboxInput
-                  className={cn("w-full", validationErrors?.transport_mode_id && "[&_input]:border-red-500")}
-                  placeholder="Pilih moda..."
+                {renderError("departure_date")}
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs font-semibold uppercase tracking-wider text-zinc-500 ml-1">Kategori Kargo</Label>
+                <Combobox
+                  items={cargoCategoryOptions}
+                  value={cargoCategoryOptions.find((x) => x.value === cargoCategoryId) ?? null}
+                  onValueChange={(next) => setCargoCategoryId(next?.value ?? "")}
+                >
+                  <ComboboxInput
+                    className={cn("w-full h-10 bg-zinc-50/50", validationErrors?.cargo_category_id && "[&_input]:border-red-500")}
+                    placeholder="Pilih kategori..."
+                  />
+                  <ComboboxContent>
+                    <ComboboxEmpty>Data tidak ditemukan.</ComboboxEmpty>
+                    <ComboboxList>
+                      {(item: ComboOption) => (
+                        <ComboboxItem key={item.value} value={item}>
+                          {item.label}
+                        </ComboboxItem>
+                      )}
+                    </ComboboxList>
+                  </ComboboxContent>
+                </Combobox>
+                {renderError("cargo_category_id")}
+              </div>
+
+              <div className="space-y-2 sm:col-span-2">
+                <Label className="flex justify-between items-center text-xs font-semibold uppercase tracking-wider text-zinc-500 ml-1">
+                  <span>Deskripsi barang</span>
+                  <span className={selectedCargoCategory?.code === "MIX" ? "text-[10px] text-red-500 font-bold" : "text-[10px] text-zinc-400 normal-case"}>
+                    {selectedCargoCategory?.code === "MIX" ? "(Wajib untuk Mixed Cargo)" : "(Opsional)"}
+                  </span>
+                </Label>
+                <Textarea
+                  value={cargo}
+                  onChange={(e) => setCargo(e.target.value)}
+                  rows={3}
+                  placeholder="Sebutkan isi paket secara detail..."
+                  className={cn("min-h-[84px] bg-zinc-50/50", validationErrors?.cargo_description && "border-red-500")}
+                  required={selectedCargoCategory?.code === "MIX"}
                 />
-                <ComboboxContent>
-                  <ComboboxEmpty>Data tidak ditemukan.</ComboboxEmpty>
-                  <ComboboxList>
-                    {(item: ComboOption) => (
-                      <ComboboxItem key={item.value} value={item}>
-                        {item.label}
-                      </ComboboxItem>
-                    )}
-                  </ComboboxList>
-                </ComboboxContent>
-              </Combobox>
-              {selectedMode ? <p className="text-[11px] text-zinc-500">Dipilih: {selectedMode.name}</p> : null}
-              {renderError("transport_mode_id")}
+                {renderError("cargo_description")}
+              </div>
+
+              {showProject ? (
+                <div className="space-y-2">
+                  <Label className="text-xs font-semibold uppercase tracking-wider text-zinc-500 ml-1">Kondisi Mesin / Unit <span className="text-red-500">*</span></Label>
+                  <select
+                    className={cn("flex h-10 w-full rounded-md border border-input bg-zinc-50/50 px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring", validationErrors?.equipment_condition && "border-red-500")}
+                    value={equipmentCondition}
+                    onChange={(e) => setEquipmentCondition(e.target.value)}
+                    required
+                  >
+                    <option value="">— pilih kondisi —</option>
+                    <option value="CLEAN">CLEAN (Bersih/Baru)</option>
+                    <option value="OILY">OILY (Berminyak/Bekas)</option>
+                    <option value="DIRTY">DIRTY (Kotor)</option>
+                  </select>
+                  {renderError("equipment_condition")}
+                </div>
+              ) : null}
+
+              {showTemp ? (
+                <div className="space-y-2">
+                  <Label className="text-xs font-semibold uppercase tracking-wider text-zinc-500 ml-1">Kebutuhan Suhu (Opsional)</Label>
+                  <Input
+                    type="text"
+                    placeholder="Contoh: -18°C, 2-8°C"
+                    value={temperature}
+                    onChange={(e) => setTemperature(e.target.value)}
+                    className={cn("h-10 bg-zinc-50/50", validationErrors?.temperature && "border-red-500")}
+                  />
+                  {renderError("temperature")}
+                </div>
+              ) : null}
             </div>
-            <div className="space-y-2">
-              <Label>Service type</Label>
-              <Combobox
-                items={serviceOptions}
-                value={serviceOptions.find((x) => x.value === serviceTypeId) ?? null}
-                onValueChange={(next) => setServiceTypeId(next?.value ?? "")}
-              >
-                <ComboboxInput
-                  className={cn("w-full", validationErrors?.service_type_id && "[&_input]:border-red-500")}
-                  placeholder="Pilih layanan..."
-                />
-                <ComboboxContent>
-                  <ComboboxEmpty>Data tidak ditemukan.</ComboboxEmpty>
-                  <ComboboxList>
-                    {(item: ComboOption) => (
-                      <ComboboxItem key={item.value} value={item}>
-                        {item.label}
-                      </ComboboxItem>
-                    )}
-                  </ComboboxList>
-                </ComboboxContent>
-              </Combobox>
-              {selectedST ? <p className="text-[11px] text-zinc-500">Dipilih: {selectedST.name}</p> : null}
-              {renderError("service_type_id")}
-            </div>
-            <div className="space-y-2">
-              <Label>Container type (opsional)</Label>
-              <Combobox
-                items={containerOptions}
-                value={containerOptions.find((x) =>
-                  x.value === (containerTypeId || "__none__")
-                ) ?? null}
-                onValueChange={(next) =>
-                  setContainerTypeId(next?.value && next.value !== "__none__" ? next.value : "")
-                }
-              >
-                <ComboboxInput className="w-full" placeholder="Pilih tipe kontainer..." />
-                <ComboboxContent>
-                  <ComboboxEmpty>Data tidak ditemukan.</ComboboxEmpty>
-                  <ComboboxList>
-                    {(item: ComboOption) => (
-                      <ComboboxItem key={item.value} value={item}>
-                        {item.label}
-                      </ComboboxItem>
-                    )}
-                  </ComboboxList>
-                </ComboboxContent>
-              </Combobox>
-              {selectedContainerType ? <p className="text-[11px] text-zinc-500">Dipilih: {selectedContainerType.name}</p> : null}
-              {renderError("container_type_id")}
-            </div>
-            <div className="space-y-2">
-              <Label>Jumlah kontainer</Label>
-              <Input
-                type="number"
-                min={1}
-                value={containerCount}
-                onChange={(e) => setContainerCount(e.target.value)}
-                className={cn(
-                  "h-9",
-                  validationErrors?.container_count ? "border-red-500" : ""
-                )}
-              />
-              {renderError("container_count")}
-            </div>
-            <div className="space-y-2">
-              <Label>Berat estimasi (kg)</Label>
-              <Input
-                type="number"
-                step="0.01"
-                value={weight}
-                onChange={(e) => setWeight(e.target.value)}
-                className={cn(
-                  "h-9",
-                  validationErrors?.estimated_weight ? "border-red-500" : ""
-                )}
-              />
-              {renderError("estimated_weight")}
-            </div>
-            <div className="space-y-2">
-              <Label>CBM estimasi</Label>
-              <Input
-                type="number"
-                step="0.01"
-                value={cbm}
-                onChange={(e) => setCbm(e.target.value)}
-                className={cn(
-                  "h-9",
-                  validationErrors?.estimated_cbm ? "border-red-500" : ""
-                )}
-              />
-              {renderError("estimated_cbm")}
-            </div>
-            <div className="space-y-2">
-              <Label>Kategori kargo</Label>
-              <Combobox
-                items={cargoCategoryOptions}
-                value={cargoCategoryOptions.find((x) => x.value === cargoCategoryId) ?? null}
-                onValueChange={(next) => setCargoCategoryId(next?.value ?? "")}
-              >
-                <ComboboxInput
-                  className={cn("w-full", validationErrors?.cargo_category_id && "[&_input]:border-red-500")}
-                  placeholder="Pilih kategori..."
-                />
-                <ComboboxContent>
-                  <ComboboxEmpty>Data tidak ditemukan.</ComboboxEmpty>
-                  <ComboboxList>
-                    {(item: ComboOption) => (
-                      <ComboboxItem key={item.value} value={item}>
-                        {item.label}
-                      </ComboboxItem>
-                    )}
-                  </ComboboxList>
-                </ComboboxContent>
-              </Combobox>
-              {selectedCargoCategory ? <p className="text-[11px] text-zinc-500">Dipilih: {selectedCargoCategory.name}</p> : null}
-              {renderError("cargo_category_id")}
-            </div>
-            <div className="space-y-2">
-              <Label>Tanggal keberangkatan (est.)</Label>
-              <Input
-                type="date"
-                value={pickupDate}
-                onChange={(e) => setPickupDate(e.target.value)}
-                className={cn(
-                  "h-9",
-                  validationErrors?.departure_date ? "border-red-500" : ""
-                )}
-              />
-              {renderError("departure_date")}
-            </div>
-            
+
             <DangerousGoodsSection
               isDg={isDg}
               dgClassId={dgClassId}
@@ -629,100 +748,84 @@ export default function AdminCreateBookingPage() {
               validationErrors={validationErrors ?? undefined}
               renderError={renderError}
             />
+          </div>
 
-            <div className="sm:col-span-2 space-y-2">
-              <Label>Deskripsi kargo</Label>
-              <Textarea
-                value={cargo}
-                onChange={(e) => setCargo(e.target.value)}
-                rows={3}
-                placeholder="Sebutkan isi paket secara detail..."
-                className={cn(
-                  "min-h-[80px]",
-                  validationErrors?.cargo_description ? "border-red-500" : ""
-                )}
-              />
-              {renderError("cargo_description")}
-            </div>
-  
-              <ShipperConsigneeSection
-                shipper={shipper}
-                onShipperChange={(f) => setShipper(s => ({ ...s, ...f }))}
-                consignee={consignee}
-                onConsigneeChange={(f) => setConsignee(c => ({ ...c, ...f }))}
-                renderError={renderError}
-                validationErrors={validationErrors ?? undefined}
-              />
-
-            <div className="sm:col-span-2 space-y-2">
-              <Label>Layanan tambahan</Label>
-              <div className="grid gap-2 sm:grid-cols-2">
-                {addServices.map((a) => (
-                  <label key={a.id} className="flex items-center gap-2 text-sm">
+          {/* Section 4: Layanan Tambahan */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-bold text-zinc-900 uppercase tracking-wider border-b border-zinc-200 pb-2">Layanan Tambahan</h3>
+            <div className="grid gap-3 sm:grid-cols-2 bg-white p-5 rounded-xl border shadow-sm">
+              {addServices.map((s) => {
+                const isMandatory =
+                  (isFCL && s.code && FCL_MANDATORY_CODES.includes(s.code)) ||
+                  (isLCL && s.code && LCL_MANDATORY_CODES.includes(s.code));
+                return (
+                  <label
+                    key={s.id}
+                    className={cn(
+                      "flex items-center space-x-3 rounded-lg border p-4 transition-colors",
+                      isMandatory
+                        ? "bg-zinc-100 border-zinc-200 cursor-not-allowed opacity-80"
+                        : "cursor-pointer hover:bg-zinc-50"
+                    )}
+                  >
                     <Checkbox
-                      checked={selectedAddOns.includes(a.id)}
-                      disabled={
-                        (isFCL && FCL_MANDATORY_CODES.includes(a.code ?? "")) ||
-                        (isLCL && LCL_MANDATORY_CODES.includes(a.code ?? ""))
-                      }
-                      onCheckedChange={(v) => {
-                        const isMandatory =
-                          (isFCL && FCL_MANDATORY_CODES.includes(a.code ?? "")) ||
-                          (isLCL && LCL_MANDATORY_CODES.includes(a.code ?? ""));
+                      checked={selectedAddOns.includes(s.id)}
+                      onCheckedChange={(checked) => {
                         if (isMandatory) return;
-                        const on = v === true;
                         setSelectedAddOns((prev) =>
-                          on ? (prev.includes(a.id) ? prev : [...prev, a.id]) : prev.filter((x) => x !== a.id)
+                          checked ? [...prev, s.id] : prev.filter((x) => x !== s.id)
                         );
                       }}
+                      disabled={Boolean(isMandatory)}
                     />
-                    {a.name}
+                    <div className="flex-1 space-y-1">
+                      <p className="text-sm font-medium leading-none">
+                        {s.name}
+                        {isMandatory && <span className="ml-2 text-[10px] text-zinc-500 uppercase">(Wajib)</span>}
+                      </p>
+                      {s.category && <p className="text-[11px] text-muted-foreground">{s.category}</p>}
+                    </div>
                   </label>
-                ))}
-              </div>
+                );
+              })}
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        {estimate ? (
-          <div className="mt-4 rounded-xl border border-zinc-200 bg-zinc-50 p-4">
-            <p className="text-xs font-bold uppercase tracking-widest text-zinc-500">Informasi Biaya</p>
-            <p className="mt-1 text-lg font-black text-emerald-700">{estimate}</p>
-            <p className="text-[10px] text-zinc-500">
-              * Harga di atas bersifat estimasi dan akan dikonfirmasi kembali oleh operasional.
-            </p>
-            {estimateBreakdown ? (
-              <div className="mt-4 space-y-2 border-t border-zinc-200 pt-3 text-sm">
-                <div className="flex justify-between text-zinc-600">
-                  <span>Base Freight</span>
-                  <span>{new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR" }).format(estimateBreakdown.base_freight)}</span>
-                </div>
-                {estimateBreakdown.discount_amount > 0 ? (
-                  <div className="flex justify-between text-emerald-700">
-                    <span>Diskon</span>
-                    <span>-{new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR" }).format(estimateBreakdown.discount_amount)}</span>
-                  </div>
-                ) : null}
-                <div className="flex justify-between text-zinc-600">
-                  <span>Layanan Tambahan</span>
-                  <span>{new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR" }).format(estimateBreakdown.additional_services_total)}</span>
-                </div>
-                <div className="flex justify-between border-t border-zinc-200 pt-2 font-semibold text-zinc-900">
-                  <span>Total</span>
-                  <span>{new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR" }).format(estimateBreakdown.total)}</span>
-                </div>
+        {/* Floating Action Bar */}
+        <div className="sticky bottom-0 z-20 flex flex-col-reverse gap-4 rounded-xl border bg-white p-4 shadow-[0_-8px_30px_-15px_rgba(0,0,0,0.1)] sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-1 items-center gap-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onEstimate}
+              disabled={submitting}
+              className="w-full sm:w-auto font-medium"
+            >
+              Hitung Estimasi
+            </Button>
+            {estimate ? (
+              <div className="flex flex-col">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Estimasi Total</span>
+                <span className="text-lg font-bold text-zinc-900 leading-none">{estimate}</span>
               </div>
             ) : null}
           </div>
-        ) : null}
-
-        <div className="mt-6 flex flex-wrap gap-3">
-          <Button type="button" variant="outline" onClick={() => void onEstimate()}>
-            Estimasi harga
-          </Button>
-          <Button type="submit" disabled={submitting}>
-            {submitting ? "Menyimpan…" : "Simpan booking"}
-          </Button>
+          
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => router.push("/dashboard/admin/bookings")}
+              disabled={submitting}
+              className="w-full sm:w-auto"
+            >
+              Batal
+            </Button>
+            <Button type="submit" disabled={submitting} className="w-full sm:w-auto bg-black text-white hover:bg-zinc-800">
+              {submitting ? "Menyimpan..." : "Simpan Booking"}
+            </Button>
+          </div>
         </div>
       </form>
     </div>

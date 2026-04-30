@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { ClipboardList, CheckCircle } from "lucide-react";
 import { useRouter } from "@/i18n/routing";
 import { useBookingForm } from "./hooks/use-booking-form";
+import { useQueryClient } from "@tanstack/react-query";
 
 // Section Components
 import { RouteServiceSection } from "./components/sections/route-service-section";
@@ -23,6 +24,7 @@ import { AddOnServiceSection } from "./components/sections/add-on-service-sectio
 
 export default function CreateBookingPage() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const f = useBookingForm();
   const fmtIdr = (n: number) =>
     new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR" }).format(n);
@@ -221,7 +223,10 @@ export default function CreateBookingPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="sm:justify-center">
-            <AlertDialogAction onClick={() => router.push("/dashboard/booking")} className="w-full sm:w-auto px-10">
+            <AlertDialogAction onClick={async () => { 
+                await queryClient.invalidateQueries({ queryKey: ["customerBookings"] });
+                router.push("/dashboard/booking"); 
+              }} className="w-full sm:w-auto px-10">
               Lihat My Bookings
             </AlertDialogAction>
           </AlertDialogFooter>

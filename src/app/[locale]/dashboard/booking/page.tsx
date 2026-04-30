@@ -328,13 +328,15 @@ export default function MyBookingsPage() {
                                 </DropdownMenuItem>
                               )}
 
-                              <DropdownMenuItem
-                                className="cursor-pointer"
-                                onClick={() => router.push(`/dashboard/booking/create?rebook=${booking.id}`)}
-                              >
-                                <RefreshCw className="mr-2 h-4 w-4" />
-                                Ajukan Ulang
-                              </DropdownMenuItem>
+                              {st === "cancelled" && (
+                                <DropdownMenuItem
+                                  className="cursor-pointer"
+                                  onClick={() => router.push(`/dashboard/booking/create?rebook=${booking.id}`)}
+                                >
+                                  <RefreshCw className="mr-2 h-4 w-4" />
+                                  Ajukan Ulang
+                                </DropdownMenuItem>
+                              )}
 
                               {canCancel && (
                                 <DropdownMenuItem

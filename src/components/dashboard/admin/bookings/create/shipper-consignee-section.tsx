@@ -17,9 +17,12 @@ interface ShipperConsigneeSectionProps {
   onConsigneeChange: (fields: Partial<ContactFields>) => void;
   renderError: (field: string) => React.ReactNode;
   validationErrors?: Record<string, string[]>;
+  companyData?: { name?: string; address?: string; phone?: string; };
 }
 
 import { cn } from "@/lib/utils";
+import { Checkbox } from "@/components/ui/checkbox";
+import { useState } from "react";
 
 export function ShipperConsigneeSection({
   shipper,
@@ -28,11 +31,48 @@ export function ShipperConsigneeSection({
   onConsigneeChange,
   renderError,
   validationErrors,
+  companyData,
 }: ShipperConsigneeSectionProps) {
+  const [useCompanyData, setUseCompanyData] = useState(false);
+
+  const handleUseCompanyDataChange = (checked: boolean) => {
+    setUseCompanyData(checked);
+    if (checked && companyData) {
+      onShipperChange({
+        name: companyData.name || "",
+        address: companyData.address || "",
+        phone: companyData.phone || "",
+      });
+    } else {
+      onShipperChange({
+        name: "",
+        address: "",
+        phone: "",
+      });
+    }
+  };
+
   return (
     <>
       <div className="sm:col-span-1 space-y-4 rounded-lg border p-4 bg-zinc-50/50">
-        <h3 className="text-sm font-semibold">Data Pengirim (Shipper)</h3>
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-semibold">Data Pengirim (Shipper)</h3>
+          {companyData && (
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="use-company-data"
+                checked={useCompanyData}
+                onCheckedChange={handleUseCompanyDataChange}
+              />
+              <label
+                htmlFor="use-company-data"
+                className="text-[11px] font-medium leading-none cursor-pointer"
+              >
+                Sama dengan Customer
+              </label>
+            </div>
+          )}
+        </div>
         <div className="space-y-2">
           <Label>Nama Pengirim</Label>
           <Input

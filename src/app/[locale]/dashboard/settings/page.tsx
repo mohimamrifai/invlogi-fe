@@ -228,18 +228,22 @@ export default function CompanySettingsPage() {
           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
         </div>
       ) : (
-        <Tabs defaultValue="company" className="w-full">
+        <Tabs defaultValue={user?.roles?.includes("company_admin") || user?.roles?.includes("super_admin") ? "company" : "profile"} className="w-full">
           <TabsList className="mb-4 grid w-full grid-cols-4 lg:w-auto lg:inline-flex">
-            <TabsTrigger value="company" className="gap-2">
-              <Building className="h-4 w-4" />
-              <span className="hidden sm:inline">Profil Perusahaan</span>
-              <span className="sm:hidden">Perusahaan</span>
-            </TabsTrigger>
-            <TabsTrigger value="users" className="gap-2">
-              <Users className="h-4 w-4" />
-              <span className="hidden sm:inline">Manajemen Pengguna</span>
-              <span className="sm:hidden">Tim</span>
-            </TabsTrigger>
+            {(user?.roles?.includes("company_admin") || user?.roles?.includes("super_admin")) && (
+              <>
+                <TabsTrigger value="company" className="gap-2">
+                  <Building className="h-4 w-4" />
+                  <span className="hidden sm:inline">Profil Perusahaan</span>
+                  <span className="sm:hidden">Perusahaan</span>
+                </TabsTrigger>
+                <TabsTrigger value="users" className="gap-2">
+                  <Users className="h-4 w-4" />
+                  <span className="hidden sm:inline">Manajemen Pengguna</span>
+                  <span className="sm:hidden">Tim</span>
+                </TabsTrigger>
+              </>
+            )}
             <TabsTrigger value="profile" className="gap-2">
               <User className="h-4 w-4" />
               <span className="hidden sm:inline">Profil Pengguna</span>
@@ -253,8 +257,9 @@ export default function CompanySettingsPage() {
           </TabsList>
 
           {/* ══ COMPANY PROFILE TAB ══ */}
-          <TabsContent value="company">
-            <Card>
+          {(user?.roles?.includes("company_admin") || user?.roles?.includes("super_admin")) && (
+            <TabsContent value="company">
+              <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Building className="h-5 w-5 text-zinc-500" />
@@ -419,11 +424,14 @@ export default function CompanySettingsPage() {
               </CardContent>
             </Card>
           </TabsContent>
+          )}
 
           {/* ══ USER PROFILE TAB ══ */}
-          <TabsContent value="users">
-            <CustomerUsersTab />
-          </TabsContent>
+          {(user?.roles?.includes("company_admin") || user?.roles?.includes("super_admin")) && (
+            <TabsContent value="users">
+              <CustomerUsersTab />
+            </TabsContent>
+          )}
 
           {/* ══ PROFILE TAB ══ */}
           <TabsContent value="profile">

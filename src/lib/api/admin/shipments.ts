@@ -50,6 +50,10 @@ export async function updateAdminRack(rackId: number, body: Record<string, unkno
   });
 }
 
+export async function deleteAdminRack(rackId: number) {
+  return apiFetch(`/admin/racks/${rackId}`, { method: "DELETE" });
+}
+
 export async function addAdminShipmentItem(shipmentId: number, body: Record<string, unknown>) {
   return apiFetch(`/admin/shipments/${shipmentId}/items`, {
     method: "POST",

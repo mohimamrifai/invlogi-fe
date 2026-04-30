@@ -167,6 +167,7 @@ export default function AdminUsersPage() {
       } else if (editRow?.id != null) {
         const body: Record<string, unknown> = {
           name: name.trim(),
+          email: email.trim(),
           phone: phone.trim() || null,
           user_type: "internal",
           role,
@@ -359,13 +360,8 @@ export default function AdminUsersPage() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                disabled={dialogMode === "edit"}
                 placeholder={dialogMode === "create" ? "email@perusahaan.com" : undefined}
-                className={dialogMode === "edit" ? "bg-muted/50 cursor-not-allowed" : ""}
               />
-              {dialogMode === "edit" && (
-                <p className="text-[0.8rem] text-muted-foreground mt-1">Email tidak dapat diubah.</p>
-              )}
             </div>
             <div className="space-y-1">
               <Label>{dialogMode === "create" ? "Password" : "Password (kosongkan jika tidak diubah)"}</Label>

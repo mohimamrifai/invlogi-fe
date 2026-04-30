@@ -164,7 +164,7 @@ export function VendorServiceDialog({
                   setServiceTypeId("");
                 }
               }}
-              disabled={listsLoading}
+              disabled={saving || listsLoading}
             >
               <SelectTrigger className="w-full">
                 <SelectValue placeholder={listsLoading ? "Memuat…" : "Pilih"}>
@@ -187,7 +187,7 @@ export function VendorServiceDialog({
             <Select
               value={serviceTypeId}
               onValueChange={(v) => v && setServiceTypeId(v)}
-              disabled={listsLoading || !transportModeId}
+              disabled={saving || listsLoading || !transportModeId}
             >
               <SelectTrigger className="w-full">
                 <SelectValue placeholder={listsLoading ? "Memuat…" : transportModeId ? "Pilih" : "Pilih moda dulu"}>

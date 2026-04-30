@@ -68,11 +68,15 @@ export function ContainerDialog({
                 <SelectValue placeholder="Pilih tipe" />
               </SelectTrigger>
               <SelectContent>
-                {containerTypes.map((ct) => (
-                  <SelectItem key={String(ct.id)} value={String(ct.id)}>
-                    {String(ct.name ?? ct.id)} {ct.size ? `(${ct.size})` : ""}
-                  </SelectItem>
-                ))}
+                {containerTypes.map((ct) => {
+                  const label = ct.name ? String(ct.name) : `Tipe ${ct.id}`;
+                  const sizeLabel = ct.size ? `(${ct.size})` : "";
+                  return (
+                    <SelectItem key={String(ct.id)} value={String(ct.id)}>
+                      {label} {sizeLabel}
+                    </SelectItem>
+                  );
+                })}
               </SelectContent>
             </Select>
           </div>

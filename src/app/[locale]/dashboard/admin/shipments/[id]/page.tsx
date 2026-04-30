@@ -135,6 +135,7 @@ export default function AdminShipmentDetailPage() {
           }
           departure={s.data.estimated_departure ? String(s.data.estimated_departure).slice(0, 10) : "—"}
           arrival={s.data.estimated_arrival ? String(s.data.estimated_arrival).slice(0, 10) : "—"}
+          booking={detail.booking as Record<string, unknown>}
           notes={detail.notes ? String(detail.notes) : undefined}
           onOpenBooking={() => {
             if (detail.booking?.id) handleOpenBooking(detail.booking.id);
@@ -148,6 +149,10 @@ export default function AdminShipmentDetailPage() {
           onAddRack={s.openRack}
           onEditContainer={s.openEditContainer}
           onEditRack={s.openEditRack}
+          onDeleteRack={(rack) => {
+            s.setDeleteRackRow(rack);
+            s.setDeleteRackOpen(true);
+          }}
         />
 
         <div className="lg:col-span-2">
@@ -257,6 +262,15 @@ export default function AdminShipmentDetailPage() {
         description={`Anda akan menghapus item "${s.deleteItemRow?.name ?? ""}". Tindakan ini tidak dapat dibatalkan.`}
         loading={s.deleteItemLoading}
         onConfirm={() => void s.handleDeleteItem()}
+      />
+
+      <ConfirmDeleteDialog
+        open={s.deleteRackOpen}
+        onOpenChange={s.setDeleteRackOpen}
+        title="Hapus Rack?"
+        description={`Anda akan menghapus rack "${s.deleteRackRow?.name ?? ""}". Tindakan ini tidak dapat dibatalkan.`}
+        loading={s.deleteRackLoading}
+        onConfirm={() => void s.handleDeleteRack()}
       />
 
       <BookingDetailDialog

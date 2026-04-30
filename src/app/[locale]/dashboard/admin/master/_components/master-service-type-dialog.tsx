@@ -133,7 +133,14 @@ export function MasterServiceTypeDialog({
               disabled={readOnly}
             >
               <SelectTrigger className="w-full">
-                <SelectValue placeholder="Pilih moda" />
+                <SelectValue placeholder="Pilih moda">
+                  {transportModeId 
+                    ? (() => {
+                        const found = transportModes.find((tm) => String(tm.id) === transportModeId);
+                        return found ? String(found.name ?? found.code ?? found.id) : transportModeId;
+                      })()
+                    : undefined}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {transportModes.map((tm) => (

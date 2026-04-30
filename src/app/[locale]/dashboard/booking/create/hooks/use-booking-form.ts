@@ -316,10 +316,7 @@ export function useBookingForm() {
     setEstimateBreakdown(null);
     try {
       const p = buildPayload();
-      const r = await estimateBookingPrice({
-        ...p,
-        additional_services: selectedAddOns,
-      });
+      const r = await estimateBookingPrice(p);
       const inner = (r as { data?: { estimated_price?: number; breakdown?: EstimateBreakdown } }).data;
       setEstimate(
         inner?.estimated_price != null

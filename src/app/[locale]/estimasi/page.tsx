@@ -2,10 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Calculator, ArrowRight, Search, Loader2, Package } from "lucide-react";
+import { Calculator, ArrowRight, Search, Loader2 } from "lucide-react";
 import { Link } from "@/i18n/routing";
 import { useTranslations } from "next-intl";
 import {
@@ -20,15 +17,10 @@ import {
 } from "@/lib/public-api";
 import { ApiError } from "@/lib/api-client";
 import type { LaravelPaginated } from "@/lib/types-api";
-import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Combobox,
-  ComboboxContent,
-  ComboboxEmpty,
-  ComboboxInput,
-  ComboboxItem,
-  ComboboxList,
-} from "@/components/ui/combobox";
+
+import { RouteServiceSection } from "../dashboard/booking/create/components/sections/route-service-section";
+import { CargoDetailSection } from "../dashboard/booking/create/components/sections/cargo-detail-section";
+import { AddOnServiceSection } from "../dashboard/booking/create/components/sections/add-on-service-section";
 
 type Loc = { id: number; name: string; code?: string };
 type TM = { id: number; name: string; code?: string };
@@ -58,8 +50,6 @@ type DC = { id: number; name: string; code: string };
 const FCL_MANDATORY_CODES = ["FREE_STORAGE_FCL", "LOLO", "CONTAINER_RENT"];
 const LCL_MANDATORY_CODES = ["FREE_STORAGE_LCL"];
 const ALL_MANDATORY_CODES = [...FCL_MANDATORY_CODES, ...LCL_MANDATORY_CODES];
-
-type ComboOption = { value: string; label: string };
 
 export default function PublicEstimatePage() {
   const t = useTranslations("Estimate");
@@ -158,39 +148,39 @@ export default function PublicEstimatePage() {
   const isFCL = selectedST?.code === "FCL";
   const isLCL = selectedST?.code === "LCL";
   const selectedCT = containerTypes.find((c) => String(c.id) === containerTypeId);
-  const selectedOrigin = locations.find((l) => String(l.id) === originId);
-  const selectedDest = locations.find((l) => String(l.id) === destId);
-  const selectedMode = modes.find((m) => String(m.id) === modeId);
+  // const selectedOrigin = locations.find((l) => String(l.id) === originId);
+  // const selectedDest = locations.find((l) => String(l.id) === destId);
+  // const selectedMode = modes.find((m) => String(m.id) === modeId);
   const selectedCC = cargoCategories.find((c) => String(c.id) === cargoCategoryId);
-  const selectedDgClass = dgClasses.find((d) => String(d.id) === dgClassId);
+  // const selectedDgClass = dgClasses.find((d) => String(d.id) === dgClassId);
 
   const showTemp = selectedCC?.requires_temperature;
   const showProject = selectedCC?.is_project_cargo;
 
-  const locationOptions: ComboOption[] = locations.map((l) => ({
-    value: String(l.id),
-    label: `${l.name}${l.code ? ` (${l.code})` : ""}`,
-  }));
-  const modeOptions: ComboOption[] = modes.map((m) => ({
-    value: String(m.id),
-    label: `${m.name}${m.code ? ` (${m.code})` : ""}`,
-  }));
-  const serviceOptions: ComboOption[] = serviceTypes.map((s) => ({
-    value: String(s.id),
-    label: `${s.name}${s.code ? ` (${s.code})` : ""}`,
-  }));
-  const containerOptions: ComboOption[] = containerTypes.map((c) => ({
-    value: String(c.id),
-    label: `${c.name} (${c.size})`,
-  }));
-  const cargoCategoryOptions: ComboOption[] = cargoCategories.map((c) => ({
-    value: String(c.id),
-    label: c.name,
-  }));
-  const dgClassOptions: ComboOption[] = dgClasses.map((d) => ({
-    value: String(d.id),
-    label: d.name,
-  }));
+  // const locationOptions: ComboOption[] = locations.map((l) => ({
+  //   value: String(l.id),
+  //   label: `${l.name}${l.code ? ` (${l.code})` : ""}`,
+  // }));
+  // const modeOptions: ComboOption[] = modes.map((m) => ({
+  //   value: String(m.id),
+  //   label: `${m.name}${m.code ? ` (${m.code})` : ""}`,
+  // }));
+  // const serviceOptions: ComboOption[] = serviceTypes.map((s) => ({
+  //   value: String(s.id),
+  //   label: `${s.name}${s.code ? ` (${s.code})` : ""}`,
+  // }));
+  // const containerOptions: ComboOption[] = containerTypes.map((c) => ({
+  //   value: String(c.id),
+  //   label: `${c.name} (${c.size})`,
+  // }));
+  // const cargoCategoryOptions: ComboOption[] = cargoCategories.map((c) => ({
+  //   value: String(c.id),
+  //   label: c.name,
+  // }));
+  // const dgClassOptions: ComboOption[] = dgClasses.map((d) => ({
+  //   value: String(d.id),
+  //   label: d.name,
+  // }));
 
   useEffect(() => {
     if (addServices.length > 0 && serviceTypeId) {
@@ -316,425 +306,131 @@ export default function PublicEstimatePage() {
         </div>
       </div>
 
-      <div className="mx-auto mt-8 max-w-4xl px-6 md:mt-10 md:px-12">
+      <div className="mx-auto mt-8 max-w-5xl px-6 md:mt-10 md:px-12">
         {error ? (
           <div className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             {error}
           </div>
         ) : null}
 
-        <div className="rounded-2xl border border-zinc-200/80 bg-white p-6 shadow-xl shadow-zinc-200/50 md:p-8">
-          <div className="mb-6">
-            <h2 className="text-lg font-semibold text-zinc-900">{t("formTitle")}</h2>
-            <p className="mt-1 text-sm text-zinc-500">{t("formDescription")}</p>
+        <div className="flex flex-col gap-8">
+          <div className="grid gap-6 lg:grid-cols-2">
+            <RouteServiceSection
+              locations={locations}
+              modes={modes}
+              serviceTypes={serviceTypes}
+              originId={originId}
+              setOriginId={setOriginId}
+              destId={destId}
+              setDestId={setDestId}
+              modeId={modeId}
+              setModeId={setModeId}
+              serviceTypeId={serviceTypeId}
+              setServiceTypeId={setServiceTypeId}
+              renderFieldError={() => null}
+            />
+
+            <CargoDetailSection
+              isLCL={isLCL}
+              isFCL={isFCL}
+              containerTypes={containerTypes}
+              cargoCategories={cargoCategories}
+              dgClasses={dgClasses}
+              containerTypeId={containerTypeId}
+              setContainerTypeId={setContainerTypeId}
+              containerCount={containerCount}
+              setContainerCount={setContainerCount}
+              weight={weight}
+              setWeight={setWeight}
+              cbm={cbm}
+              setCbm={setCbm}
+              itemLength={itemLength}
+              setItemLength={setItemLength}
+              itemWidth={itemWidth}
+              setItemWidth={setItemWidth}
+              itemHeight={itemHeight}
+              setItemHeight={setItemHeight}
+              departureDate={""}
+              setDepartureDate={() => {}}
+              cargoCategoryId={cargoCategoryId}
+              setCargoCategoryId={setCargoCategoryId}
+              cargo={""}
+              setCargo={() => {}}
+              selectedCT={selectedCT}
+              selectedCC={selectedCC}
+              isDG={isDG}
+              dgClassId={dgClassId}
+              setDgClassId={setDgClassId}
+              unNumber={unNumber}
+              setUnNumber={setUnNumber}
+              msdsFile={null}
+              setMsdsFile={() => {}}
+              equipmentCondition={equipmentCondition}
+              setEquipmentCondition={setEquipmentCondition}
+              temperature={temperature}
+              setTemperature={setTemperature}
+              showTemp={showTemp}
+              showProject={showProject}
+              renderFieldError={() => null}
+            />
+
+            <AddOnServiceSection
+              isFCL={isFCL}
+              isLCL={isLCL}
+              addServices={addServices}
+              selectedAddOns={selectedAddOns}
+              setSelectedAddOns={setSelectedAddOns}
+            />
           </div>
 
-          <div className="grid gap-5 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
-                {t("origin")}
-              </Label>
-              <Combobox
-                items={locationOptions}
-                value={locationOptions.find((x) => x.value === originId) ?? null}
-                onValueChange={(next) => setOriginId(next?.value ?? "")}
-              >
-                <ComboboxInput className="w-full" placeholder="Pilih origin" />
-                <ComboboxContent>
-                  <ComboboxEmpty>Data tidak ditemukan.</ComboboxEmpty>
-                  <ComboboxList>
-                    {(item: ComboOption) => (
-                      <ComboboxItem key={item.value} value={item}>
-                        {item.label}
-                      </ComboboxItem>
-                    )}
-                  </ComboboxList>
-                </ComboboxContent>
-              </Combobox>
-              {selectedOrigin ? (
-                <p className="text-[11px] text-zinc-500">Dipilih: {selectedOrigin.name}</p>
-              ) : null}
-            </div>
-            <div className="space-y-2">
-              <Label className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
-                {t("destination")}
-              </Label>
-              <Combobox
-                items={locationOptions}
-                value={locationOptions.find((x) => x.value === destId) ?? null}
-                onValueChange={(next) => setDestId(next?.value ?? "")}
-              >
-                <ComboboxInput className="w-full" placeholder="Pilih destination" />
-                <ComboboxContent>
-                  <ComboboxEmpty>Data tidak ditemukan.</ComboboxEmpty>
-                  <ComboboxList>
-                    {(item: ComboOption) => (
-                      <ComboboxItem key={item.value} value={item}>
-                        {item.label}
-                      </ComboboxItem>
-                    )}
-                  </ComboboxList>
-                </ComboboxContent>
-              </Combobox>
-              {selectedDest ? (
-                <p className="text-[11px] text-zinc-500">Dipilih: {selectedDest.name}</p>
-              ) : null}
-            </div>
-            <div className="space-y-2">
-              <Label className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
-                {t("transportMode")}
-              </Label>
-              <Combobox
-                items={modeOptions}
-                value={modeOptions.find((x) => x.value === modeId) ?? null}
-                onValueChange={(next) => setModeId(next?.value ?? "")}
-              >
-                <ComboboxInput className="w-full" placeholder="Pilih transport mode" />
-                <ComboboxContent>
-                  <ComboboxEmpty>Data tidak ditemukan.</ComboboxEmpty>
-                  <ComboboxList>
-                    {(item: ComboOption) => (
-                      <ComboboxItem key={item.value} value={item}>
-                        {item.label}
-                      </ComboboxItem>
-                    )}
-                  </ComboboxList>
-                </ComboboxContent>
-              </Combobox>
-              {selectedMode ? (
-                <p className="text-[11px] text-zinc-500">Dipilih: {selectedMode.name}</p>
-              ) : null}
-            </div>
-            <div className="space-y-2">
-              <Label className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
-                {t("serviceType")}
-              </Label>
-              <Combobox
-                items={serviceOptions}
-                value={serviceOptions.find((x) => x.value === serviceTypeId) ?? null}
-                onValueChange={(next) => setServiceTypeId(next?.value ?? "")}
-              >
-                <ComboboxInput className="w-full" placeholder="Pilih service type" />
-                <ComboboxContent>
-                  <ComboboxEmpty>Data tidak ditemukan.</ComboboxEmpty>
-                  <ComboboxList>
-                    {(item: ComboOption) => (
-                      <ComboboxItem key={item.value} value={item}>
-                        {item.label}
-                      </ComboboxItem>
-                    )}
-                  </ComboboxList>
-                </ComboboxContent>
-              </Combobox>
-              {selectedST ? (
-                <p className="text-[11px] text-zinc-500">Dipilih: {selectedST.name}</p>
-              ) : null}
-            </div>
-            <div className="space-y-2 sm:col-span-2 border-t border-zinc-100 pt-5 mt-2">
-              <Label className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
-                Kategori Kargo <span className="text-red-500">*</span>
-              </Label>
-              <Combobox
-                items={cargoCategoryOptions}
-                value={cargoCategoryOptions.find((x) => x.value === cargoCategoryId) ?? null}
-                onValueChange={(next) => setCargoCategoryId(next?.value ?? "")}
-              >
-                <ComboboxInput className="w-full" placeholder="Pilih kategori kargo" />
-                <ComboboxContent>
-                  <ComboboxEmpty>Data tidak ditemukan.</ComboboxEmpty>
-                  <ComboboxList>
-                    {(item: ComboOption) => (
-                      <ComboboxItem key={item.value} value={item}>
-                        {item.label}
-                      </ComboboxItem>
-                    )}
-                  </ComboboxList>
-                </ComboboxContent>
-              </Combobox>
-              {selectedCC ? (
-                <p className="text-[11px] text-zinc-500">Dipilih: {selectedCC.name}</p>
-              ) : null}
-            </div>
-
-            {showTemp && (
-              <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
-                <Label className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
-                  Suhu (Celsius) <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  className="h-11 rounded-xl border-zinc-200 shadow-sm focus:border-[#0b1b69] focus:ring-2 focus:ring-[#0b1b69]/20"
-                  type="number"
-                  value={temperature}
-                  onChange={(e) => setTemperature(e.target.value)}
-                  placeholder="0.0"
-                />
+          <div className="flex flex-col gap-6 p-6 bg-zinc-50 border border-zinc-200 rounded-2xl shadow-inner">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="space-y-1">
+                <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Informasi Biaya</p>
+                {estimate ? (
+                  <p className="text-xl font-black text-emerald-700">{estimate}</p>
+                ) : (
+                  <p className="text-sm text-zinc-400 italic">Silakan klik tombol estimasi untuk melihat perkiraan harga.</p>
+                )}
+                {estimate && (
+                   <p className="text-[10px] text-zinc-500">* Harga di atas bersifat estimasi dan akan dikonfirmasi kembali oleh operasional.</p>
+                )}
               </div>
-            )}
-
-            {showProject && (
-              <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
-                <Label className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
-                  Kondisi Mesin / Unit <span className="text-red-500">*</span>
-                </Label>
-                <select
-                  className="flex h-11 w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-[#0b1b69] focus:ring-2 focus:ring-[#0b1b69]/20 focus-visible:outline-none"
-                  value={equipmentCondition}
-                  onChange={(e) => setEquipmentCondition(e.target.value)}
+              
+              <div className="flex flex-wrap gap-3 items-center">
+                <Button
+                  type="button"
+                  className="gap-2 rounded-full bg-[#0b1b69] px-8 py-3 text-sm font-semibold text-white shadow-lg transition-colors hover:bg-[#0d2280]"
+                  onClick={() => void onEstimate()}
+                  disabled={estimating || !originId || !destId || !modeId || !serviceTypeId}
                 >
-                  <option value="">— pilih kondisi —</option>
-                  <option value="CLEAN">CLEAN (Bersih/Baru)</option>
-                  <option value="RESIDUAL">RESIDUAL (Bekas/Terdapat sisa BBM)</option>
-                </select>
-                {equipmentCondition === "RESIDUAL" && (
-                  <p className="text-[10px] text-amber-600 font-medium">
-                    * Unit Residual otomatis ditandai sebagai Dangerous Goods (DG).
-                  </p>
-                )}
-              </div>
-            )}
-
-            {!isLCL ? (
-              <>
-                <div className="space-y-2">
-                  <Label className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
-                    {t("containerType")} {isFCL && <span className="text-red-500">*</span>}
-                  </Label>
-                  <Combobox
-                    items={containerOptions}
-                    value={containerOptions.find((x) => x.value === containerTypeId) ?? null}
-                    onValueChange={(next) => setContainerTypeId(next?.value ?? "")}
-                  >
-                    <ComboboxInput className="w-full" placeholder="Pilih container type" />
-                    <ComboboxContent>
-                      <ComboboxEmpty>Data tidak ditemukan.</ComboboxEmpty>
-                      <ComboboxList>
-                        {(item: ComboOption) => (
-                          <ComboboxItem key={item.value} value={item}>
-                            {item.label}
-                          </ComboboxItem>
-                        )}
-                      </ComboboxList>
-                    </ComboboxContent>
-                  </Combobox>
-                  {selectedCT ? (
-                    <p className="text-[11px] text-zinc-500">Dipilih: {selectedCT.name}</p>
-                  ) : null}
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
-                    {t("containerCount")}
-                  </Label>
-                  <Input
-                    className="h-11 rounded-xl border-zinc-200 shadow-sm focus:border-[#0b1b69] focus:ring-2 focus:ring-[#0b1b69]/20"
-                    type="number"
-                    min={1}
-                    value={containerCount}
-                    onChange={(e) => setContainerCount(e.target.value)}
-                  />
-                </div>
-              </>
-            ) : (
-              <div className="sm:col-span-2 grid gap-4 sm:grid-cols-3 bg-zinc-50/50 p-4 rounded-xl border border-dashed border-zinc-300">
-                <div className="space-y-2">
-                  <Label className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
-                    Panjang (cm)
-                  </Label>
-                  <Input
-                    className="h-11 rounded-xl border-zinc-200 shadow-sm focus:border-[#0b1b69] focus:ring-2 focus:ring-[#0b1b69]/20 bg-white"
-                    type="number"
-                    value={itemLength}
-                    onChange={(e) => setItemLength(e.target.value)}
-                    placeholder="cm"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
-                    Lebar (cm)
-                  </Label>
-                  <Input
-                    className="h-11 rounded-xl border-zinc-200 shadow-sm focus:border-[#0b1b69] focus:ring-2 focus:ring-[#0b1b69]/20 bg-white"
-                    type="number"
-                    value={itemWidth}
-                    onChange={(e) => setItemWidth(e.target.value)}
-                    placeholder="cm"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
-                    Tinggi (cm)
-                  </Label>
-                  <Input
-                    className="h-11 rounded-xl border-zinc-200 shadow-sm focus:border-[#0b1b69] focus:ring-2 focus:ring-[#0b1b69]/20 bg-white"
-                    type="number"
-                    value={itemHeight}
-                    onChange={(e) => setItemHeight(e.target.value)}
-                    placeholder="cm"
-                  />
-                </div>
-                <p className="sm:col-span-3 text-[10px] text-zinc-500">* Dimensi digunakan untuk menghitung CBM secara otomatis.</p>
-              </div>
-            )}
-
-            <div className="space-y-2">
-              <Label className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
-                {t("weight")}
-              </Label>
-              <Input
-                className={cn(
-                  "h-11 rounded-xl border-zinc-200 shadow-sm focus:border-[#0b1b69] focus:ring-2 focus:ring-[#0b1b69]/20",
-                  !isLCL && selectedCT ? "bg-zinc-100 italic" : "bg-white"
-                )}
-                type="number"
-                step="0.01"
-                value={weight}
-                onChange={(e) => setWeight(e.target.value)}
-                disabled={!isLCL && !!selectedCT}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
-                {t("cbm")}
-              </Label>
-              <Input
-                className={cn(
-                  "h-11 rounded-xl border-zinc-200 shadow-sm focus:border-[#0b1b69] focus:ring-2 focus:ring-[#0b1b69]/20",
-                  selectedCT || isLCL ? "bg-zinc-100 italic" : "bg-white"
-                )}
-                type="number"
-                step="0.01"
-                value={cbm}
-                onChange={(e) => setCbm(e.target.value)}
-                disabled={!!selectedCT || isLCL}
-              />
-            </div>
-
-            {isDG && (
-              <div className="sm:col-span-2 border-t border-zinc-100 pt-5 mt-2">
-                <Label className="text-xs font-bold text-red-600 mb-3 block uppercase tracking-wider">
-                  Detail Kargo Berbahaya (DG)
-                </Label>
-                <div className="grid gap-4 sm:grid-cols-2 animate-in fade-in slide-in-from-top-2 duration-300 bg-amber-50/30 p-5 rounded-2xl border border-amber-100">
-                  <div className="space-y-2">
-                    <Label className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
-                      DG Class <span className="text-red-500">*</span>
-                    </Label>
-                    <Combobox
-                      items={dgClassOptions}
-                      value={dgClassOptions.find((x) => x.value === dgClassId) ?? null}
-                      onValueChange={(next) => setDgClassId(next?.value ?? "")}
-                    >
-                      <ComboboxInput className="w-full bg-white" placeholder="Pilih DG class" />
-                      <ComboboxContent>
-                        <ComboboxEmpty>Data tidak ditemukan.</ComboboxEmpty>
-                        <ComboboxList>
-                          {(item: ComboOption) => (
-                            <ComboboxItem key={item.value} value={item}>
-                              {item.label}
-                            </ComboboxItem>
-                          )}
-                        </ComboboxList>
-                      </ComboboxContent>
-                    </Combobox>
-                    {selectedDgClass ? (
-                      <p className="text-[11px] text-zinc-500">Dipilih: {selectedDgClass.name}</p>
-                    ) : null}
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
-                      UN Number <span className="text-red-500">*</span>
-                    </Label>
-                    <Input
-                      value={unNumber}
-                      onChange={(e) => setUnNumber(e.target.value)}
-                      placeholder="e.g. UN1263"
-                      className="h-11 rounded-xl border-zinc-200 shadow-sm focus:border-[#0b1b69] focus:ring-2 focus:ring-[#0b1b69]/20 bg-white"
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-            {addServices.length > 0 && (
-              <div className="space-y-3 sm:col-span-2">
-                <Label className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
-                  {t("addOns")}
-                </Label>
-                <div className="grid gap-2 sm:grid-cols-2 md:grid-cols-3">
-                  {addServices.map((a) => (
-                    <label
-                      key={a.id}
-                      className={cn(
-                        "flex cursor-pointer items-center gap-3 rounded-xl border px-4 py-3 text-sm transition-colors",
-                        selectedAddOns.includes(a.id)
-                          ? "border-[#0b1b69]/30 bg-[#0b1b69]/5 text-[#0b1b69]"
-                          : "border-zinc-200 hover:border-zinc-300"
-                      )}
-                    >
-                      <Checkbox
-                        checked={selectedAddOns.includes(a.id)}
-                        onCheckedChange={(v) => {
-                          const on = v === true;
-                          setSelectedAddOns((prev) =>
-                            on ? (prev.includes(a.id) ? prev : [...prev, a.id]) : prev.filter((x) => x !== a.id)
-                          );
-                        }}
-                      />
-                      {a.name}
-                    </label>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div className="mt-8 flex flex-wrap items-center gap-3 border-t border-zinc-100 pt-6">
-            <Button
-              type="button"
-              className="gap-2 rounded-full bg-[#0b1b69] px-8 py-3 text-sm font-semibold text-white shadow-lg transition-colors hover:bg-[#0d2280]"
-              onClick={() => void onEstimate()}
-              disabled={estimating || !originId || !destId || !modeId || !serviceTypeId}
-            >
-              {estimating ? (
-                <><Loader2 className="h-4 w-4 animate-spin" /> {t("estimating")}</>
-              ) : (
-                <><Calculator className="h-4 w-4" /> {t("estimateCta")}</>
-              )}
-            </Button>
-            <Link
-              href="/register"
-              className="inline-flex items-center gap-1 rounded-full px-5 py-3 text-sm font-medium text-zinc-600 transition-colors hover:text-[#0b1b69]"
-            >
-              {t("registerHint")}
-              <ArrowRight className="h-3.5 w-3.5" />
-            </Link>
-          </div>
-        </div>
-
-        {estimate ? (
-          <div className="mt-8 rounded-2xl border border-zinc-200 bg-zinc-50 p-6 shadow-inner md:p-8">
-            <div className="flex items-start gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-100">
-                <Package className="h-5 w-5 text-emerald-700" />
-              </div>
-              <div className="min-w-0 flex-1 space-y-1">
-                <p className="text-xs font-bold uppercase tracking-widest text-zinc-500">Informasi Biaya</p>
-                <p className="text-2xl font-black text-emerald-700">{estimate}</p>
-                <p className="text-[10px] text-zinc-500">
-                  * Harga di atas bersifat estimasi dan akan dikonfirmasi kembali oleh operasional.
-                </p>
+                  {estimating ? (
+                    <><Loader2 className="h-4 w-4 animate-spin" /> {t("estimating")}</>
+                  ) : (
+                    <><Calculator className="h-4 w-4" /> {t("estimateCta")}</>
+                  )}
+                </Button>
+                <Link
+                  href="/register"
+                  className="inline-flex items-center gap-1 rounded-full px-5 py-3 text-sm font-medium text-zinc-600 transition-colors hover:text-[#0b1b69]"
+                >
+                  {t("registerHint")}
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </Link>
               </div>
             </div>
             {breakdown ? (
-              <div className="mt-5 space-y-2 border-t border-zinc-200 pt-4 text-sm">
+              <div className="space-y-2 border-t border-zinc-200 pt-4 text-sm">
                 <div className="flex justify-between text-zinc-600">
                   <span>{t("breakdownBase")}</span>
                   <span>{fmtIdr(breakdown.base_freight)}</span>
                 </div>
-                {breakdown.discount_amount > 0 && (
+                {breakdown.discount_amount > 0 ? (
                   <div className="flex justify-between text-emerald-700">
                     <span>{t("breakdownDiscount")}</span>
                     <span>-{fmtIdr(breakdown.discount_amount)}</span>
                   </div>
-                )}
+                ) : null}
                 <div className="flex justify-between text-zinc-600">
                   <span>{t("breakdownAddOns")}</span>
                   <span>{fmtIdr(breakdown.additional_services_total)}</span>
@@ -746,7 +442,7 @@ export default function PublicEstimatePage() {
               </div>
             ) : null}
           </div>
-        ) : null}
+        </div>
 
         <div className="h-16" />
       </div>
