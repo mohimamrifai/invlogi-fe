@@ -76,6 +76,8 @@ export default function PublicEstimatePage() {
   const [unNumber, setUnNumber] = useState("");
   const [equipmentCondition, setEquipmentCondition] = useState("");
   const [temperature, setTemperature] = useState("");
+  const [departureDate, setDepartureDate] = useState("");
+  const [cargo, setCargo] = useState("");
   
   const [itemLength, setItemLength] = useState("");
   const [itemWidth, setItemWidth] = useState("");
@@ -350,12 +352,12 @@ export default function PublicEstimatePage() {
               setItemWidth={setItemWidth}
               itemHeight={itemHeight}
               setItemHeight={setItemHeight}
-              departureDate={""}
-              setDepartureDate={() => {}}
+              departureDate={departureDate}
+              setDepartureDate={setDepartureDate}
               cargoCategoryId={cargoCategoryId}
               setCargoCategoryId={setCargoCategoryId}
-              cargo={""}
-              setCargo={() => {}}
+              cargo={cargo}
+              setCargo={setCargo}
               selectedCT={selectedCT}
               selectedCC={selectedCC}
               isDG={isDG}

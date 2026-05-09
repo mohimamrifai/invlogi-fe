@@ -11,12 +11,13 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  Combobox,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+} from "@/components/ui/combobox";
 import { DIALOG_CREATE_HEADER_CLASS } from "@/lib/dialog-create-header";
 
 type ContainerTypeRow = {
@@ -54,6 +55,12 @@ export function ContainerDialog({
   saving,
   onSave,
 }: ContainerDialogProps) {
+  const containerOptions = containerTypes.map((ct) => {
+    const label = ct.name ? String(ct.name) : `Tipe ${ct.id}`;
+    const sizeLabel = ct.size ? `(${ct.size})` : "";
+    return { value: String(ct.id), label: `${label} ${sizeLabel}`.trim() };
+  });
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent showCloseButton>
@@ -63,22 +70,23 @@ export function ContainerDialog({
         <div className="grid gap-3 py-2">
           <div className="space-y-1">
             <Label>Tipe Kontainer</Label>
-            <Select value={contTypeId} onValueChange={(v) => v && setContTypeId(v)}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Pilih tipe" />
-              </SelectTrigger>
-              <SelectContent>
-                {containerTypes.map((ct) => {
-                  const label = ct.name ? String(ct.name) : `Tipe ${ct.id}`;
-                  const sizeLabel = ct.size ? `(${ct.size})` : "";
-                  return (
-                    <SelectItem key={String(ct.id)} value={String(ct.id)}>
-                      {label} {sizeLabel}
-                    </SelectItem>
-                  );
-                })}
-              </SelectContent>
-            </Select>
+            <Combobox
+              items={containerOptions}
+              value={containerOptions.find((x) => x.value === contTypeId) ?? null}
+              onValueChange={(next) => setContTypeId(next?.value ?? "")}
+            >
+              <ComboboxInput className="w-full" placeholder="Pilih tipe..." />
+              <ComboboxContent>
+                <ComboboxEmpty>Data tidak ditemukan.</ComboboxEmpty>
+                <ComboboxList>
+                  {(item: { value: string; label: string }) => (
+                    <ComboboxItem key={item.value} value={item}>
+                      {item.label}
+                    </ComboboxItem>
+                  )}
+                </ComboboxList>
+              </ComboboxContent>
+            </Combobox>
           </div>
           <div className="space-y-1">
             <Label>Nomor Kontainer</Label>

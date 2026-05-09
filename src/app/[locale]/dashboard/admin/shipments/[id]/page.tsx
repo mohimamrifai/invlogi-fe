@@ -28,9 +28,13 @@ type ShipmentDetailData = {
   company?: { name?: string };
   booking?: { booking_number?: string; id?: number | string };
   originLocation?: { name?: string };
+  origin_location?: { name?: string };
   destinationLocation?: { name?: string };
+  destination_location?: { name?: string };
   transportMode?: { name?: string };
+  transport_mode?: { name?: string };
   serviceType?: { name?: string };
+  service_type?: { name?: string };
   estimated_departure?: string;
   estimated_arrival?: string;
   notes?: string;
@@ -124,10 +128,10 @@ export default function AdminShipmentDetailPage() {
           companyName={String(detail.company?.name ?? "—")}
           bookingNumber={detail.booking?.booking_number ? String(detail.booking.booking_number) : undefined}
           bookingId={detail.booking?.id}
-          origin={String(detail.originLocation?.name ?? "—")}
-          destination={String(detail.destinationLocation?.name ?? "—")}
-          transportMode={String(detail.transportMode?.name ?? "—")}
-          serviceType={String(detail.serviceType?.name ?? "—")}
+          origin={String(detail.origin_location?.name ?? detail.originLocation?.name ?? "—")}
+          destination={String(detail.destination_location?.name ?? detail.destinationLocation?.name ?? "—")}
+          transportMode={String(detail.transport_mode?.name ?? detail.transportMode?.name ?? "—")}
+          serviceType={String(detail.service_type?.name ?? detail.serviceType?.name ?? "—")}
           containerInfo={
             s.containers.length > 0 
               ? `${s.containers.length} Kontainer` 

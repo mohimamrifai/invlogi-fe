@@ -33,6 +33,12 @@ import {
   ComboboxItem,
   ComboboxList,
 } from "@/components/ui/combobox";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { ChevronDown, Package, Truck, Wrench, Settings } from "lucide-react";
 import { DangerousGoodsSection } from "@/components/dashboard/admin/bookings/create/dangerous-goods-section";
 import { ShipperConsigneeSection } from "@/components/dashboard/admin/bookings/create/shipper-consignee-section";
 
@@ -50,6 +56,16 @@ type CC = {
   is_project_cargo?: boolean;
 };
 type ComboOption = { value: string; label: string };
+
+const FCL_MANDATORY_CODES = ["FREE_STORAGE_FCL", "LOLO", "CONTAINER_RENT"];
+const LCL_MANDATORY_CODES = ["FREE_STORAGE_LCL"];
+
+const CATEGORIES = [
+  { key: "pickup", label: "Pickup", icon: Truck },
+  { key: "packing", label: "Packing", icon: Package },
+  { key: "handling", label: "Handling", icon: Wrench },
+  { key: "other", label: "Lainnya", icon: Settings },
+];
 
 interface BookingEditDialogProps {
   open: boolean;
@@ -224,6 +240,25 @@ export function BookingEditDialog({
       }
     }
   }, [cargoCategoryId, equipmentCondition, cargoCats, cargoCategoryOptions.length]);
+
+  // Sync mandatory add-ons
+  useEffect(() => {
+    if (addServices.length > 0 && serviceTypeId) {
+      const codes = isFCL ? FCL_MANDATORY_CODES : isLCL ? LCL_MANDATORY_CODES : [];
+      const mandatoryIds = addServices
+        .filter((s) => s.code != null && codes.includes(s.code))
+        .map((s) => s.id);
+      setSelectedAddOns((prev) => {
+        const others = prev.filter(
+          (id) =>
+            ![...FCL_MANDATORY_CODES, ...LCL_MANDATORY_CODES].includes(
+              addServices.find((s) => s.id === id)?.code ?? ""
+            )
+        );
+        return Array.from(new Set([...others, ...mandatoryIds]));
+      });
+    }
+  }, [serviceTypeId, addServices, isFCL, isLCL]);
 
   const renderError = (field: string) => {
     const msgs = validationErrors?.[field];
@@ -484,22 +519,78 @@ export function BookingEditDialog({
               {/* Section 4: Add-ons */}
               <div className="space-y-4">
                 <h3 className="text-sm font-bold text-zinc-900 uppercase tracking-wider border-b border-zinc-200 pb-2">Layanan Tambahan</h3>
-                <div className="bg-white p-5 rounded-xl border shadow-sm">
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    {addServices.map((svc) => (
-                      <label key={svc.id} className="flex items-center gap-3 text-sm p-3 rounded-lg border bg-zinc-50/50 hover:bg-zinc-100 transition-colors cursor-pointer">
-                        <Checkbox
-                          checked={selectedAddOns.includes(svc.id)}
-                          onCheckedChange={(checked) =>
-                            setSelectedAddOns((prev) =>
-                              checked === true ? Array.from(new Set([...prev, svc.id])) : prev.filter((id) => id !== svc.id)
-                            )
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 bg-white p-5 rounded-xl border shadow-sm">
+                  {CATEGORIES.map((cat) => {
+                    const svcs = addServices.filter((s) => (s.category || "other") === cat.key);
+                    if (svcs.length === 0) return null;
+
+                    const activeCount = svcs.filter((s) => selectedAddOns.includes(s.id)).length;
+                    const activeNames = svcs
+                      .filter((s) => selectedAddOns.includes(s.id))
+                      .map((s) => s.name)
+                      .join(", ");
+
+                    return (
+                      <Popover key={cat.key}>
+                        <PopoverTrigger
+                          render={
+                            <Button
+                              variant="outline"
+                              className="w-full justify-between h-auto py-3 px-4 text-left font-normal border-zinc-200 hover:bg-zinc-50"
+                            >
+                              <div className="flex items-center gap-3 min-w-0">
+                                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-zinc-100 text-zinc-600">
+                                  <cat.icon className="h-4 w-4" />
+                                </div>
+                                <div className="flex flex-col min-w-0">
+                                  <span className="text-xs font-bold text-zinc-900 leading-tight">{cat.label}</span>
+                                  <span className="text-xs text-zinc-500 leading-tight truncate max-w-[120px]">
+                                    {activeCount > 0 ? activeNames : "Pilih layanan"}
+                                  </span>
+                                </div>
+                              </div>
+                              <ChevronDown className="h-4 w-4 shrink-0 opacity-50 ml-2" />
+                            </Button>
                           }
                         />
-                        <span className="font-medium text-zinc-700">{svc.name}</span>
-                      </label>
-                    ))}
-                  </div>
+                        <PopoverContent className="w-72 p-2 shadow-2xl border-zinc-200" align="start">
+                          <div className="flex flex-col gap-1">
+                            {svcs.map((a) => {
+                              const isMandatory =
+                                (isFCL && a.code && FCL_MANDATORY_CODES.includes(a.code)) ||
+                                (isLCL && a.code && LCL_MANDATORY_CODES.includes(a.code));
+                              return (
+                                <label
+                                  key={a.id}
+                                  className="flex items-center gap-3 rounded-md px-3 py-2 hover:bg-zinc-100 cursor-pointer text-sm transition-colors"
+                                >
+                                  <Checkbox
+                                    checked={selectedAddOns.includes(a.id)}
+                                    disabled={Boolean(isMandatory)}
+                                    onCheckedChange={(v) => {
+                                      if (isMandatory) return;
+                                      const on = v === true;
+                                      setSelectedAddOns((prev) =>
+                                        on
+                                          ? prev.includes(a.id) ? prev : [...prev, a.id]
+                                          : prev.filter((x) => x !== a.id)
+                                      );
+                                    }}
+                                  />
+                                  <div className="flex flex-col">
+                                    <span className={isMandatory ? "text-zinc-500 font-semibold italic" : "font-normal group-hover:text-zinc-900"}>
+                                      {a.name}
+                                    </span>
+                                    {isMandatory && <span className="text-[10px] text-zinc-400 font-medium">Bawaan (Default Terpilih)</span>}
+                                  </div>
+                                </label>
+                              );
+                            })}
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                    );
+                  })}
                 </div>
               </div>
             </div>
