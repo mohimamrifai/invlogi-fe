@@ -32,10 +32,13 @@ export default function AdminCreateBookingPage() {
     fd.append("destination_location_id", form.destId);
     fd.append("transport_mode_id", form.modeId);
     fd.append("service_type_id", form.serviceTypeId);
-    if (form.containerTypeId) fd.append("container_type_id", form.containerTypeId);
-    fd.append("container_count", form.containerCount);
-    if (form.weight) fd.append("estimated_weight", form.weight);
-    if (form.cbm) fd.append("estimated_cbm", form.cbm);
+    if (!form.isLCL && form.containerTypeId) fd.append("container_type_id", form.containerTypeId);
+    if (!form.isLCL && form.containerCount) fd.append("container_count", form.containerCount);
+    fd.append("estimated_weight", form.weight ? form.weight : "0");
+    fd.append("estimated_cbm", form.cbm ? form.cbm : "0");
+    if (form.isLCL && form.itemLength) fd.append("length", form.itemLength);
+    if (form.isLCL && form.itemWidth) fd.append("width", form.itemWidth);
+    if (form.isLCL && form.itemHeight) fd.append("height", form.itemHeight);
     fd.append("cargo_category_id", form.cargoCategoryId);
     if (form.pickupDate) fd.append("departure_date", form.pickupDate);
     if (form.cargo) fd.append("cargo_description", form.cargo);
@@ -70,8 +73,8 @@ export default function AdminCreateBookingPage() {
         destination_location_id: Number(form.destId),
         transport_mode_id: Number(form.modeId),
         service_type_id: Number(form.serviceTypeId),
-        container_type_id: form.containerTypeId ? Number(form.containerTypeId) : null,
-        container_count: Number(form.containerCount) || 1,
+        container_type_id: !form.isLCL && form.containerTypeId ? Number(form.containerTypeId) : null,
+        container_count: !form.isLCL ? (Number(form.containerCount) || 1) : null,
         estimated_weight: form.weight ? Number(form.weight) : null,
         estimated_cbm: form.cbm ? Number(form.cbm) : null,
         additional_services: form.selectedAddOns.map((id) => ({ id })),

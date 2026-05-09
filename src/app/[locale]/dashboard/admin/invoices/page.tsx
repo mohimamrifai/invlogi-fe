@@ -43,6 +43,7 @@ import {
   Pencil,
   Receipt,
   Trash2,
+  Link as LinkIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { InvoicePdfDownloadProgressDialog } from "@/components/invoice-pdf-download-progress-dialog";
@@ -62,6 +63,7 @@ import {
   downloadAdminInvoicePdf,
   fetchAdminInvoice,
   fetchAdminInvoices,
+  generateAdminMidtransLink,
 } from "@/lib/admin-api";
 import type { LaravelPaginated } from "@/lib/types-api";
 import { ApiError } from "@/lib/api-client";
@@ -90,6 +92,7 @@ type InvRow = Record<string, unknown>;
 function AdminInvoiceActionsMenu({
   invoiceId,
   invoiceNumber,
+  status,
   canManageInvoices,
   onViewDetail,
   onEdit,
@@ -97,6 +100,7 @@ function AdminInvoiceActionsMenu({
 }: {
   invoiceId: number;
   invoiceNumber: string;
+  status: string;
   canManageInvoices: boolean;
   onViewDetail: () => void;
   onEdit: () => void;
@@ -105,6 +109,26 @@ function AdminInvoiceActionsMenu({
   const [pdfDialogOpen, setPdfDialogOpen] = useState(false);
   const [pdfBusy, setPdfBusy] = useState(false);
   const [pdfProgress, setPdfProgress] = useState<number | null>(null);
+  const [linkLoading, setLinkLoading] = useState(false);
+
+  const onGenerateLink = async () => {
+    const toastId = toast.loading("Membuat link pembayaran...");
+    setLinkLoading(true);
+    try {
+      const res = await generateAdminMidtransLink(invoiceId);
+      const url = res.data?.payment_url;
+      if (url) {
+        await navigator.clipboard.writeText(url);
+        toast.success("Link berhasil dibuat dan disalin ke clipboard!", { id: toastId, duration: 4000 });
+      } else {
+        toast.success(res.message, { id: toastId });
+      }
+    } catch (e) {
+      toast.error(e instanceof ApiError ? e.message : "Gagal membuat link.", { id: toastId });
+    } finally {
+      setLinkLoading(false);
+    }
+  };
 
   const onPdf = async () => {
     setPdfDialogOpen(true);
@@ -166,6 +190,16 @@ function AdminInvoiceActionsMenu({
         {canManageInvoices ? (
           <>
             <DropdownMenuSeparator />
+            {(status === "unpaid" || status === "overdue") && (
+              <DropdownMenuItem 
+                className="cursor-pointer" 
+                onClick={() => void onGenerateLink()}
+                disabled={linkLoading}
+              >
+                <LinkIcon className="h-4 w-4" />
+                {linkLoading ? "Membuat link..." : "Buat Link Midtrans"}
+              </DropdownMenuItem>
+            )}
             <DropdownMenuItem className="cursor-pointer" onClick={onEdit}>
               <Pencil className="h-4 w-4" />
               Edit invoice
@@ -503,6 +537,7 @@ export default function AdminInvoicesPage() {
                             <AdminInvoiceActionsMenu
                               invoiceId={id}
                               invoiceNumber={num}
+                              status={st}
                               canManageInvoices={canManageInvoices}
                               onViewDetail={() => void openInvoiceDetail(id)}
                               onEdit={() => {

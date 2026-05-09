@@ -65,3 +65,10 @@ export async function verifyAdminPaymentManual(id: number, body?: { note?: strin
 export async function fetchAdminOverdueInvoices() {
   return apiFetch(`/admin/payments/overdue-invoices`, { method: "GET" });
 }
+
+export async function generateAdminMidtransLink(invoiceId: number) {
+  return apiFetch<{ message: string; data: { payment_url: string } }>(
+    `/admin/invoices/${invoiceId}/generate-payment-link`,
+    { method: "POST" }
+  );
+}

@@ -24,9 +24,12 @@ export type BookingDetail = {
   container_count: number;
   cargo_category?: { id?: number; name?: string; requires_temperature?: boolean; is_project_cargo?: boolean };
   cargoCategory?: { id?: number; name?: string; requires_temperature?: boolean; is_project_cargo?: boolean };
-  estimated_weight?: string;
-  estimated_cbm?: string;
-  departure_date?: string;
+  estimated_weight?: number | null;
+  estimated_cbm?: number | null;
+  length?: number | null;
+  width?: number | null;
+  height?: number | null;
+  departure_date?: string | null;
   cargo_description?: string;
   shipper_name?: string;
   shipper_address?: string;

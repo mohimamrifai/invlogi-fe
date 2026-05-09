@@ -162,6 +162,9 @@ export function BookingEditDialog({
     setContainerCount(String(data.container_count ?? 1));
     setWeight(data.estimated_weight ? String(data.estimated_weight) : "");
     setCbm(data.estimated_cbm ? String(data.estimated_cbm) : "");
+    setItemLength(data.length ? String(data.length) : "");
+    setItemWidth(data.width ? String(data.width) : "");
+    setItemHeight(data.height ? String(data.height) : "");
     setDepartureDate(data.departure_date ? String(data.departure_date).slice(0, 10) : "");
     setCargo(data.cargo_description ?? "");
     setCargoCategoryId(data.cargo_category_id ? String(data.cargo_category_id) : (data.cargoCategory?.id ? String(data.cargoCategory.id) : (data.cargo_category?.id ? String(data.cargo_category.id) : "")));
@@ -277,6 +280,9 @@ export function BookingEditDialog({
     if (!isLCL) fd.append("container_count", containerCount || "1");
     if (weight) fd.append("estimated_weight", weight);
     if (cbm) fd.append("estimated_cbm", cbm);
+    if (isLCL && itemLength) fd.append("length", itemLength);
+    if (isLCL && itemWidth) fd.append("width", itemWidth);
+    if (isLCL && itemHeight) fd.append("height", itemHeight);
     fd.append("cargo_category_id", cargoCategoryId);
     if (departureDate) fd.append("departure_date", departureDate);
     if (cargo) fd.append("cargo_description", cargo);
